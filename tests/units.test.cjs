@@ -110,10 +110,10 @@ test('temperature offsets apply to absolute temperatures, never to temperature d
 
 test('percent inputs and percent results each scale at the correct boundary',()=>{
   const m=model('inputPower','efficiency');
-  m.inputUnits={'P_nyttig:power':'kW','P_ind:power':'kW','η:scalar':'percent'};
+  m.inputUnits={'P_teo:power':'kW','P_nyttig:power':'kW','P_ind:power':'kW','η:scalar':'percent'};
   m.formulas[0].resultUnit='kW';m.formulas[1].resultUnit='percent';
   const c=E.context(m);
-  near(value(c.result('formula:inputPower'),{P_nyttig:10,'η':80}),12.5);
+  near(value(c.result('formula:inputPower'),{P_teo:10,'η':80}),12.5);
   near(value(c.result('formula:efficiency'),{P_nyttig:8,P_ind:10}),80);
 });
 

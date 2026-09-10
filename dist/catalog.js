@@ -3097,20 +3097,21 @@
       }
     },
     "inputPower": {
-      "name": "Tilført effekt med virkningsgrad",
+      "name": "Virkelig effekt (Pvirk)",
+      "aliases": ["tilført effekt", "Pind", "P_ind", "Pnyttig", "P_nyttig", "virkeevne", "eta"],
       "group": "Pumper og tryk",
-      "symbol": "P_ind",
+      "symbol": "P_virk",
       "dimension": "power",
-      "equation": "Pind = Pnyttig / η",
+      "equation": "Pvirk = Pteo / η",
       "args": {
         "P": {
-          "symbol": "P_nyttig",
-          "label": "Nyttig eller teoretisk effekt",
+          "symbol": "P_teo",
+          "label": "Teoretisk eller nyttig effekt",
           "dimension": "power"
         },
         "eta": {
           "symbol": "η",
-          "label": "Virkningsgrad som decimaltal",
+          "label": "Virkningsgrad · η (eta)",
           "dimension": "scalar"
         }
       },
@@ -3119,7 +3120,7 @@
         "P",
         "eta"
       ],
-      "note": "Brug fx 0,80 med inputenheden tal eller 80 med inputenheden %. Virkningsgraden er større end 0 og højst 1 som decimaltal.",
+      "note": "Pvirk er den nødvendige tilførte effekt, og Pteo er den teoretiske eller nyttige effekt. η (eta) er virkningsgraden. Brug fx 0,80 med inputenheden tal eller 80 med inputenheden %. Virkningsgraden er større end 0 og højst 1 som decimaltal.",
       "source": {
         "pages": [
           5,

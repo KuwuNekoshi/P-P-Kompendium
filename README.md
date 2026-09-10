@@ -24,6 +24,8 @@ Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser
 
 En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af kildens aktuelle formel; eventuelle underreferencer i kopien bliver ved med at følge deres egne kilder.
 
+**Virkelig effekt (Pvirk)** findes under **Pumper og tryk** og som **T30**. Formlen er `Pvirk = Pteo / η`, hvor `η` hedder eta og er virkningsgraden. Søg fx på `Pvirk`, `P_virk`, `eta`, `virkeevne` eller det tidligere navn **Tilført effekt**. Vælg **%** som inputenhed, hvis virkningsgraden er oplyst i procent.
+
 Indsatte delformler og figursummer får **tydelige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx ganges hele summen af tankens pladearealer med pladetykkelse og massefylde. Nævnere, subtraherede summer og udtryk under potenser grupperes også.
 
 ### Input- og resultatenheder
@@ -68,7 +70,7 @@ Gamle opsætninger åbnes med indvendige diametre, som før. Hvis en gammel ops�
 
 ### Tankens egenvægt · T9
 
-Tryk **Brug T9** under figurvisningen, eller find **Tankens egenvægt** i formelsamlingen:
+Find **Tankens egenvægt** i formelsamlingen ved at søge på **T9**, eller vælg den via **Tilføj formel**:
 
 ```text
 m_tank = (A_cylinder + A_endestykke + …) · t_plade · ρ_mat
