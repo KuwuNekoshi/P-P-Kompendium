@@ -30,6 +30,10 @@ Indsatte delformler og figursummer får **tydelige parenteser**, både i MathML-
 
 Hver kendt størrelse har et enhedsvalg, fx **mm → m**, **L/min → m³/s** eller **% → tal**. Brug derefter tallet fra opgaven direkte som det viste symbol. Omregningsfaktorerne er allerede med i formlen; der er fortsat ingen talindtastning eller numerisk resultatberegning i kompendiet.
 
+Brøkenheder har **to uafhængige dropdowns** for tæller og nævner. Vælg fx **t (ton) / m³**, **kg / h**, **mg / min** eller **mL / h**, både for input og resultat. Skifter du tælleren, bevares nævneren, og omvendt. Alle kombinationer af de relevante enheder er tilgængelige; masseflow kombinerer masse og tid, mens densitet kombinerer masse og rumfang.
+
+Hastighed, acceleration, volumenflow, masseflow, densitet, omdrejningstal, antal pr. længde, specifik energi og specifik varmekapacitet bruger de delte valg. Acceleration beholder kvadreret tid i nævneren. Varmekapacitet viser nævneren som en samlet gruppe, fx **(kg·K)** eller **(g·°C)**. Tidligere gemte enhedsvalg genåbnes med de tilsvarende dele og samme omregningsfaktor.
+
 **Resultatets enhed** omregner hele det færdige udtryk, fx fra m³ til liter, sekunder til minutter, kg til ton eller W til kW. Den valgte enhed står ved formelresultatet. Eksempel med diameter i mm, indvendig højde i cm og rumfang i liter:
 
 ```text

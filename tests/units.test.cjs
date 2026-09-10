@@ -139,3 +139,62 @@ test('unit choices survive saving and migration while incompatible or malformed 
   const malformed=E.clone(m);malformed.inputUnits={'<img>:length':'mm'};assert.throws(()=>E.validateModel(malformed),/ugyldig størrelse/);
   const removed=E.removeShape(m,'cylinder');assert.deepEqual(E.validateModel(removed).inputUnits,m.inputUnits);
 });
+
+test('numerator and denominator changes are independent and preserve older unit selections',()=>{
+  let unit=U.get('massFlow','kg_h');
+  assert.deepEqual(unit.parts,{numerator:'kg',denominator:'h'});
+  unit=U.withPart('massFlow',unit.id,'numerator','mg');
+  assert.equal(unit.label,'mg/h');
+  unit=U.withPart('massFlow',unit.id,'denominator','min');
+  assert.equal(unit.label,'mg/min');
+  near(value(U.convert({type:'symbol',symbol:'x'},unit),{x:60000000}),1);
+  unit=U.withPart('massFlow',unit.id,'numerator','kg');
+  assert.equal(unit.id,'kg_min');
+  assert.equal(U.combine('density','ton','m3').id,'ton_m3');
+  assert.equal(U.combine('density','g','cm3').id,'g_cm3');
+  assert.equal(U.combine('flow','L','min').id,'L_min');
+  assert.equal(U.combine('rotationRate','rev','min').id,'rpm');
+  assert.equal(U.combine('heatCapacity','kJ','kg_K').id,'kJ_kgK');
+  assert.throws(()=>U.combine('density','kg','h'),/passer ikke/);
+  assert.throws(()=>U.withPart('massFlow','kg_h','numerator','L'),/passer ikke/);
+  assert.throws(()=>U.withPart('massFlow','kg_h','power','min'),/valgte del/);
+});
+
+test('new density and flow combinations give consistent mass-flow results and survive saving',()=>{
+  const m=model('massFlow');
+  m.inputUnits={'ρ:density':U.combine('density','mg','mL').id,'Q_v:flow':U.combine('flow','cL','min').id};
+  m.formulas[0].resultUnit=U.combine('massFlow','g','h').id;
+  // 2 mg/mL × 30 mL/min = 60 mg/min = 3.6 g/h.
+  near(value(E.context(m).result('formula:massFlow'),{'ρ':2,Q_v:3}),3.6);
+  const saved=E.validateModel(JSON.parse(JSON.stringify(m)));
+  assert.deepEqual(saved,m);
+  assert.deepEqual(E.resultUnit(saved.formulas[0]).parts,{numerator:'g',denominator:'h'});
+  const invalid=E.clone(m);invalid.inputUnits['Q_v:flow']='ratio:kg:h';
+  assert.throws(()=>E.validateModel(invalid),/inputenhed/);
+});
+
+test('squared time and grouped mass-temperature denominators retain their physical exponents',()=>{
+  const acceleration=U.combine('acceleration','cm','min2');
+  near(value(U.convert({type:'symbol',symbol:'a'},acceleration),{a:360000}),1);
+  const m=model('heatingEnergy');
+  m.inputUnits={'m:mass':'g','c_p:heatCapacity':U.combine('heatCapacity','Wh','g_C').id,'ΔT:temperatureChange':'C'};
+  m.formulas[0].resultUnit='kJ';
+  // 2 g × 0.5 Wh/(g·°C) × 10 °C = 10 Wh = 36 kJ.
+  const ast=E.context(m).result('formula:heatingEnergy');
+  near(value(ast,{m:2,c_p:.5,'ΔT':10}),36);
+  assert.equal(U.get('heatCapacity',m.inputUnits['c_p:heatCapacity']).label,'Wh/(g·°C)');
+  assert(!E.plain(ast).includes('273'));
+});
+
+test('references accept a result unit composed from independently selected parts',()=>{
+  const m=model('flowFromVolume','massFlow');
+  m.formulas[0].resultUnit=U.combine('flow','mL','h').id;
+  m.formulas[1].expression.args.Q=E.ref('formula:flowFromVolume');
+  m.formulas[1].resultUnit=U.combine('massFlow','g','min').id;
+  const c=E.context(m),inputs={V:.001,t:60,'ρ':1000};
+  near(value(c.result('formula:flowFromVolume'),inputs),60000);
+  near(value(c.result('formula:massFlow'),inputs),1000);
+  const compact=c.result('formula:massFlow','compact');
+  near(value(compact,{'ρ':1000,Q_v:60000}),1000);
+  assert(E.plain(compact).includes('[mL/h]'));
+});

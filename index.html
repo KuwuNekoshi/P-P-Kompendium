@@ -34,7 +34,11 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .unit-symbol-list>div{display:block;padding:16px 0}
 .unit-symbol-list dt{margin-bottom:11px}
 .unit-symbol-list dd{white-space:normal}
-.unit-pair{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;min-width:0;font-size:.875rem;color:var(--text)}
+.unit-pair{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;min-width:0;font-size:.875rem;color:var(--text)}
+.unit-choice{flex:1 1 160px;min-width:0;max-width:100%}
+.unit-fraction{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;flex-basis:220px}
+.unit-slash{color:var(--muted);font-size:1.1rem}
+.unit-target{display:flex;align-items:center;gap:7px;line-height:1.5}
 .unit-pair>span{overflow-wrap:anywhere}
 .unit-select{width:100%;min-width:0;min-height:42px;border:1px solid var(--border);border-radius:6px;padding:9px 27px 9px 10px;background:var(--surface);color:var(--text);font-size:.875rem;line-height:1.5;text-overflow:ellipsis;cursor:pointer}
 .unit-select:hover{border-color:var(--muted)}
@@ -42,7 +46,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .result-unit-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:23px;padding:20px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
 .result-unit-row label{font-size:.95rem;font-weight:550;line-height:1.5}
 .result-unit-row p{display:flex;align-items:center;gap:9px;margin-top:9px;font-size:.8rem;line-height:1.6;color:var(--muted)}
-.result-unit-row .unit-pair{grid-template-columns:auto auto minmax(0,1fr)}
+.result-unit-row .unit-pair{align-items:center}
 .unit-footnote{font-size:.8rem;line-height:1.7;color:var(--muted);margin-top:12px}
 @media(max-width:1190px){.result-unit-row{grid-template-columns:minmax(0,1fr);gap:14px}}
 @media print{.unit-select{appearance:none;border:0;padding:0;min-height:0;background:none}.result-unit-row{break-inside:avoid}}
@@ -5236,6 +5240,34 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     specificEnergy:[['J_kg','J/kg'],['kJ_kg','kJ/kg',1000],['MJ_kg','MJ/kg',1000000]]
   };
   const units=Object.fromEntries(Object.entries(definitions).map(([dimension,rows])=>[dimension,rows.map(([id,label,numerator=1,denominator=1,offset='0'])=>Object.freeze({id,label,numerator,denominator,offset,dimension}))]));
+  const squaredTime=units.time.map(u=>({id:u.id+'2',label:u.label+'²',numerator:u.numerator**2,denominator:u.denominator**2}));
+  const massTemperature=units.mass.flatMap(m=>units.temperatureChange.map(t=>({id:m.id+'_'+t.id,label:m.label+'·'+t.label,numerator:m.numerator*t.numerator,denominator:m.denominator*t.denominator})));
+  const ratios={
+    velocity:{numerator:units.length,denominator:units.time},
+    acceleration:{numerator:units.length,denominator:squaredTime},
+    flow:{numerator:units.volume,denominator:units.time},
+    massFlow:{numerator:units.mass,denominator:units.time},
+    density:{numerator:units.mass,denominator:units.volume},
+    rotationRate:{numerator:[{id:'rev',label:'omdr.',numerator:1,denominator:1}],denominator:units.time},
+    countPerLength:{numerator:[{id:'one',label:'1',numerator:1,denominator:1}],denominator:units.length},
+    heatCapacity:{numerator:units.energy,denominator:massTemperature,groupDenominator:true},
+    specificEnergy:{numerator:units.energy,denominator:units.mass}
+  };
+  const gcd=(a,b)=>b?gcd(b,a%b):a;
+  for(const [dimension,ratio]of Object.entries(ratios)){
+    const previous=units[dimension];
+    units[dimension]=ratio.numerator.flatMap(n=>ratio.denominator.map(d=>{
+      const label=n.label+'/'+(ratio.groupDenominator?'('+d.label+')':d.label);
+      const legacy=previous.find(u=>u.label===label);
+      const numerator=n.numerator*d.denominator,denominator=n.denominator*d.numerator;
+      if(!Number.isSafeInteger(numerator)||!Number.isSafeInteger(denominator))throw new Error('Enhedens omregningsfaktor er for stor.');
+      const divisor=gcd(numerator,denominator);
+      // Existing combinations retain their IDs and displayed factors for saved setups.
+      // New combinations use an exact rational factor; no rounded factor is stored.
+      return Object.freeze({id:'ratio:'+n.id+':'+d.id,label,numerator:numerator/divisor,denominator:denominator/divisor,offset:'0',dimension,...legacy,parts:Object.freeze({numerator:n.id,denominator:d.id})});
+    }));
+    for(const unit of previous)if(!units[dimension].some(u=>u.id===unit.id))throw new Error('En tidligere enhed mangler i enhedsvalget.');
+  }
   function choices(dimension){
     if(!Object.hasOwn(units,dimension))throw new Error('Ukendt størrelse til enhedsvalg.');
     return units[dimension];
@@ -5245,6 +5277,18 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const unit=choices(dimension).find(u=>u.id===id);
     if(!unit)throw new Error('Enheden passer ikke til denne størrelse.');
     return unit;
+  }
+  const ratio=dimension=>Object.hasOwn(ratios,dimension)?ratios[dimension]:null;
+  function combine(dimension,numerator,denominator){
+    const unit=choices(dimension).find(u=>u.parts?.numerator===numerator&&u.parts?.denominator===denominator);
+    if(!unit)throw new Error('Tæller og nævner passer ikke til denne størrelse.');
+    return unit;
+  }
+  function withPart(dimension,id,part,value){
+    const current=get(dimension,id);
+    if(!current.parts||!['numerator','denominator'].includes(part))throw new Error('Enheden har ikke den valgte del.');
+    const next={...current.parts,[part]:value};
+    return combine(dimension,next.numerator,next.denominator);
   }
   const key=variable=>variable.symbol+':'+variable.dimension;
   const constant=value=>({type:'constant',value:String(value)});
@@ -5271,7 +5315,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     if(!inverse&&unit.offset!=='0')parts.push('+ '+format(unit.offset));
     return parts.join(' · derefter ')||'Samme tal';
   }
-  return {choices,base,get,key,convert,hint};
+  return {choices,base,get,ratio,combine,withPart,key,convert,hint};
 });
 
 </script>
@@ -6066,12 +6110,27 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   function unitOptions(dimension,selected) {
     return E.Units.choices(dimension).map(u=>`<option value="${esc(u.id)}" ${u.id===selected?'selected':''}>${esc(u.label)}</option>`).join('');
   }
+  function unitSelector(dimension,unit,action,id,symbol='') {
+    const ratio=E.Units.ratio(dimension),result=action==='result-unit';
+    const label=result?'Resultatets enhed':`Din enhed for ${pretty(symbol)} · ${E.DIMENSIONS[dimension].name}`;
+    const attributes=`data-id="${esc(id)}" data-dimension="${esc(dimension)}"${symbol?` data-symbol="${esc(symbol)}"`:''}`;
+    if(!ratio)return `<div class="unit-choice"><select ${result?'id="result-unit"':''} class="unit-select" data-action="${action}" ${attributes} aria-label="${esc(label)}">${unitOptions(dimension,unit.id)}</select></div>`;
+    const labelledPart=ratio.numerator.length>1?'numerator':'denominator';
+    const selectPart=part=>{
+      const options=ratio[part].map(u=>{
+        const name=part==='denominator'&&ratio.groupDenominator?'('+u.label+')':u.id==='ton'?'t (ton)':u.label;
+        return `<option value="${esc(u.id)}" ${u.id===unit.parts[part]?'selected':''}>${esc(name)}</option>`;
+      }).join('');
+      return `<select ${result&&part===labelledPart?'id="result-unit"':''} class="unit-select" data-action="${action}-part" ${attributes} data-part="${part}" aria-label="${esc(label)} · ${part==='numerator'?'tæller':'nævner'}" ${ratio[part].length===1?'disabled':''}>${options}</select>`;
+    };
+    return `<div class="unit-choice unit-fraction" role="group" aria-label="${esc(label)}">${selectPart('numerator')}<span class="unit-slash" aria-hidden="true">/</span>${selectPart('denominator')}</div>`;
+  }
   function renderUnitGuide(ast,f) {
     const vars=E.variables(ast),output=E.resultUnit(f),base=E.Units.base(f.dimension);
-    $('#symbol-guide').innerHTML=`<div class="guide-heading"><h2>Størrelserne i formlen</h2><span>Din enhed → formlens enhed</span></div><p class="unit-intro">Vælg enhederne fra opgaven. Omregningerne indsættes i formlen, så du kan bruge de oplyste tal direkte.</p><dl class="symbol-list unit-symbol-list">${vars.map(v=>{
+    $('#symbol-guide').innerHTML=`<div class="guide-heading"><h2>Størrelserne i formlen</h2><span>Din enhed → formlens enhed</span></div><p class="unit-intro">Vælg enhederne fra opgaven. I fx kg/h vælger du tæller og nævner hver for sig. Omregningerne indsættes i formlen, så du kan bruge de oplyste tal direkte.</p><dl class="symbol-list unit-symbol-list">${vars.map(v=>{
       const unit=E.inputUnit(model,v),expected=E.Units.base(v.dimension);
-      return `<div><dt>${symbolHtml(v.symbol)}<span>${esc(v.label||E.DIMENSIONS[v.dimension].name)}</span></dt><dd><div class="unit-pair"><select class="unit-select" data-action="input-unit" data-id="${esc(E.Units.key(v))}" data-symbol="${esc(v.symbol)}" data-dimension="${esc(v.dimension)}" aria-label="Din enhed for ${esc(pretty(v.symbol))} · ${esc(E.DIMENSIONS[v.dimension].name)}">${unitOptions(v.dimension,unit.id)}</select><span aria-hidden="true">→</span><span>${esc(expected.label)}</span></div><span class="unit-operation">${esc(E.Units.hint(unit))}</span></dd></div>`;
-    }).join('')}</dl><div class="result-unit-row"><div><label for="result-unit">Resultatets enhed</label><p>${symbolHtml(f.symbol)}<span>Vælg enheden for svaret</span></p></div><div><div class="unit-pair"><span>${esc(base.label)}</span><span aria-hidden="true">→</span><select id="result-unit" class="unit-select" data-action="result-unit" data-id="${esc(f.id)}" aria-label="Resultatets enhed">${unitOptions(f.dimension,output.id)}</select></div><span class="unit-operation">${esc(E.Units.hint(output,'fromBase'))}</span></div></div><p class="unit-footnote">Samme symbol bruger samme inputenhed i hele opsætningen. Resultatenheden vælges for hver formel. Valgene følger med, når du gemmer.</p>`;
+      return `<div><dt>${symbolHtml(v.symbol)}<span>${esc(v.label||E.DIMENSIONS[v.dimension].name)}</span></dt><dd><div class="unit-pair">${unitSelector(v.dimension,unit,'input-unit',E.Units.key(v),v.symbol)}<span class="unit-target"><span aria-hidden="true">→</span> ${esc(expected.label)}</span></div><span class="unit-operation">${esc(E.Units.hint(unit))}</span></dd></div>`;
+    }).join('')}</dl><div class="result-unit-row"><div><label for="result-unit">Resultatets enhed</label><p>${symbolHtml(f.symbol)}<span>Vælg enheden for svaret</span></p></div><div><div class="unit-pair"><span class="unit-target">${esc(base.label)} <span aria-hidden="true">→</span></span>${unitSelector(f.dimension,output,'result-unit',f.id)}</div><span class="unit-operation">${esc(E.Units.hint(output,'fromBase'))}</span></div></div><p class="unit-footnote">Samme symbol bruger samme inputenhed i hele opsætningen. Resultatenheden vælges for hver formel. Valgene følger med, når du gemmer.</p>`;
   }
   function expressionEditor(expr, dimension, path, defaultSymbol, ctx, depth = 0) {
     if (depth > 12) return '<div class="error-box">Formlen er for dyb til at blive vist.</div>';
@@ -6161,14 +6220,14 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   }
   function render(keepFocus = false) {
     const el = document.activeElement;
-    const focus = keepFocus && el?.dataset.action ? { action:el.dataset.action,id:el.dataset.id,path:el.dataset.path,face:el.dataset.face,start:el.selectionStart,end:el.selectionEnd } : null;
+    const focus = keepFocus && el?.dataset.action ? { action:el.dataset.action,id:el.dataset.id,path:el.dataset.path,face:el.dataset.face,part:el.dataset.part,start:el.selectionStart,end:el.selectionEnd } : null;
     const open = [...document.querySelectorAll('details[open][data-detail-key]')].map(d=>d.dataset.detailKey);
     const ctx = E.context(model);
     $('#project-title').value = model.title;
     renderSidebar(); renderGoal(); renderFigures(ctx); renderPreview(ctx); renderInspector(ctx);
     for (const d of document.querySelectorAll('details[data-detail-key]')) if (open.includes(d.dataset.detailKey)) d.open = true;
     if (focus) {
-      const next = [...document.querySelectorAll('[data-action]')].find(e=>e.dataset.action===focus.action && e.dataset.id===focus.id && e.dataset.path===focus.path && e.dataset.face===focus.face);
+      const next = [...document.querySelectorAll('[data-action]')].find(e=>e.dataset.action===focus.action && e.dataset.id===focus.id && e.dataset.path===focus.path && e.dataset.face===focus.face && e.dataset.part===focus.part);
       if (next) { next.focus({preventScroll:true}); if (focus.start != null && next.setSelectionRange) next.setSelectionRange(focus.start,focus.end); }
     }
   }
@@ -6338,7 +6397,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     else if(a==='example')replaceSetup(E.example(),'Indlæs bassin-eksemplet?');
     else if(a==='close-dialog')closeDialog();
     else if(a==='confirm'){const action=pending;closeDialog();if(action)action();}
-    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Tankens egenvægt · T9</h3><p>Tryk <strong>Brug T9</strong> under figurerne. Pladearealet følger automatisk dine åbninger og samlinger. Vælg pladetykkelse og materialets massefylde som kendte symboler, formler eller referencer. Med tykkelse i meter og massefylde i kg/m³ fås tankens masse i kg. Dette er selve tankmaterialet, uden væske. Ved forskellig tykkelse eller materiale kan du lave én masseformel pr. del og summere dem.</p><p><strong>Tank med indhold</strong> lægger tankens egenvægt sammen med væskens masse. Vælg det faktiske væskevolumen. I <strong>Formelsamling</strong> kan du søge efter fx T9, varme eller gearing og slå enheder op.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Fx giver <strong>mm → m</strong> division med 1000 inde i formlen. Du skal derefter bruge tallet fra opgaven uden først at omregne det. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Samme symbol og størrelse har samme inputenhed i hele opsætningen. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Tankens egenvægt · T9</h3><p>Tryk <strong>Brug T9</strong> under figurerne. Pladearealet følger automatisk dine åbninger og samlinger. Vælg pladetykkelse og materialets massefylde som kendte symboler, formler eller referencer. Med tykkelse i meter og massefylde i kg/m³ fås tankens masse i kg. Dette er selve tankmaterialet, uden væske. Ved forskellig tykkelse eller materiale kan du lave én masseformel pr. del og summere dem.</p><p><strong>Tank med indhold</strong> lægger tankens egenvægt sammen med væskens masse. Vælg det faktiske væskevolumen. I <strong>Formelsamling</strong> kan du søge efter fx T9, varme eller gearing og slå enheder op.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Brøkenheder har to dropdowns: vælg tæller og nævner hver for sig, fx <strong>t (ton) / m³</strong>, <strong>kg / h</strong> eller <strong>mg / min</strong>. Det gælder også resultatets enhed. Fx giver <strong>mm → m</strong> division med 1000 inde i formlen. Du skal derefter bruge tallet fra opgaven uden først at omregne det. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Samme symbol og størrelse har samme inputenhed i hele opsætningen. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
   });
   document.addEventListener('change',event=>{
     const el=event.target,a=el.dataset.action;
@@ -6355,14 +6414,15 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       if(el.value.startsWith('saved:'))select('formula',el.value.slice(6));
       else if(el.value.startsWith('new:'))addFormula(el.value.slice(4));return;
     }
-    if(a==='input-unit'){
-      const variable={symbol:el.dataset.symbol,dimension:el.dataset.dimension},unit=E.Units.get(variable.dimension,el.value),key=E.Units.key(variable);
+    if(a==='input-unit'||a==='input-unit-part'){
+      const variable={symbol:el.dataset.symbol,dimension:el.dataset.dimension},key=E.Units.key(variable);
+      const unit=a==='input-unit-part'?E.Units.withPart(variable.dimension,E.inputUnit(model,variable).id,el.dataset.part,el.value):E.Units.get(variable.dimension,el.value);
       model.inputUnits||={};
       if(unit.id===E.Units.base(variable.dimension).id)delete model.inputUnits[key];else model.inputUnits[key]=unit.id;
       expanded=true;save();render(true);
-    }else if(a==='result-unit'){
+    }else if(a==='result-unit'||a==='result-unit-part'){
       const f=model.formulas.find(f=>f.id===el.dataset.id);
-      if(f){f.resultUnit=E.Units.get(f.dimension,el.value).id;expanded=true;save();render(true);}
+      if(f){f.resultUnit=(a==='result-unit-part'?E.Units.withPart(f.dimension,E.resultUnit(f).id,el.dataset.part,el.value):E.Units.get(f.dimension,el.value)).id;expanded=true;save();render(true);}
     }else if(a==='source'){
       const path=JSON.parse(el.dataset.path),old=getAt(path);
       const next=el.value==='symbol'?E.symbol(el.dataset.symbol):el.value==='zero'?{kind:'zero',dimension:'area'}:el.value==='assembly'?E.assembly(el.dataset.dimension):el.value.startsWith('formula:')?E.newExpression(el.value.slice(8)):E.ref(el.value.slice(4));

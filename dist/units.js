@@ -33,6 +33,34 @@
     specificEnergy:[['J_kg','J/kg'],['kJ_kg','kJ/kg',1000],['MJ_kg','MJ/kg',1000000]]
   };
   const units=Object.fromEntries(Object.entries(definitions).map(([dimension,rows])=>[dimension,rows.map(([id,label,numerator=1,denominator=1,offset='0'])=>Object.freeze({id,label,numerator,denominator,offset,dimension}))]));
+  const squaredTime=units.time.map(u=>({id:u.id+'2',label:u.label+'²',numerator:u.numerator**2,denominator:u.denominator**2}));
+  const massTemperature=units.mass.flatMap(m=>units.temperatureChange.map(t=>({id:m.id+'_'+t.id,label:m.label+'·'+t.label,numerator:m.numerator*t.numerator,denominator:m.denominator*t.denominator})));
+  const ratios={
+    velocity:{numerator:units.length,denominator:units.time},
+    acceleration:{numerator:units.length,denominator:squaredTime},
+    flow:{numerator:units.volume,denominator:units.time},
+    massFlow:{numerator:units.mass,denominator:units.time},
+    density:{numerator:units.mass,denominator:units.volume},
+    rotationRate:{numerator:[{id:'rev',label:'omdr.',numerator:1,denominator:1}],denominator:units.time},
+    countPerLength:{numerator:[{id:'one',label:'1',numerator:1,denominator:1}],denominator:units.length},
+    heatCapacity:{numerator:units.energy,denominator:massTemperature,groupDenominator:true},
+    specificEnergy:{numerator:units.energy,denominator:units.mass}
+  };
+  const gcd=(a,b)=>b?gcd(b,a%b):a;
+  for(const [dimension,ratio]of Object.entries(ratios)){
+    const previous=units[dimension];
+    units[dimension]=ratio.numerator.flatMap(n=>ratio.denominator.map(d=>{
+      const label=n.label+'/'+(ratio.groupDenominator?'('+d.label+')':d.label);
+      const legacy=previous.find(u=>u.label===label);
+      const numerator=n.numerator*d.denominator,denominator=n.denominator*d.numerator;
+      if(!Number.isSafeInteger(numerator)||!Number.isSafeInteger(denominator))throw new Error('Enhedens omregningsfaktor er for stor.');
+      const divisor=gcd(numerator,denominator);
+      // Existing combinations retain their IDs and displayed factors for saved setups.
+      // New combinations use an exact rational factor; no rounded factor is stored.
+      return Object.freeze({id:'ratio:'+n.id+':'+d.id,label,numerator:numerator/divisor,denominator:denominator/divisor,offset:'0',dimension,...legacy,parts:Object.freeze({numerator:n.id,denominator:d.id})});
+    }));
+    for(const unit of previous)if(!units[dimension].some(u=>u.id===unit.id))throw new Error('En tidligere enhed mangler i enhedsvalget.');
+  }
   function choices(dimension){
     if(!Object.hasOwn(units,dimension))throw new Error('Ukendt størrelse til enhedsvalg.');
     return units[dimension];
@@ -42,6 +70,18 @@
     const unit=choices(dimension).find(u=>u.id===id);
     if(!unit)throw new Error('Enheden passer ikke til denne størrelse.');
     return unit;
+  }
+  const ratio=dimension=>Object.hasOwn(ratios,dimension)?ratios[dimension]:null;
+  function combine(dimension,numerator,denominator){
+    const unit=choices(dimension).find(u=>u.parts?.numerator===numerator&&u.parts?.denominator===denominator);
+    if(!unit)throw new Error('Tæller og nævner passer ikke til denne størrelse.');
+    return unit;
+  }
+  function withPart(dimension,id,part,value){
+    const current=get(dimension,id);
+    if(!current.parts||!['numerator','denominator'].includes(part))throw new Error('Enheden har ikke den valgte del.');
+    const next={...current.parts,[part]:value};
+    return combine(dimension,next.numerator,next.denominator);
   }
   const key=variable=>variable.symbol+':'+variable.dimension;
   const constant=value=>({type:'constant',value:String(value)});
@@ -68,5 +108,5 @@
     if(!inverse&&unit.offset!=='0')parts.push('+ '+format(unit.offset));
     return parts.join(' · derefter ')||'Samme tal';
   }
-  return {choices,base,get,key,convert,hint};
+  return {choices,base,get,ratio,combine,withPart,key,convert,hint};
 });
