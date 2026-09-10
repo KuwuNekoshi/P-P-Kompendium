@@ -173,3 +173,61 @@ test('sketch labels escape user-supplied names and expose face choices accessibl
   assert(svg.includes('Åben')&&svg.includes('Lukket'));
   assert(svg.includes('data-action="inspect-face"')&&svg.includes('tabindex="0"'));
 });
+
+test('T9 tank mass follows actual joined surfaces, plate thickness and material density',()=>{
+  let m=E.connect(model('cylinder','hemisphere','pipe'),end(0,'bottom'),end(1,'base'),'joint');
+  const f=E.newTankMass(m,'tank-mass');m.formulas.push(f);
+  const vars={D_1:2,h_1:3,t_plade:.003,'ρ_mat':7850};
+  const mass=()=>value(E.context(m).target('formula:tank-mass'),vars);
+  near(mass(),8*Math.PI*.003*7850);
+  m.shapes[0].faces.top='closed';
+  near(mass(),9*Math.PI*.003*7850);
+  vars.t_plade=.006;
+  near(mass(),9*Math.PI*.006*7850);
+  const before=mass();m=E.removeShape(m,'part2');near(mass(),before);
+  m=E.removeShape(m,'part1');
+  near(mass(),8*Math.PI*.006*7850); // Cylinder mantle plus two exposed disks.
+  assert.deepEqual(E.validateModel(E.clone(m)),m);
+});
+
+test('own mass and liquid mass keep different densities and actual liquid volume',()=>{
+  const m=model('cylinder');m.formulas.push(E.newTankMass(m,'tank'));
+  const full=E.newFilledTankMass(m,'full');m.formulas.push(full);
+  assert.deepEqual(full.expression.args.tank,E.ref('formula:tank'));
+  assert.deepEqual(full.expression.args.V,E.symbol('V_væske'));
+  const vars={D_1:2,h_1:3,t_plade:.003,'ρ_mat':7850,'ρ_væske':1000,'V_væske':.8};
+  near(value(E.context(m).target('formula:full'),vars),7*Math.PI*.003*7850+800);
+  const labels=E.variables(E.context(m).target('formula:full')).map(v=>v.symbol);
+  assert(labels.includes('ρ_mat')&&labels.includes('ρ_væske'));
+  m.formulas[0].expression.args.thickness=E.ref('formula:full');
+  assert.throws(()=>E.validateModel(m),/forkert størrelse/);
+});
+
+test('tank mass supports an explicitly known plate area and a box with all faces open',()=>{
+  const empty=model();empty.formulas.push(E.newTankMass(empty,'tank'));
+  near(value(E.context(empty).target('formula:tank'),{A_plade:5,t_plade:.002,'ρ_mat':8000}),80);
+  const m=model('box');for(const key of Object.keys(m.shapes[0].faces))m.shapes[0].faces[key]='open';
+  m.formulas.push(E.newTankMass(m,'tank'));
+  near(value(E.context(m).target('formula:tank'),{t_plade:.002,'ρ_mat':8000}),0);
+});
+
+test('school transport and heat formulas agree with their minute, hour and kilo-unit versions',()=>{
+  near(value(E.formulaAst('screwFlow'),{D:.3,d:.1,s:.2,n:60/60,'η':.4})*3600,
+    Math.PI/4*(.3**2-.1**2)*.2*60*60*.4);
+  near(value(E.formulaAst('beltSpeed'),{D:.2,n:90/60})*60,Math.PI*.2*90);
+  near(value(E.formulaAst('heatingEnergy'),{m:10,c_p:4190,'ΔT':30})/1000,10*4.19*30);
+  near(value(E.formulaAst('heatFlowPower'),{Q_m:2,c_p:4190,'ΔT':30})/1000,2*4.19*30);
+  near(value(E.formulaAst('phasePower'),{Q_m:2,H_f:2260000})/1000,2*2260);
+  near(value(E.formulaAst('headFromPressure'),{'Δp':98100,'ρ':1000,g:9.81}),10);
+});
+
+test('school mixing and head-sign formulas keep their physical meaning',()=>{
+  near(value(E.formulaAst('mixTemperature'),{c_p1:4190,m_1:2,T_1:293.15,c_p2:4190,m_2:1,T_2:353.15}),313.15);
+  near(value(E.formulaAst('totalHeadSuction'),{H:10,H_m:2,H_i:1,H_s:3}),16);
+  near(value(E.formulaAst('totalHeadInlet'),{H:10,H_m:2,H_i:1,H_s:3}),10);
+  const m=model();m.formulas.push(E.newFormula('absolute','mixTemperature'),E.newFormula('heat','heatingEnergy'));
+  m.formulas[1].expression.args.dT=E.ref('formula:absolute');
+  assert.throws(()=>E.validateModel(m),/forkert størrelse/);
+  assert.equal(E.FORMULAS.massMoment.dimension,'massMoment');
+  assert.equal(E.FORMULAS.torque.dimension,'torque');
+});

@@ -4,7 +4,7 @@
   else root.PP = factory(root.PPCatalog);
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog) {
   'use strict';
-  const { FORMULAS, SHAPES, DIMENSIONS } = catalog;
+  const { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE } = catalog;
   const clone = value => JSON.parse(JSON.stringify(value));
   const symbol = name => ({ kind: 'symbol', symbol: name });
   const ref = target => ({ kind: 'ref', target });
@@ -28,6 +28,17 @@
     const f = FORMULAS[formulaId];
     if (!f) throw new Error('Ukendt formel.');
     return { id, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: newExpression(formulaId) };
+  }
+  function newTankMass(model,id) {
+    const f=newFormula(id,'tankMass');
+    if(model.shapes.some(s=>s.include))f.expression.args.A=assembly('area');
+    return f;
+  }
+  function newFilledTankMass(model,id) {
+    const f=newFormula(id,'filledTankMass');
+    const candidates=model.formulas.filter(other=>other.expression.kind==='formula'&&other.expression.formula==='tankMass');
+    if(candidates.length===1)f.expression.args.tank=ref('formula:'+candidates[0].id);
+    return f;
   }
   function example() {
     const cylinder = newShape('cylinder', 'cylinder', 1);
@@ -195,6 +206,7 @@
   }
   function context(model) {
     const list = descriptors(model), map = new Map(list.map(d => [d.target, d]));
+    const grouped=(ast,depth)=>depth>0&&!['symbol','constant','group'].includes(ast.type)?{type:'group',children:[ast]}:ast;
     function expand(expr, dimension, mode = 'expanded', stack = [], budget = { nodes: 0 }, depth = 0, label = '') {
       if (++budget.nodes > 1200 || depth > 48 || stack.length > 80) throw new Error('Formelkæden er for stor. Behold nogle dele som symboler.');
       if (expr.kind === 'symbol') return leaf(expr.symbol, dimension, label);
@@ -212,12 +224,12 @@
         const selected = model.shapes.filter(s => s.include);
         if (!selected.length) throw new Error('Vælg mindst én figur, der indgår i beholderen.');
         const children = selected.map(s => expand(ref(`shape:${s.id}:${dimension === 'volume' ? 'volume' : 'area'}`), dimension, mode, stack, budget, depth + 1));
-        return children.length === 1 ? children[0] : { type: 'add', children };
+        return grouped(children.length === 1 ? children[0] : { type: 'add', children },depth);
       }
       const f = own(FORMULAS, expr.formula) && FORMULAS[expr.formula];
       if (expr.kind !== 'formula' || !f || f.dimension !== dimension) throw new Error('Formlen passer ikke til størrelsen.');
       const args = Object.fromEntries(Object.entries(f.args).map(([k, a]) => [k, expand(expr.args[k], a.dimension, mode, stack, budget, depth + 1, a.label)]));
-      return instantiate(f.template, args);
+      return grouped(instantiate(f.template, args),depth);
     }
     function target(id, mode = 'expanded') {
       const d = map.get(id);
@@ -267,16 +279,17 @@
     if (ast.type === 'symbol') return ast.symbol;
     if (ast.type === 'constant') return ast.value;
     const c = ast.children.map(plain);
-    if (ast.type === 'div') return `(${c[0]}) / (${c[1]})`;
-    if (ast.type === 'pow') return `(${c[0]})^${c[1]}`;
+    const bracket=i=>['add','sub','mul','group'].includes(ast.children[i].type)?c[i]:`(${c[i]})`;
+    if (ast.type === 'div') return `${bracket(0)} / ${bracket(1)}`;
+    if (ast.type === 'pow') return `${bracket(0)}^${['symbol','constant'].includes(ast.children[1].type)?c[1]:bracket(1)}`;
     if (ast.type === 'sqrt') return `√(${c[0]})`;
-    if (ast.type === 'group') return `(${c[0]})`;
+    if (ast.type === 'group') return bracket(0);
     return '(' + c.join({ mul:' · ', add:' + ', sub:' − ' }[ast.type]) + ')';
   }
   function tex(ast) {
     if (ast.type === 'symbol') {
       const [b,...s] = ast.symbol.split('_');
-      const greek = { 'ρ':'\\rho', 'η':'\\eta', 'ΔV':'\\Delta V', 'Δp':'\\Delta p' };
+      const greek = { 'ρ':'\\rho', 'η':'\\eta', 'ΔV':'\\Delta V', 'Δp':'\\Delta p', 'Δv':'\\Delta v', 'ΔT':'\\Delta T', 'μ':'\\mu' };
       const base = greek[b] || (/^[A-Za-z]+$/.test(b) ? b : '\\mathrm{' + b + '}');
       return s.length ? base + '_{' + s.join('_').replace(/[^\p{L}\p{N}]/gu, '') + '}' : base;
     }
@@ -376,5 +389,5 @@
     // Missing references and cycles remain visible as actionable errors, never guessed away.
     return model;
   }
-  return { FORMULAS, SHAPES, DIMENSIONS, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded };
+  return { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded };
 });

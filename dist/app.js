@@ -37,6 +37,9 @@
   }
   const symbolHtml = s => `<math xmlns="http://www.w3.org/1998/Math/MathML">${E.mathSymbol(s)}</math>`;
   const pretty = s => s.replace(/_/g, '');
+  const schoolRef = f => f?.source ? [...f.source.triangles,'s. '+f.source.pages.join(', ')].join(' · ') : '';
+  const formulaTitle = f => f.name+(f.source?.triangles.length?' · '+f.source.triangles.join('/'):'');
+  let libraryQuery='';
   const active = () => model.formulas.find(f => f.id === activeId);
   const getAt = p => p.reduce((o,k) => o[k], model);
   function setAt(p,v) { getAt(p.slice(0,-1))[p.at(-1)] = v; }
@@ -62,12 +65,13 @@
     catch (error) { return `<p class="inline-error">${esc(error.message)}</p>`; }
   }
   function renderSidebar() {
+    $('#library-total').textContent=Object.keys(E.FORMULAS).length;
     $('#shape-library').innerHTML = Object.entries(E.SHAPES).map(([type,s]) => `<button class="shape-tool" data-action="add-shape" data-type="${type}" aria-label="Indsæt ${esc(s.name.toLowerCase())}" title="${esc(s.hint)}">${shapeIcon(type)}<span>${esc(s.name)}</span></button>`).join('');
     $('#formula-count').textContent = model.formulas.length;
     $('#saved-formulas').innerHTML = model.formulas.map(f => `<button class="saved-formula ${f.id === activeId ? 'active' : ''}" data-action="select-formula" data-id="${esc(f.id)}" ${f.id === activeId ? 'aria-current="true"' : ''}><span class="saved-symbol">${symbolHtml(f.symbol)}</span><span>${esc(f.name)}</span><span class="item-chevron" aria-hidden="true">›</span></button>`).join('');
   }
   function renderGoal() {
-    $('#goal-select').innerHTML = (model.formulas.length ? '<optgroup label="Mine formler">' + model.formulas.map(f => `<option value="saved:${esc(f.id)}" ${f.id === activeId ? 'selected' : ''}>${esc(f.name)} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>' : '<option value="" selected>Vælg en formel…</option>') + '<optgroup label="Tilføj en ny formel">' + Object.entries(E.FORMULAS).map(([id,f]) => `<option value="new:${id}">${esc(f.name)} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>';
+    $('#goal-select').innerHTML = (model.formulas.length ? '<optgroup label="Mine formler">' + model.formulas.map(f => `<option value="saved:${esc(f.id)}" ${f.id === activeId ? 'selected' : ''}>${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>' : '<option value="" selected>Vælg en formel…</option>') + '<optgroup label="Tilføj en ny formel">' + Object.entries(E.FORMULAS).map(([id,f]) => `<option value="new:${id}">${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>';
   }
   function renderFigures(ctx) {
     if(preview3D){previewPose=preview3D.getPose();preview3D.destroy();preview3D=null;}
@@ -87,7 +91,7 @@
     $('#assembly-overview').innerHTML = model.shapes.length ? `<section class="assembly-section"><div class="assembly-heading"><h3>${groups.length?'Sammensatte figurer':'Din figursamling'}</h3><div class="segmented" role="group" aria-label="Figurvisning"><button data-action="geometry-view" data-mode="3d" aria-pressed="${geometryView==='3d'}">3D</button><button data-action="geometry-view" data-mode="sketch" aria-pressed="${geometryView==='sketch'}">Skitse</button></div></div><p class="geometry-caption">Skematisk visning · ikke målfast. Separate figurer vises ved siden af hinanden.</p>${viewer}${groups.length?`<div class="joint-list">${joints.map(c=>{
       const a=E.faceInfo(model,c.a.shape,c.a.face),b=E.faceInfo(model,c.b.shape,c.b.face);
       return `<div><span>${esc(a.shape.name)} · ${esc(a.info.label)} <span aria-hidden="true">↔</span> ${esc(b.shape.name)} · ${esc(b.info.label)}</span><button class="text-button" data-action="disconnect" data-id="${esc(c.id)}">Skil ad</button></div>`;
-    }).join('')}</div>`:'<p class="assembly-hint">Sæt fx en halvkugle på cylinderens bund. Fælles endeflader udelades automatisk fra overfladearealet.</p>'}${included.length?`<details class="assembly-totals" data-detail-key="assembly-totals"><summary>Rumfang og overflade for valgte beholderdele</summary>${summaries}<p class="field-note">Åbninger og samlinger bidrager ikke med en plan endeflade. Rumfanget er geometrisk og ændres ikke af et åbent/lukket valg.</p></details>`:''}</section>` : '';
+    }).join('')}</div>`:'<p class="assembly-hint">Sæt fx en halvkugle på cylinderens bund. Fælles endeflader udelades automatisk fra overfladearealet.</p>'}${included.length?`<div class="tank-mass-action"><div><strong>Tankens egenvægt</strong><span>Pladeareal · tykkelse · materialets massefylde</span></div><button class="button outline" data-action="tank-mass">Brug T9</button></div><details class="assembly-totals" data-detail-key="assembly-totals"><summary>Rumfang og overflade for valgte beholderdele</summary>${summaries}<p class="field-note">Åbninger og samlinger bidrager ikke med en plan endeflade. Rumfanget er geometrisk og ændres ikke af et åbent/lukket valg.</p></details>`:''}</section>` : '';
     if(model.shapes.length&&geometryView==='3d')preview3D=window.PPSolidPreview.mount($('.model-viewer-canvas'),model,selected?.type==='shape'?selected.id:null,previewPose);
   }
   function renderPreview(ctx) {
@@ -98,9 +102,11 @@
     }
     const r = ctx.safe(`formula:${f.id}`,expanded ? 'expanded' : 'compact');
     const full = ctx.safe(`formula:${f.id}`);
-    let note = f.expression.kind === 'formula' ? E.FORMULAS[f.expression.formula].note : '';
+    const definition=f.expression.kind==='formula'?E.FORMULAS[f.expression.formula]:null;
+    const source=schoolRef(definition);
+    let note=definition?.note||'';
     if (f.expression.kind === 'assembly') note = f.dimension === 'volume' ? 'Geometrisk rumfang af de valgte dele. Åbne sider ændrer ikke rumfanget; delene må ikke overlappe.' : 'Åbne flader og endeflader i samlinger er automatisk udeladt.';
-    $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div><div class="formula-display">${r.ok ? E.math(r.ast,f.symbol) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}`;
+    $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div><div class="formula-display">${r.ok ? E.math(r.ast,f.symbol) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}${source?`<p class="formula-source">Skolens formelsamling · ${esc(source)}</p>`:''}`;
     let steps;
     try { steps = ctx.steps(`formula:${f.id}`); } catch (_) { steps = []; }
     $('#formula-chain').innerHTML = steps.length ? `<details class="chain-details" data-detail-key="chain-${esc(f.id)}"><summary><span>Se formelkæden</span><span class="chain-count">${steps.length} ${steps.length === 1 ? 'formel' : 'formler'}</span></summary><ol class="chain-list">${steps.map(d => `<li><div class="chain-step-heading"><span>${esc(d.name)}</span><button class="text-button" data-action="inspect-reference" data-target="${esc(d.target)}">Tilpas</button></div><div class="chain-math">${formulaSummary(d.expression,d.dimension,ctx,d.symbol)}</div></li>`).join('')}</ol></details>` : '';
@@ -117,7 +123,7 @@
     if(expr.kind==='zero')options+='<option value="zero">Ingen valgte flader · 0</option>';
     if (['volume','area'].includes(dimension)) options += `<option value="assembly">Fra beholderdelene · samlet ${dimension === 'volume' ? 'rumfang' : 'areal'}</option>`;
     const formulas = Object.entries(E.FORMULAS).filter(([,f]) => f.dimension === dimension);
-    if (formulas.length) options += '<optgroup label="Indsæt en formel">' + formulas.map(([id,f]) => `<option value="formula:${id}">${esc(f.equation)} · ${esc(f.name)}</option>`).join('') + '</optgroup>';
+    if (formulas.length) options += '<optgroup label="Indsæt en formel">' + formulas.map(([id,f]) => `<option value="formula:${id}">${esc(f.equation)} · ${esc(formulaTitle(f))}</option>`).join('') + '</optgroup>';
     if (targets.length) options += '<optgroup label="Brug en reference">' + targets.map(d => `<option value="ref:${esc(d.target)}">↗ ${esc(d.name)}</option>`).join('') + '</optgroup>';
     if (expr.kind === 'ref' && !targets.some(d => d.target === expr.target)) options += `<option value="${esc(current)}">↗ ${esc(ctx.map.get(expr.target)?.name || 'Manglende reference')}</option>`;
     options = options.replace(`value="${esc(current)}"`,`value="${esc(current)}" selected`);
@@ -168,8 +174,17 @@
     }
   }
   function renderLibrary() {
-    const groups = [...new Set(Object.values(E.FORMULAS).map(f=>f.group))];
-    $('#panel-library').innerHTML = '<div class="library-intro"><h2>Formler, du kan bygge videre på.</h2><p>Vælg en formel. Erstat dens størrelser med det, du kender fra opgaven.</p></div>' + groups.map(group=>`<section class="formula-group"><h3>${esc(group)}</h3><div class="formula-grid">${Object.entries(E.FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="formula-card" data-action="use-formula" data-formula="${id}"><h4>${esc(f.name)}</h4><div class="library-equation">${E.math(E.formulaAst(id),f.symbol)}</div>${f.note ? `<p>${esc(f.note)}</p>` : ''}<div class="formula-card-foot"><span>${esc(E.DIMENSIONS[f.dimension].name)}</span><span>Brug formel +</span></div></button>`).join('')}</div></section>`).join('');
+    $('#panel-library').innerHTML = `<div class="library-intro"><h2>Find formlen fra din opgave.</h2><p>Med T1–T39 fra skolens formelsamling. Vælg en formel, og forbind dens størrelser med figurer eller andre formler.</p></div><label class="formula-search">Søg i formelsamlingen<input type="search" data-action="search-formulas" value="${esc(libraryQuery)}" placeholder="Fx T9, tank, varme eller gearing" autocomplete="off"></label><div class="library-results"></div><details class="unit-guide"><summary>Enheder og omregninger</summary><p>Formlernes enhedsforklaringer bruger SI. Omregn opgavens værdier til de viste enheder, før du bruger formlen. Der indsættes ingen ekstra tidsfaktor i SI-formlerne.</p><div class="unit-table-wrap"><table><thead><tr><th scope="col">Størrelse</th><th scope="col">Fra → til</th><th scope="col">Omregning</th><th scope="col">Husk</th></tr></thead><tbody>${E.UNIT_GUIDE.map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details><p class="school-source-note">Grundlag: ${esc(E.SCHOOL_SOURCE.title)} · ${esc(E.SCHOOL_SOURCE.school)} · ${esc(E.SCHOOL_SOURCE.date)}. Side- og T-numre henviser til jeres PDF. Der er både grundformler og omskrivninger. Forudsætninger og enhedstilpasninger står ved formlerne.</p>`;
+    renderLibraryResults();
+  }
+  function renderLibraryResults() {
+    const query=libraryQuery.trim().toLocaleLowerCase('da'),words=query.split(/\s+/).filter(Boolean);
+    const formulas=Object.entries(E.FORMULAS).filter(([,f])=>{
+      const haystack=[f.name,f.group,f.equation,f.note,schoolRef(f)].join(' ').toLocaleLowerCase('da');
+      return words.every(word=>/^t\d+$/.test(word)?f.source?.triangles.some(t=>t.toLowerCase()===word):haystack.includes(word));
+    });
+    const groups=[...new Set(formulas.map(([,f])=>f.group))];
+    $('.library-results').innerHTML=`<p class="search-count" role="status">${formulas.length} formler${query?' fundet':''}</p>`+(formulas.length?groups.map(group=>`<section class="formula-group"><h3>${esc(group)}</h3><div class="formula-grid">${formulas.filter(([,f])=>f.group===group).map(([id,f])=>`<button class="formula-card" data-action="use-formula" data-formula="${id}"><h4>${esc(f.name)}</h4>${schoolRef(f)?`<span class="school-reference">${esc(schoolRef(f))}</span>`:''}<div class="library-equation">${E.math(E.formulaAst(id),f.symbol)}</div>${f.note?`<p>${esc(f.note)}</p>`:''}<div class="formula-card-foot"><span>${esc(E.DIMENSIONS[f.dimension].name)}</span><span>Brug formel +</span></div></button>`).join('')}</div></section>`).join(''):'<p class="empty-search">Ingen formler matcher. Prøv fx T9, masse eller tryk.</p>');
   }
   function render(keepFocus = false) {
     const el = document.activeElement;
@@ -249,17 +264,23 @@
     }
     select('formula',f.id);
   }
+  function useTankMass() {
+    if(!model.shapes.some(s=>s.include)){notify('Vælg først de figurer, der indgår i tanken.');return;}
+    const existing=model.formulas.find(f=>f.expression.kind==='formula'&&f.expression.formula==='tankMass'&&f.expression.args.A.kind==='assembly');
+    if(existing)select('formula',existing.id,true);else addFormula('tankMass');
+  }
   function replaceSetup(candidate,title) {
     pending=()=>{model=candidate;activeId=model.formulas.at(-1)?.id||null;selected=activeId?{type:'formula',id:activeId}:null;save();changeView('builder');render();};
     openDialog(title,'<p>Din nuværende opsætning bliver erstattet. Gem den først, hvis du vil beholde den separat.</p>','<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="confirm">Erstat opsætning</button>');
   }
   function formulaPicker() {
     const groups=[...new Set(Object.values(E.FORMULAS).map(f=>f.group))];
-    openDialog('Hvad vil du finde?','<div class="dialog-formula-list">'+groups.map(group=>`<h3>${esc(group)}</h3>${Object.entries(E.FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="dialog-formula-item" data-action="use-formula" data-formula="${id}"><span>${esc(f.name)}</span><span>${esc(f.equation)}</span></button>`).join('')}`).join('')+'</div>');
+    openDialog('Hvad vil du finde?','<div class="dialog-formula-list">'+groups.map(group=>`<h3>${esc(group)}</h3>${Object.entries(E.FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="dialog-formula-item" data-action="use-formula" data-formula="${id}"><span>${esc(formulaTitle(f))}</span><span>${esc(f.equation)}</span></button>`).join('')}`).join('')+'</div>');
   }
   function addFormula(id) {
     if (model.formulas.length>=40) {notify('Der kan højst være 40 formler i én opsætning.');return;}
-    const f=E.newFormula(newId('formula'),id);
+    const key=newId('formula');
+    const f=id==='tankMass'?E.newTankMass(model,key):id==='filledTankMass'?E.newFilledTankMass(model,key):E.newFormula(key,id);
     if(model.formulas.some(other=>other.symbol===f.symbol)){
       const base=f.symbol.replace(/_/g,'');let n=2;
       while(model.formulas.some(other=>other.symbol===base+'_'+n))n++;
@@ -319,6 +340,7 @@
     else if(a==='confirm-join')commitJoin();
     else if(a==='disconnect'){model=E.disconnect(model,b.dataset.id);save();render();notify('Figurerne er skilt ad. Frie ender og egne mål er gendannet.');}
     else if(a==='use-assembly')useAssembly(b.dataset.dimension);
+    else if(a==='tank-mass')useTankMass();
     else if(a==='inspect-face'){
       select('shape',b.dataset.id,true);
       const row=[...document.querySelectorAll('[data-face-row]')].find(el=>el.dataset.faceRow===b.dataset.face);
@@ -341,7 +363,7 @@
     else if(a==='example')replaceSetup(E.example(),'Indlæs bassin-eksemplet?');
     else if(a==='close-dialog')closeDialog();
     else if(a==='confirm'){const action=pending;closeDialog();if(action)action();}
-    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra det ydre overfladeareal. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra det ydre overfladeareal. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Tankens egenvægt · T9</h3><p>Tryk <strong>Brug T9</strong> under figurerne. Pladearealet følger automatisk dine åbninger og samlinger. Vælg pladetykkelse og materialets massefylde som kendte symboler, formler eller referencer. Med tykkelse i meter og massefylde i kg/m³ fås tankens masse i kg. Dette er selve tankmaterialet, uden væske. Ved forskellig tykkelse eller materiale kan du lave én masseformel pr. del og summere dem.</p><p><strong>Tank med indhold</strong> lægger tankens egenvægt sammen med væskens masse. Vælg det faktiske væskevolumen. I <strong>Formelsamling</strong> kan du søge efter fx T9, varme eller gearing og slå enheder op.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
   });
   document.addEventListener('change',event=>{
     const el=event.target,a=el.dataset.action;
@@ -370,6 +392,7 @@
   });
   document.addEventListener('input',event=>{
     const el=event.target;
+    if(el.dataset.action==='search-formulas'){libraryQuery=el.value;renderLibraryResults();return;}
     if(el.id==='project-title'){model.title=el.value.trim()||'Ny opsætning';save();}
     else if(el.dataset.action==='rename'){
       const list=el.dataset.type==='shape'?model.shapes:model.formulas,item=list.find(o=>o.id===el.dataset.id);

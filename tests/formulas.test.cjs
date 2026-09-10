@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const E = require('../dist/engine.js');
+const ungroup = ast => ast.type==='group'?ungroup(ast.children[0]):ast;
 
 test('bassin: cylinder + cone use a shared diameter; pipe only supplies flow area', () => {
   const m = E.example(), c = E.context(m);
@@ -10,8 +11,8 @@ test('bassin: cylinder + cone use a shared diameter; pipe only supplies flow are
   assert(total.includes('h_1') && total.includes('h_2'));
   assert(!total.includes('D_3') && !total.includes('L_3'));
   assert.equal(c.target('formula:time').type, 'div');
-  assert.equal(c.target('formula:time').children[0].type, 'add');
-  assert.equal(c.target('formula:time').children[1].type, 'mul');
+  assert.equal(ungroup(c.target('formula:time').children[0]).type, 'add');
+  assert.equal(ungroup(c.target('formula:time').children[1]).type, 'mul');
   assert.match(E.tex(c.target('formula:time')), /\\frac\{1\}\{3\}/);
 });
 
@@ -68,10 +69,10 @@ test('the default open basin surface consists of cylinder and cone mantles only'
   const ast = E.context(m).expand(E.assembly('area'),'area');
   assert.equal(ast.type,'add');
   assert.equal(ast.children.length,2);
-  assert.equal(ast.children[0].type,'mul');
-  assert.equal(ast.children[1].type,'mul');
+  assert.equal(ungroup(ast.children[0]).type,'mul');
+  assert.equal(ungroup(ast.children[1]).type,'mul');
   m.shapes[0].faces.top='closed';
-  assert.equal(E.context(m).expand(E.assembly('area'),'area').children[0].type,'add');
+  assert.equal(ungroup(E.context(m).expand(E.assembly('area'),'area').children[0]).type,'add');
 });
 
 test('removed sources are errors and never silently become plausible formulas', () => {
@@ -106,18 +107,20 @@ test('imports preserve the symbolic model and reject incompatible references', (
 });
 
 test('all catalogue templates use declared arguments and dimensionally consistent operations', () => {
-  const dims = { scalar:[0,0,0],length:[1,0,0],area:[2,0,0],volume:[3,0,0],time:[0,0,1],velocity:[1,0,-1],acceleration:[1,0,-2],flow:[3,0,-1],mass:[0,1,0],density:[-3,1,0],massFlow:[0,1,-1],pressure:[-1,1,-2],force:[1,1,-2],power:[2,1,-3] };
+  // Exponents of length, mass, time and temperature.
+  const dims = { scalar:[0,0,0,0],length:[1,0,0,0],area:[2,0,0,0],volume:[3,0,0,0],time:[0,0,1,0],velocity:[1,0,-1,0],acceleration:[1,0,-2,0],flow:[3,0,-1,0],mass:[0,1,0,0],density:[-3,1,0,0],massFlow:[0,1,-1,0],pressure:[-1,1,-2,0],force:[1,1,-2,0],power:[2,1,-3,0],energy:[2,1,-2,0],torque:[2,1,-2,0],massMoment:[1,1,0,0],rotationRate:[0,0,-1,0],countPerLength:[-1,0,0,0],temperature:[0,0,0,1],temperatureChange:[0,0,0,1],heatCapacity:[2,0,-2,-1],specificEnergy:[2,0,-2,0] };
+  assert.deepEqual(Object.keys(E.DIMENSIONS).sort(),Object.keys(dims).sort());
   function dimension(t,args){
     if(typeof t==='string'){
       if(Object.hasOwn(args,t))return dims[args[t].dimension];
-      assert(/^(?:π|\d+)$/.test(t),'Unknown template token: '+t);return [0,0,0];
+      assert(/^(?:π|\d+)$/.test(t),'Unknown template token: '+t);return [0,0,0,0];
     }
     const [op,...children]=t,values=children.map(c=>dimension(c,args));
     if(op==='group')return values[0];
     if(op==='sqrt')return values[0].map(v=>v/2);
     if(op==='pow')return values[0].map(v=>v*Number(children[1]));
     if(op==='add'||op==='sub'){for(const d of values)assert.deepEqual(d,values[0]);return values[0];}
-    if(op==='mul')return values.reduce((a,b)=>a.map((v,i)=>v+b[i]),[0,0,0]);
+    if(op==='mul')return values.reduce((a,b)=>a.map((v,i)=>v+b[i]),[0,0,0,0]);
     if(op==='div')return values[0].map((v,i)=>v-values[1][i]);
     assert.fail('Unexpected operator '+op);
   }
@@ -139,4 +142,42 @@ test('overly deep imported formula trees are bounded', () => {
   for(let i=0;i<15;i++)expr=E.form('volumeSum',{V1:expr,V2:E.symbol('V_2')});
   m.formulas[0].expression=expr;
   assert.throws(()=>E.validateModel(m),/for dyb/);
+});
+
+test('nested formulas and assembly sums have explicit boundaries in all three formats',()=>{
+  const m=E.example();m.formulas.push(E.newTankMass(m,'tank'));
+  const ast=E.context(m).target('formula:tank');
+  assert.equal(ast.type,'mul');
+  assert.equal(ast.children[0].type,'group');
+  assert.equal(ast.children[0].children[0].type,'add');
+  for(const part of ast.children[0].children[0].children)assert.equal(part.type,'group');
+  const html=E.math(ast),latex=E.tex(ast),plain=E.plain(ast);
+  assert.match(html,/<mo>\(<\/mo><mrow>/);
+  assert(latex.startsWith('\\left(')&&latex.includes('\\right) \\cdot t_{plade}'));
+  assert(plain.startsWith('(((')&&plain.endsWith(' · t_plade · ρ_mat)'));
+  const time=E.context(m).target('formula:time');
+  assert.equal(time.children[0].type,'group');assert.equal(time.children[1].type,'group');
+});
+
+test('inline fractions, subtraction and exponent substitutions remain unambiguous',()=>{
+  const m={version:3,title:'Parenteser',shapes:[],connections:[],formulas:[E.newFormula('rho','density')]};
+  m.formulas[0].expression.args.V=E.form('volumeDifference',{end:E.symbol('V_total'),start:E.form('volumeSum',{V1:E.symbol('V_1'),V2:E.symbol('V_2')})});
+  const ast=E.context(m).target('formula:rho');
+  assert.equal(E.plain(ast),'(m) / (V_total − (V_1 + V_2))');
+  assert.equal(E.tex(ast),'\\frac{m}{\\left(V_{total} - \\left(V_{1} + V_{2}\\right)\\right)}');
+  const circle=E.newFormula('circle','circleArea');circle.expression.args.D=E.form('diameter',{r:E.symbol('r')});m.formulas.push(circle);
+  const result=E.context(m).target('formula:circle');
+  assert(E.plain(result).includes('(2 · r)^2'));
+  assert(E.math(result).includes('<msup><mrow><mo>(</mo>'));
+  const x={type:'symbol',symbol:'x'},y={type:'symbol',symbol:'y'};
+  assert.equal(E.plain({type:'pow',children:[x,{type:'div',children:[x,y]}]}),'(x)^((x) / (y))');
+});
+
+test('school catalogue covers T1 to T39 and every page reference is within the supplied PDF',()=>{
+  const found=new Set();
+  for(const f of Object.values(E.FORMULAS))if(f.source){
+    assert(f.source.pages.every(p=>Number.isInteger(p)&&p>=1&&p<=13));
+    f.source.triangles.forEach(t=>found.add(t));
+  }
+  assert.deepEqual([...found].sort((a,b)=>Number(a.slice(1))-Number(b.slice(1))),Array.from({length:39},(_,i)=>'T'+(i+1)));
 });
