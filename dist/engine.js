@@ -1,8 +1,8 @@
 /* Symbolic composition only. This module does not evaluate numbers. */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'));
-  else root.PP = factory(root.PPCatalog);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'));
+  else root.PP = factory(root.PPCatalog,root.PPUnits);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units) {
   'use strict';
   const { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE } = catalog;
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -18,6 +18,8 @@
   const innerTarget = (s,key) => `shape:${s.id}:inner:${key}`;
   const geometricInput = (s,key) => diameterKeys(s).includes(key)?innerTarget(s,key):`shape:${s.id}:input:${key}`;
   const own = (object, key) => Object.hasOwn(object, key);
+  const inputUnit = (model,variable) => Units.get(variable.dimension,model.inputUnits?.[Units.key(variable)] || Units.base(variable.dimension).id);
+  const resultUnit = formula => Units.get(formula.dimension,formula.resultUnit || Units.base(formula.dimension).id);
   const esc = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
   function newExpression(id) {
@@ -54,7 +56,7 @@
     const cylinder = newShape('cylinder', 'cylinder', 1);
     const cone = newShape('cone', 'cone', 2); cone.name = 'Keglebund'; cone.faces.base = 'closed';
     const pipe = newShape('pipe', 'pipe', 3); pipe.name = 'Indløbsrør';
-    return { version: 4, title: 'Bassin med keglebund', tank:defaultTank(),shapes: [cylinder, cone, pipe], connections: [{ id:'basin-joint', a:{shape:'cylinder',face:'bottom'}, b:{shape:'cone',face:'base'} }], formulas: [
+    return { version: 5, inputUnits:{}, title: 'Bassin med keglebund', tank:defaultTank(),shapes: [cylinder, cone, pipe], connections: [{ id:'basin-joint', a:{shape:'cylinder',face:'bottom'}, b:{shape:'cone',face:'base'} }], formulas: [
       { id: 'volume', name: 'Samlet rumfang', symbol: 'V_fyld', dimension: 'volume', expression: assembly('volume') },
       { id: 'flow', name: 'Volumenflow', symbol: 'Q_v', dimension: 'flow', expression: form('flow', { A: ref('shape:pipe:crossSection'), v: symbol('v') }) },
       { id: 'time', name: 'Fyldetid', symbol: 't', dimension: 'time', expression: form('fillTime', { V: ref('formula:volume'), Q: ref('formula:flow') }) }
@@ -206,7 +208,7 @@
       list.push({ target:`shape:${s.id}:area`,name:`${s.name} · Pladeareal ved indvendige mål`,symbol:'A_'+s.ordinal,dimension:'area',expression:surfaceExpression(model,s),ownerId:s.id,ownerType:'shape',output:'area' });
       if (type.crossSection) addOutput('crossSection', 'Tværsnitsareal', type.crossSection, 'A_t' + s.ordinal);
     }
-    for (const f of model.formulas) list.push({ target: `formula:${f.id}`, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: f.expression, ownerType: 'formula', ownerId: f.id });
+    for (const f of model.formulas) list.push({ target: `formula:${f.id}`, name: f.name, symbol: f.symbol, dimension: f.dimension, resultUnit:f.resultUnit, expression: f.expression, ownerType: 'formula', ownerId: f.id });
     return list;
   }
   function references(expr, model) {
@@ -239,14 +241,24 @@
     const grouped=(ast,depth)=>depth>0&&!['symbol','constant','group'].includes(ast.type)?{type:'group',children:[ast]}:ast;
     function expand(expr, dimension, mode = 'expanded', stack = [], budget = { nodes: 0 }, depth = 0, label = '') {
       if (++budget.nodes > 1200 || depth > 48 || stack.length > 80) throw new Error('Formelkæden er for stor. Behold nogle dele som symboler.');
-      if (expr.kind === 'symbol') return leaf(expr.symbol, dimension, label);
+      if (expr.kind === 'symbol') {
+        const variable=leaf(expr.symbol,dimension,label);
+        return Units.convert(variable,inputUnit(model,variable));
+      }
       if (expr.kind === 'zero' && expr.dimension === dimension) return {type:'constant',value:'0'};
       if (expr.kind === 'ref') {
         const d = map.get(expr.target);
         if (!d) throw new Error('En reference mangler. Vælg en ny kilde i dropdown-menuen.');
         if (d.dimension !== dimension) throw new Error('Referencen passer ikke til denne størrelse.');
         if (stack.includes(d.target)) throw new Error('Cirkulær reference: en formel henviser tilbage til sig selv.');
-        if (mode === 'compact') return leaf(d.symbol, dimension, d.name);
+        if (mode === 'compact') {
+          // Known inputs retain their declared unit. Calculated references use the
+          // source formula's displayed result unit and convert back to base once.
+          if(d.expression.kind==='symbol')return expand(d.expression,dimension,mode,[...stack,d.target],budget,depth+1,d.name);
+          const unit=resultUnit(d),variable={...leaf(d.symbol,dimension,d.name),reference:d.target};
+          if(unit.id!==Units.base(dimension).id)variable.unit=unit.label;
+          return Units.convert(variable,unit);
+        }
         return expand(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);
       }
       if (expr.kind === 'assembly') {
@@ -266,7 +278,11 @@
       if (!d) throw new Error('Formlen findes ikke.');
       return expand(d.expression, d.dimension, mode, [id]);
     }
-    function safe(id, mode = 'expanded') { try { return { ok: true, ast: target(id, mode) }; } catch (e) { return { ok: false, error: e.message }; } }
+    function result(id,mode='expanded') {
+      const ast=target(id,mode);
+      return Units.convert(ast,resultUnit(map.get(id)),'fromBase');
+    }
+    function safe(id, mode = 'expanded', asResult = false) { try { return { ok: true, ast: asResult?result(id,mode):target(id,mode) }; } catch (e) { return { ok: false, error: e.message }; } }
     function steps(id) {
       const seen = new Set(), visiting = new Set(), out = [];
       function walk(key) {
@@ -281,7 +297,7 @@
       }
       walk(id); return out;
     }
-    return { list, map, expand, target, safe, steps };
+    return { list, map, expand, target, result, safe, steps };
   }
 
   function mathSymbol(s) {
@@ -291,8 +307,8 @@
     return sub ? `<msub>${mi}${/^\d+$/.test(sub) ? `<mn>${esc(sub)}</mn>` : `<mtext>${esc(sub)}</mtext>`}</msub>` : mi;
   }
   function mathBody(ast) {
-    if (ast.type === 'symbol') return mathSymbol(ast.symbol);
-    if (ast.type === 'constant') return /^\d+$/.test(ast.value) ? `<mn>${esc(ast.value)}</mn>` : `<mi>${esc(ast.value)}</mi>`;
+    if (ast.type === 'symbol') return ast.unit?`<mrow>${mathSymbol(ast.symbol)}<mspace width="0.2em"/><mtext>[${esc(ast.unit)}]</mtext></mrow>`:mathSymbol(ast.symbol);
+    if (ast.type === 'constant') return /^\d+(?:\.\d+)?$/.test(ast.value) ? `<mn>${esc(ast.value.replace('.',','))}</mn>` : `<mi>${esc(ast.value)}</mi>`;
     const c = ast.children;
     if (ast.type === 'div') return `<mfrac>${mathBody(c[0])}${mathBody(c[1])}</mfrac>`;
     if (ast.type === 'pow') return `<msup>${['add','sub','mul'].includes(c[0].type) ? '<mrow><mo>(</mo>' + mathBody(c[0]) + '<mo>)</mo></mrow>' : mathBody(c[0])}${mathBody(c[1])}</msup>`;
@@ -306,8 +322,8 @@
     }).join(`<mo>${operator}</mo>`) + '</mrow>';
   }
   function plain(ast) {
-    if (ast.type === 'symbol') return ast.symbol;
-    if (ast.type === 'constant') return ast.value;
+    if (ast.type === 'symbol') return ast.symbol+(ast.unit?' ['+ast.unit+']':'');
+    if (ast.type === 'constant') return ast.value.replace('.',',');
     const c = ast.children.map(plain);
     const bracket=i=>['add','sub','mul','group'].includes(ast.children[i].type)?c[i]:`(${c[i]})`;
     if (ast.type === 'div') return `${bracket(0)} / ${bracket(1)}`;
@@ -321,9 +337,9 @@
       const [b,...s] = ast.symbol.split('_');
       const greek = { 'ρ':'\\rho', 'η':'\\eta', 'ΔV':'\\Delta V', 'Δp':'\\Delta p', 'Δv':'\\Delta v', 'ΔT':'\\Delta T', 'μ':'\\mu' };
       const base = greek[b] || (/^[A-Za-z]+$/.test(b) ? b : '\\mathrm{' + b + '}');
-      return s.length ? base + '_{' + s.join('_').replace(/[^\p{L}\p{N}]/gu, '') + '}' : base;
+      return (s.length ? base + '_{' + s.join('_').replace(/[^\p{L}\p{N}]/gu, '') + '}' : base)+(ast.unit?'\\,[\\text{'+ast.unit.replace(/%/g,'\\%')+'}]':'');
     }
-    if (ast.type === 'constant') return ast.value === 'π' ? '\\pi' : ast.value;
+    if (ast.type === 'constant') return ast.value === 'π' ? '\\pi' : ast.value.replace('.','{,}');
     const c = ast.children.map(tex);
     if (ast.type === 'div') return '\\frac{' + c[0] + '}{' + c[1] + '}';
     if (ast.type === 'pow') return '{' + (['add','sub','mul'].includes(ast.children[0].type) ? '\\left(' + c[0] + '\\right)' : c[0]) + '}^{' + c[1] + '}';
@@ -334,15 +350,15 @@
       return group ? '\\left(' + c[i] + '\\right)' : c[i];
     }).join({ mul:' \\cdot ', add:' + ', sub:' - ' }[ast.type]);
   }
-  function math(ast, lhs) {
-    const label = (lhs ? lhs + ' = ' : '') + plain(ast);
-    return `<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="${esc(label)}"><mrow>${lhs ? mathSymbol(lhs) + '<mo>=</mo>' : ''}${mathBody(ast)}</mrow></math>`;
+  function math(ast, lhs, unit) {
+    const label = (lhs ? lhs + (unit?' ['+unit+']':'') + ' = ' : '') + plain(ast);
+    return `<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="${esc(label)}"><mrow>${lhs ? mathSymbol(lhs)+(unit?`<mspace width="0.2em"/><mtext>[${esc(unit)}]</mtext>`:'') + '<mo>=</mo>' : ''}${mathBody(ast)}</mrow></math>`;
   }
   function variables(ast) {
     const found = new Map();
     function visit(node) {
       if (node.type === 'symbol') {
-        const key = node.symbol + ':' + node.dimension;
+        const key = node.reference || Units.key(node);
         if (!found.has(key)) found.set(key, node);
       }
       for (const c of node.children || []) visit(c);
@@ -358,7 +374,7 @@
     const fail = message => { throw new Error('Ugyldig opsætning: ' + message); };
     const str = (value, max = 120) => typeof value === 'string' && value.length > 0 && value.length <= max;
     const validSymbol = value => str(value,24) && /^[\p{L}\p{N}]+(?:_[\p{L}\p{N}]+)?$/u.test(value);
-    if (!input || ![2,3,4].includes(input.version) || !str(input.title) || !Array.isArray(input.shapes) || !Array.isArray(input.formulas) || input.shapes.length > 24 || input.formulas.length > 40) fail('formatet genkendes ikke, eller opsætningen er for stor.');
+    if (!input || ![2,3,4,5].includes(input.version) || !str(input.title) || !Array.isArray(input.shapes) || !Array.isArray(input.formulas) || input.shapes.length > 24 || input.formulas.length > 40) fail('formatet genkendes ikke, eller opsætningen er for stor.');
     const ids = new Set(), ordinals = new Set();
     function identity(item) {
       if (!item || !str(item.id,64) || !/^[a-zA-Z0-9_-]+$/.test(item.id) || ids.has(item.id) || !str(item.name)) fail('ugyldigt navn eller id.');
@@ -375,8 +391,17 @@
       if (e.kind !== 'formula' || !f || f.dimension !== dimension) fail('formlen passer ikke til størrelsen.');
       return form(e.formula,Object.fromEntries(Object.entries(f.args).map(([k,a]) => [k,cleanExpr(e.args?.[k],a.dimension,depth+1)])));
     }
-    const model = { version:4,title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
-    if(input.version===4){
+    const model = { version:5,inputUnits:{},title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
+    if(input.version===5){
+      if(!input.inputUnits||typeof input.inputUnits!=='object'||Array.isArray(input.inputUnits)||Object.keys(input.inputUnits).length>3000)fail('ugyldige enhedsvalg.');
+      for(const [key,id]of Object.entries(input.inputUnits)){
+        const parts=key.split(':');
+        if(parts.length!==2||!validSymbol(parts[0])||!own(DIMENSIONS,parts[1]))fail('ugyldig størrelse i enhedsvalget.');
+        try{Units.get(parts[1],id);}catch(_){fail('en inputenhed passer ikke til størrelsen.');}
+        model.inputUnits[key]=id;
+      }
+    }
+    if(input.version>=4){
       if(!input.tank||typeof input.tank!=='object'||Array.isArray(input.tank))fail('fælles pladetykkelse mangler.');
       model.tank.thickness=cleanExpr(input.tank.thickness,'length');
     }
@@ -398,7 +423,7 @@
       }
       const shape={ id:s.id,type:s.type,name:s.name,ordinal:s.ordinal,include:s.include,faces,inputs:Object.fromEntries(Object.entries(type.inputs).map(([k,a])=>[k,cleanExpr(s.inputs?.[k],a.dimension)])) };
       if(diameterKeys(shape).length){
-        if(input.version===4){
+        if(input.version>=4){
           if(!s.diameter||!['inner','outer'].includes(s.diameter.basis))fail('ugyldigt valg af indre/ydre diameter.');
           shape.diameter={basis:s.diameter.basis,thickness:cleanExpr(s.diameter.thickness,'length')};
         }else shape.diameter=defaultDiameter(shape);
@@ -408,7 +433,12 @@
     for (const f of input.formulas) {
       identity(f);
       if (!own(DIMENSIONS,f.dimension) || !validSymbol(f.symbol)) fail('ugyldigt formelsymbol.');
-      model.formulas.push({ id:f.id,name:f.name,symbol:f.symbol,dimension:f.dimension,expression:cleanExpr(f.expression,f.dimension) });
+      const formula={ id:f.id,name:f.name,symbol:f.symbol,dimension:f.dimension,expression:cleanExpr(f.expression,f.dimension) };
+      if(f.resultUnit!==undefined){
+        try{Units.get(f.dimension,f.resultUnit);}catch(_){fail('resultatenheden passer ikke til formlen.');}
+        formula.resultUnit=f.resultUnit;
+      }
+      model.formulas.push(formula);
     }
     if(input.version<4){
       const tanks=model.formulas.filter(f=>f.expression.kind==='formula'&&f.expression.formula==='tankMass');
@@ -439,5 +469,5 @@
     // Missing references and cycles remain visible as actionable errors, never guessed away.
     return model;
   }
-  return { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });

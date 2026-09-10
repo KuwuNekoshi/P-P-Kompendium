@@ -30,6 +30,22 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 @media(max-width:640px){.figure-tray:has(>.figure-card:nth-child(3):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}.construction-heading{align-items:flex-start}.construction-actions{gap:7px}.construction-actions>span{display:none}.assembly-section{padding:15px}.assembly-heading h3{font-size:.875rem}.model-viewer-canvas{height:280px}.joint-list>div{align-items:flex-start}.assembly-formula>div:first-child{align-items:flex-start}.compound-svg{height:auto!important}.geometry-caption{font-size:.75rem}.viewer-controls .icon-button{width:36px;height:36px}}
 .tank-mass-action{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:19px;padding:16px;background:var(--blue-soft);border-radius:7px}.tank-mass-action>div{display:flex;flex-direction:column;gap:6px;min-width:0}.tank-mass-action strong{font-size:.875rem;font-weight:550}.tank-mass-action span{font-size:.8rem;line-height:1.6;color:var(--muted)}.tank-mass-action .button{white-space:nowrap;flex-shrink:0;background:var(--surface)}.formula-source{font-size:.8rem;line-height:1.6;color:var(--muted);padding:12px 22px;border-top:1px solid var(--border)}.formula-search{display:flex;flex-direction:column;gap:10px;font-size:.875rem;line-height:1.5;margin:0 0 18px;max-width:640px}.formula-search input{font-size:1rem;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:13px 15px;width:100%;min-height:47px}.search-count{font-size:.875rem;color:var(--muted);margin-bottom:24px}.school-reference{align-self:flex-start;border-radius:4px;background:var(--soft);color:var(--blue-ink);padding:4px 8px;font-size:.8rem;line-height:1.5}.formula-card .school-reference{margin-top:-3px}.school-source-note{font-size:.8rem;line-height:1.8;color:var(--muted);margin-top:25px}.unit-guide{margin-top:28px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:18px 20px;min-width:0}.unit-guide summary{font-size:1rem;font-weight:550;line-height:1.5;cursor:pointer}.unit-guide>p{font-size:.875rem;line-height:1.8;color:var(--muted);margin:17px 0}.unit-table-wrap{overflow-x:auto}.unit-guide table{border-collapse:collapse;width:100%;font-size:.875rem;line-height:1.7}.unit-guide th,.unit-guide td{text-align:left;vertical-align:top;padding:12px 13px;border-bottom:1px solid var(--border)}.unit-guide th{font-weight:550;background:var(--soft)}.unit-guide td:nth-child(3){white-space:nowrap}.empty-search{font-size:1rem;line-height:1.75;padding:25px;border:1px dashed var(--border);border-radius:8px}.library-results .formula-card p{font-size:.875rem}.library-results .formula-group>h3{font-size:.95rem}@media(max-width:640px){.tank-mass-action{align-items:flex-start;padding:14px;gap:12px}.tank-mass-action .button{padding:9px 11px}.unit-guide{padding:16px}.unit-guide th,.unit-guide td{padding:10px}.formula-source{padding:12px 16px}}@media print{.tank-mass-action button,.formula-search{display:none!important}}
 .diameter-settings{border:1px solid var(--border);border-radius:8px;padding:16px;margin:20px 0;background:var(--bg)}.diameter-settings>.field-label{font-weight:550;line-height:1.5;margin:0}.diameter-settings .source-select{margin-top:10px}.diameter-settings .field-note{font-size:.8rem}.diameter-wall{border-top:1px solid var(--border);padding-top:13px;margin-top:14px}.diameter-wall>summary{font-size:.875rem;line-height:1.5;cursor:pointer}.diameter-wall>.expression{margin-top:14px}.diameter-wall>.text-button{margin:0 0 8px;font-size:.8rem}.diameter-derived{border-top:1px solid var(--border);padding-top:14px;margin-top:16px}.diameter-derived>span{font-size:.8rem;color:var(--muted);line-height:1.5}.diameter-equation{overflow-x:auto;padding:12px 0 3px}.diameter-equation math{min-width:min-content;font-size:1rem}.shared-measure>math{min-width:min-content;max-width:100%}.shared-measure>span{flex-basis:100%}@media(max-width:640px){.diameter-settings{padding:14px}}
+.unit-intro{font-size:.875rem;line-height:1.7;color:var(--muted);margin:-2px 0 10px}
+.unit-symbol-list>div{display:block;padding:16px 0}
+.unit-symbol-list dt{margin-bottom:11px}
+.unit-symbol-list dd{white-space:normal}
+.unit-pair{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;min-width:0;font-size:.875rem;color:var(--text)}
+.unit-pair>span{overflow-wrap:anywhere}
+.unit-select{width:100%;min-width:0;min-height:42px;border:1px solid var(--border);border-radius:6px;padding:9px 27px 9px 10px;background:var(--surface);color:var(--text);font-size:.875rem;line-height:1.5;text-overflow:ellipsis;cursor:pointer}
+.unit-select:hover{border-color:var(--muted)}
+.unit-operation{display:block;font-size:.8rem;line-height:1.6;color:var(--muted);margin-top:7px}
+.result-unit-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:23px;padding:20px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.result-unit-row label{font-size:.95rem;font-weight:550;line-height:1.5}
+.result-unit-row p{display:flex;align-items:center;gap:9px;margin-top:9px;font-size:.8rem;line-height:1.6;color:var(--muted)}
+.result-unit-row .unit-pair{grid-template-columns:auto auto minmax(0,1fr)}
+.unit-footnote{font-size:.8rem;line-height:1.7;color:var(--muted);margin-top:12px}
+@media(max-width:1190px){.result-unit-row{grid-template-columns:minmax(0,1fr);gap:14px}}
+@media print{.unit-select{appearance:none;border:0;padding:0;min-height:0;background:none}.result-unit-row{break-inside:avoid}}
 @media(min-width:1001px){
   .inspector{
     position:sticky;
@@ -48,6 +64,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 @media print{.topbar,.catalog,.inspector,.view-tabs,.goal-row,.preview-header .segmented,.copy-button,.save-status,.chain-step-heading button,.figure-remove,.construction-actions,.viewer-controls,.assembly-heading .segmented,.joint-list button,.assembly-formula button{display:none!important}.app-shell{display:block}.workspace{padding:0}.workspace-header{margin-bottom:20px}:root{--bg:#fff;--surface:#fff;--text:#111;--muted:#444;--border:#ddd;--blue-ink:#222}.formula-preview,.figure-tile,.formula-card{break-inside:avoid}.formula-display{overflow:visible}.formula-display>math{font-size:1.2rem}.formula-grid{grid-template-columns:repeat(2,1fr)}}
 
 </style>
+  
   
   
   
@@ -912,7 +929,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "A",
         "v"
       ],
-      "note": "Med middelhastighed i m/s og areal i m² fås m³/s. Skolens faktor k omregner kun tidsenheden; gang med 3600 for m³/h.",
+      "note": "Grundformlen bruger middelhastighed i m/s og areal i m² og giver m³/s. Vælg fx m³/h som resultatenhed; skolens tidsfaktor indsættes via enhedsvalget.",
       "source": {
         "pages": [
           4,
@@ -1361,7 +1378,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         ],
         "eta"
       ],
-      "note": "H er den samlede løftehøjde. η er virkningsgraden som decimaltal. g er tyngdeaccelerationen. Brug SI-enheder.",
+      "note": "H er den samlede løftehøjde. g er tyngdeaccelerationen. Grundformlen bruger SI og η som decimaltal; vælger du % som inputenhed, indsættes division med 100.",
       "source": {
         "pages": [
           5,
@@ -1545,7 +1562,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "thickness",
         "rho"
       ],
-      "note": "Tankmaterialets masse uden væske, ben, studs og andet udstyr. Ens materiale og pladetykkelse; figurernes arealer er baseret på indvendige mål og krumme flader behandles som tynd plade. t_plade er tykkelse, ikke tid. Brug m og kg/m³ for kg; med ton/m³ fås ton.",
+      "note": "Tankmaterialets masse uden væske, ben, studs og andet udstyr. Ens materiale og pladetykkelse; figurernes arealer er baseret på indvendige mål og krumme flader behandles som tynd plade. t_plade er tykkelse, ikke tid. Grundformlen bruger m og kg/m³ og giver kg. Andre inputenheder og fx resultat i ton vælges under Størrelserne i formlen.",
       "source": {
         "pages": [
           3,
@@ -2855,7 +2872,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "E",
         "t"
       ],
-      "note": "J og s giver W. kJ og s giver kW.",
+      "note": "Grundformlen bruger J og s og giver W. Vælg fx kJ som inputenhed og kW som resultatenhed for at indsætte omregningerne.",
       "source": {
         "pages": [
           4,
@@ -3222,7 +3239,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "P",
         "eta"
       ],
-      "note": "Fx 80 % skrives 0,80. Virkningsgraden er større end 0 og højst 1.",
+      "note": "Brug fx 0,80 med inputenheden tal eller 80 med inputenheden %. Virkningsgraden er større end 0 og højst 1 som decimaltal.",
       "source": {
         "pages": [
           5,
@@ -3257,7 +3274,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "out",
         "input"
       ],
-      "note": "Resultatet er et decimaltal; gang med 100 for procent.",
+      "note": "Grundformlen giver et decimaltal. Vælg % under Resultatets enhed for at indsætte multiplikation med 100.",
       "source": {
         "pages": [
           12
@@ -3618,7 +3635,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "n",
         "eta"
       ],
-      "note": "D > d. SI: n i omdr./s giver m³/s. Skolens n i omdr./min og faktor 60 giver m³/h.",
+      "note": "D > d. Grundformlen bruger n i omdr./s og giver m³/s. Vælg omdr./min som inputenhed og fx m³/h som resultatenhed; tidsfaktorerne indsættes automatisk.",
       "source": {
         "pages": [
           6
@@ -3790,7 +3807,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "cp",
         "dT"
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7,
@@ -3833,7 +3850,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           "cp"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -3875,7 +3892,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           "dT"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -3917,7 +3934,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           "dT"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -3950,7 +3967,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "m",
         "H"
       ],
-      "note": "Kun faseændringen. Brug Hf ved stoffets aktuelle tryk og temperatur. J/kg giver J; kJ/kg giver kJ.",
+      "note": "Kun faseændringen. Brug Hf ved stoffets aktuelle tryk og temperatur. Grundformlen bruger J/kg og giver J; kJ/kg og resultat i kJ vælges under Størrelserne i formlen.",
       "source": {
         "pages": [
           12
@@ -3989,7 +4006,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "cp",
         "dT"
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7,
@@ -4033,7 +4050,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           "cp"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -4075,7 +4092,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           "dT"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -4117,7 +4134,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           "dT"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -4260,7 +4277,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           ]
         ]
       ],
-      "note": "Ingen varmetab, faseændring eller blandingsvarme; konstante varmekapaciteter. Begge temperaturer på samme skala: K eller °C. Resultatet får samme skala.",
+      "note": "Ingen varmetab, faseændring eller blandingsvarme; konstante varmekapaciteter. Temperaturerne omregnes til K. Vælg fx °C som input- og resultatenhed; tillæg og fradrag af 273,15 indsættes automatisk.",
       "source": {
         "pages": [
           7
@@ -5183,12 +5200,88 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 
 </script>
 <script>
+/* units.js */
+/* Exact unit factors for symbolic substitution. No user values are evaluated. */
+(function(root,factory){
+  if(typeof module==='object'&&module.exports)module.exports=factory();
+  else root.PPUnits=factory();
+})(typeof globalThis!=='undefined'?globalThis:this,function(){
+  'use strict';
+  // The first unit is the formula's base unit. base = value × numerator / denominator + offset.
+  // Ratios such as kg/h retain their component factors instead of rounded decimals.
+  const definitions={
+    scalar:[['number','tal'],['percent','%',1,100]],
+    length:[['m','m'],['mm','mm',1,1000],['cm','cm',1,100],['dm','dm',1,10],['um','µm',1,1000000],['km','km',1000]],
+    area:[['m2','m²'],['mm2','mm²',1,1000000],['cm2','cm²',1,10000],['dm2','dm²',1,100],['ha','ha',10000],['km2','km²',1000000]],
+    volume:[['m3','m³'],['L','L',1,1000],['mL','mL',1,1000000],['cL','cL',1,100000],['dL','dL',1,10000],['dm3','dm³',1,1000],['cm3','cm³',1,1000000],['mm3','mm³',1,1000000000]],
+    time:[['s','s'],['ms','ms',1,1000],['min','min',60],['h','h',3600],['day','døgn',86400]],
+    velocity:[['m_s','m/s'],['mm_s','mm/s',1,1000],['cm_s','cm/s',1,100],['m_min','m/min',1,60],['km_h','km/h',1000,3600]],
+    acceleration:[['m_s2','m/s²'],['mm_s2','mm/s²',1,1000],['cm_s2','cm/s²',1,100]],
+    flow:[['m3_s','m³/s'],['m3_min','m³/min',1,60],['m3_h','m³/h',1,3600],['L_s','L/s',1,1000],['L_min','L/min',1,60000],['L_h','L/h',1,3600000],['mL_s','mL/s',1,1000000],['mL_min','mL/min',1,60000000]],
+    mass:[['kg','kg'],['g','g',1,1000],['mg','mg',1,1000000],['ton','ton',1000]],
+    density:[['kg_m3','kg/m³'],['ton_m3','ton/m³',1000],['kg_L','kg/L',1000],['g_cm3','g/cm³',1000],['g_L','g/L']],
+    massFlow:[['kg_s','kg/s'],['kg_min','kg/min',1,60],['kg_h','kg/h',1,3600],['g_s','g/s',1,1000],['g_min','g/min',1,60000],['ton_h','ton/h',1000,3600]],
+    pressure:[['Pa','Pa'],['hPa','hPa',100],['kPa','kPa',1000],['MPa','MPa',1000000],['bar','bar',100000],['mbar','mbar',100]],
+    force:[['N','N'],['mN','mN',1,1000],['kN','kN',1000]],
+    power:[['W','W'],['kW','kW',1000],['MW','MW',1000000]],
+    energy:[['J','J'],['kJ','kJ',1000],['MJ','MJ',1000000],['Wh','Wh',3600],['kWh','kWh',3600000],['MWh','MWh',3600000000]],
+    torque:[['N_m','N·m'],['N_cm','N·cm',1,100],['N_mm','N·mm',1,1000],['kN_m','kN·m',1000]],
+    massMoment:[['kg_m','kg·m'],['kg_cm','kg·cm',1,100],['kg_mm','kg·mm',1,1000],['g_cm','g·cm',1,100000],['ton_m','ton·m',1000]],
+    rotationRate:[['rev_s','omdr./s'],['rpm','omdr./min',1,60]],
+    countPerLength:[['per_m','1/m'],['per_cm','1/cm',100],['per_mm','1/mm',1000]],
+    temperature:[['K','K'],['C','°C',1,1,'273.15']],
+    // A temperature difference never receives the absolute-temperature offset.
+    temperatureChange:[['K','K'],['C','°C']],
+    heatCapacity:[['J_kgK','J/(kg·K)'],['kJ_kgK','kJ/(kg·K)',1000],['J_kgC','J/(kg·°C)'],['kJ_kgC','kJ/(kg·°C)',1000],['J_gK','J/(g·K)',1000]],
+    specificEnergy:[['J_kg','J/kg'],['kJ_kg','kJ/kg',1000],['MJ_kg','MJ/kg',1000000]]
+  };
+  const units=Object.fromEntries(Object.entries(definitions).map(([dimension,rows])=>[dimension,rows.map(([id,label,numerator=1,denominator=1,offset='0'])=>Object.freeze({id,label,numerator,denominator,offset,dimension}))]));
+  function choices(dimension){
+    if(!Object.hasOwn(units,dimension))throw new Error('Ukendt størrelse til enhedsvalg.');
+    return units[dimension];
+  }
+  const base=dimension=>choices(dimension)[0];
+  function get(dimension,id){
+    const unit=choices(dimension).find(u=>u.id===id);
+    if(!unit)throw new Error('Enheden passer ikke til denne størrelse.');
+    return unit;
+  }
+  const key=variable=>variable.symbol+':'+variable.dimension;
+  const constant=value=>({type:'constant',value:String(value)});
+  const group=ast=>ast.type==='group'?ast:{type:'group',children:[ast]};
+  function convert(ast,unit,direction='toBase'){
+    if(!['toBase','fromBase'].includes(direction))throw new Error('Ukendt omregningsretning.');
+    const inverse=direction==='fromBase';
+    const numerator=inverse?unit.denominator:unit.numerator,denominator=inverse?unit.numerator:unit.denominator;
+    if(numerator===1&&denominator===1&&unit.offset==='0')return ast;
+    let out=['symbol','constant','group'].includes(ast.type)?ast:group(ast);
+    if(inverse&&unit.offset!=='0')out={type:'sub',children:[out,constant(unit.offset)]};
+    if(numerator!==1)out={type:'mul',children:[out,constant(numerator)]};
+    if(denominator!==1)out={type:'div',children:[out,constant(denominator)]};
+    if(!inverse&&unit.offset!=='0')out={type:'add',children:[out,constant(unit.offset)]};
+    return group(out);
+  }
+  function hint(unit,direction='toBase'){
+    const inverse=direction==='fromBase',parts=[];
+    const format=n=>Number(n).toLocaleString('da-DK',{maximumFractionDigits:8});
+    if(inverse&&unit.offset!=='0')parts.push('− '+format(unit.offset));
+    const n=inverse?unit.denominator:unit.numerator,d=inverse?unit.numerator:unit.denominator;
+    if(n!==1)parts.push('× '+format(n));
+    if(d!==1)parts.push('÷ '+format(d));
+    if(!inverse&&unit.offset!=='0')parts.push('+ '+format(unit.offset));
+    return parts.join(' · derefter ')||'Samme tal';
+  }
+  return {choices,base,get,key,convert,hint};
+});
+
+</script>
+<script>
 /* engine.js */
 /* Symbolic composition only. This module does not evaluate numbers. */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'));
-  else root.PP = factory(root.PPCatalog);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'));
+  else root.PP = factory(root.PPCatalog,root.PPUnits);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units) {
   'use strict';
   const { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE } = catalog;
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -5204,6 +5297,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   const innerTarget = (s,key) => `shape:${s.id}:inner:${key}`;
   const geometricInput = (s,key) => diameterKeys(s).includes(key)?innerTarget(s,key):`shape:${s.id}:input:${key}`;
   const own = (object, key) => Object.hasOwn(object, key);
+  const inputUnit = (model,variable) => Units.get(variable.dimension,model.inputUnits?.[Units.key(variable)] || Units.base(variable.dimension).id);
+  const resultUnit = formula => Units.get(formula.dimension,formula.resultUnit || Units.base(formula.dimension).id);
   const esc = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
   function newExpression(id) {
@@ -5240,7 +5335,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const cylinder = newShape('cylinder', 'cylinder', 1);
     const cone = newShape('cone', 'cone', 2); cone.name = 'Keglebund'; cone.faces.base = 'closed';
     const pipe = newShape('pipe', 'pipe', 3); pipe.name = 'Indløbsrør';
-    return { version: 4, title: 'Bassin med keglebund', tank:defaultTank(),shapes: [cylinder, cone, pipe], connections: [{ id:'basin-joint', a:{shape:'cylinder',face:'bottom'}, b:{shape:'cone',face:'base'} }], formulas: [
+    return { version: 5, inputUnits:{}, title: 'Bassin med keglebund', tank:defaultTank(),shapes: [cylinder, cone, pipe], connections: [{ id:'basin-joint', a:{shape:'cylinder',face:'bottom'}, b:{shape:'cone',face:'base'} }], formulas: [
       { id: 'volume', name: 'Samlet rumfang', symbol: 'V_fyld', dimension: 'volume', expression: assembly('volume') },
       { id: 'flow', name: 'Volumenflow', symbol: 'Q_v', dimension: 'flow', expression: form('flow', { A: ref('shape:pipe:crossSection'), v: symbol('v') }) },
       { id: 'time', name: 'Fyldetid', symbol: 't', dimension: 'time', expression: form('fillTime', { V: ref('formula:volume'), Q: ref('formula:flow') }) }
@@ -5392,7 +5487,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       list.push({ target:`shape:${s.id}:area`,name:`${s.name} · Pladeareal ved indvendige mål`,symbol:'A_'+s.ordinal,dimension:'area',expression:surfaceExpression(model,s),ownerId:s.id,ownerType:'shape',output:'area' });
       if (type.crossSection) addOutput('crossSection', 'Tværsnitsareal', type.crossSection, 'A_t' + s.ordinal);
     }
-    for (const f of model.formulas) list.push({ target: `formula:${f.id}`, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: f.expression, ownerType: 'formula', ownerId: f.id });
+    for (const f of model.formulas) list.push({ target: `formula:${f.id}`, name: f.name, symbol: f.symbol, dimension: f.dimension, resultUnit:f.resultUnit, expression: f.expression, ownerType: 'formula', ownerId: f.id });
     return list;
   }
   function references(expr, model) {
@@ -5425,14 +5520,24 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const grouped=(ast,depth)=>depth>0&&!['symbol','constant','group'].includes(ast.type)?{type:'group',children:[ast]}:ast;
     function expand(expr, dimension, mode = 'expanded', stack = [], budget = { nodes: 0 }, depth = 0, label = '') {
       if (++budget.nodes > 1200 || depth > 48 || stack.length > 80) throw new Error('Formelkæden er for stor. Behold nogle dele som symboler.');
-      if (expr.kind === 'symbol') return leaf(expr.symbol, dimension, label);
+      if (expr.kind === 'symbol') {
+        const variable=leaf(expr.symbol,dimension,label);
+        return Units.convert(variable,inputUnit(model,variable));
+      }
       if (expr.kind === 'zero' && expr.dimension === dimension) return {type:'constant',value:'0'};
       if (expr.kind === 'ref') {
         const d = map.get(expr.target);
         if (!d) throw new Error('En reference mangler. Vælg en ny kilde i dropdown-menuen.');
         if (d.dimension !== dimension) throw new Error('Referencen passer ikke til denne størrelse.');
         if (stack.includes(d.target)) throw new Error('Cirkulær reference: en formel henviser tilbage til sig selv.');
-        if (mode === 'compact') return leaf(d.symbol, dimension, d.name);
+        if (mode === 'compact') {
+          // Known inputs retain their declared unit. Calculated references use the
+          // source formula's displayed result unit and convert back to base once.
+          if(d.expression.kind==='symbol')return expand(d.expression,dimension,mode,[...stack,d.target],budget,depth+1,d.name);
+          const unit=resultUnit(d),variable={...leaf(d.symbol,dimension,d.name),reference:d.target};
+          if(unit.id!==Units.base(dimension).id)variable.unit=unit.label;
+          return Units.convert(variable,unit);
+        }
         return expand(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);
       }
       if (expr.kind === 'assembly') {
@@ -5452,7 +5557,11 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       if (!d) throw new Error('Formlen findes ikke.');
       return expand(d.expression, d.dimension, mode, [id]);
     }
-    function safe(id, mode = 'expanded') { try { return { ok: true, ast: target(id, mode) }; } catch (e) { return { ok: false, error: e.message }; } }
+    function result(id,mode='expanded') {
+      const ast=target(id,mode);
+      return Units.convert(ast,resultUnit(map.get(id)),'fromBase');
+    }
+    function safe(id, mode = 'expanded', asResult = false) { try { return { ok: true, ast: asResult?result(id,mode):target(id,mode) }; } catch (e) { return { ok: false, error: e.message }; } }
     function steps(id) {
       const seen = new Set(), visiting = new Set(), out = [];
       function walk(key) {
@@ -5467,7 +5576,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       }
       walk(id); return out;
     }
-    return { list, map, expand, target, safe, steps };
+    return { list, map, expand, target, result, safe, steps };
   }
 
   function mathSymbol(s) {
@@ -5477,8 +5586,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     return sub ? `<msub>${mi}${/^\d+$/.test(sub) ? `<mn>${esc(sub)}</mn>` : `<mtext>${esc(sub)}</mtext>`}</msub>` : mi;
   }
   function mathBody(ast) {
-    if (ast.type === 'symbol') return mathSymbol(ast.symbol);
-    if (ast.type === 'constant') return /^\d+$/.test(ast.value) ? `<mn>${esc(ast.value)}</mn>` : `<mi>${esc(ast.value)}</mi>`;
+    if (ast.type === 'symbol') return ast.unit?`<mrow>${mathSymbol(ast.symbol)}<mspace width="0.2em"/><mtext>[${esc(ast.unit)}]</mtext></mrow>`:mathSymbol(ast.symbol);
+    if (ast.type === 'constant') return /^\d+(?:\.\d+)?$/.test(ast.value) ? `<mn>${esc(ast.value.replace('.',','))}</mn>` : `<mi>${esc(ast.value)}</mi>`;
     const c = ast.children;
     if (ast.type === 'div') return `<mfrac>${mathBody(c[0])}${mathBody(c[1])}</mfrac>`;
     if (ast.type === 'pow') return `<msup>${['add','sub','mul'].includes(c[0].type) ? '<mrow><mo>(</mo>' + mathBody(c[0]) + '<mo>)</mo></mrow>' : mathBody(c[0])}${mathBody(c[1])}</msup>`;
@@ -5492,8 +5601,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     }).join(`<mo>${operator}</mo>`) + '</mrow>';
   }
   function plain(ast) {
-    if (ast.type === 'symbol') return ast.symbol;
-    if (ast.type === 'constant') return ast.value;
+    if (ast.type === 'symbol') return ast.symbol+(ast.unit?' ['+ast.unit+']':'');
+    if (ast.type === 'constant') return ast.value.replace('.',',');
     const c = ast.children.map(plain);
     const bracket=i=>['add','sub','mul','group'].includes(ast.children[i].type)?c[i]:`(${c[i]})`;
     if (ast.type === 'div') return `${bracket(0)} / ${bracket(1)}`;
@@ -5507,9 +5616,9 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       const [b,...s] = ast.symbol.split('_');
       const greek = { 'ρ':'\\rho', 'η':'\\eta', 'ΔV':'\\Delta V', 'Δp':'\\Delta p', 'Δv':'\\Delta v', 'ΔT':'\\Delta T', 'μ':'\\mu' };
       const base = greek[b] || (/^[A-Za-z]+$/.test(b) ? b : '\\mathrm{' + b + '}');
-      return s.length ? base + '_{' + s.join('_').replace(/[^\p{L}\p{N}]/gu, '') + '}' : base;
+      return (s.length ? base + '_{' + s.join('_').replace(/[^\p{L}\p{N}]/gu, '') + '}' : base)+(ast.unit?'\\,[\\text{'+ast.unit.replace(/%/g,'\\%')+'}]':'');
     }
-    if (ast.type === 'constant') return ast.value === 'π' ? '\\pi' : ast.value;
+    if (ast.type === 'constant') return ast.value === 'π' ? '\\pi' : ast.value.replace('.','{,}');
     const c = ast.children.map(tex);
     if (ast.type === 'div') return '\\frac{' + c[0] + '}{' + c[1] + '}';
     if (ast.type === 'pow') return '{' + (['add','sub','mul'].includes(ast.children[0].type) ? '\\left(' + c[0] + '\\right)' : c[0]) + '}^{' + c[1] + '}';
@@ -5520,15 +5629,15 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       return group ? '\\left(' + c[i] + '\\right)' : c[i];
     }).join({ mul:' \\cdot ', add:' + ', sub:' - ' }[ast.type]);
   }
-  function math(ast, lhs) {
-    const label = (lhs ? lhs + ' = ' : '') + plain(ast);
-    return `<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="${esc(label)}"><mrow>${lhs ? mathSymbol(lhs) + '<mo>=</mo>' : ''}${mathBody(ast)}</mrow></math>`;
+  function math(ast, lhs, unit) {
+    const label = (lhs ? lhs + (unit?' ['+unit+']':'') + ' = ' : '') + plain(ast);
+    return `<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="${esc(label)}"><mrow>${lhs ? mathSymbol(lhs)+(unit?`<mspace width="0.2em"/><mtext>[${esc(unit)}]</mtext>`:'') + '<mo>=</mo>' : ''}${mathBody(ast)}</mrow></math>`;
   }
   function variables(ast) {
     const found = new Map();
     function visit(node) {
       if (node.type === 'symbol') {
-        const key = node.symbol + ':' + node.dimension;
+        const key = node.reference || Units.key(node);
         if (!found.has(key)) found.set(key, node);
       }
       for (const c of node.children || []) visit(c);
@@ -5544,7 +5653,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const fail = message => { throw new Error('Ugyldig opsætning: ' + message); };
     const str = (value, max = 120) => typeof value === 'string' && value.length > 0 && value.length <= max;
     const validSymbol = value => str(value,24) && /^[\p{L}\p{N}]+(?:_[\p{L}\p{N}]+)?$/u.test(value);
-    if (!input || ![2,3,4].includes(input.version) || !str(input.title) || !Array.isArray(input.shapes) || !Array.isArray(input.formulas) || input.shapes.length > 24 || input.formulas.length > 40) fail('formatet genkendes ikke, eller opsætningen er for stor.');
+    if (!input || ![2,3,4,5].includes(input.version) || !str(input.title) || !Array.isArray(input.shapes) || !Array.isArray(input.formulas) || input.shapes.length > 24 || input.formulas.length > 40) fail('formatet genkendes ikke, eller opsætningen er for stor.');
     const ids = new Set(), ordinals = new Set();
     function identity(item) {
       if (!item || !str(item.id,64) || !/^[a-zA-Z0-9_-]+$/.test(item.id) || ids.has(item.id) || !str(item.name)) fail('ugyldigt navn eller id.');
@@ -5561,8 +5670,17 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       if (e.kind !== 'formula' || !f || f.dimension !== dimension) fail('formlen passer ikke til størrelsen.');
       return form(e.formula,Object.fromEntries(Object.entries(f.args).map(([k,a]) => [k,cleanExpr(e.args?.[k],a.dimension,depth+1)])));
     }
-    const model = { version:4,title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
-    if(input.version===4){
+    const model = { version:5,inputUnits:{},title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
+    if(input.version===5){
+      if(!input.inputUnits||typeof input.inputUnits!=='object'||Array.isArray(input.inputUnits)||Object.keys(input.inputUnits).length>3000)fail('ugyldige enhedsvalg.');
+      for(const [key,id]of Object.entries(input.inputUnits)){
+        const parts=key.split(':');
+        if(parts.length!==2||!validSymbol(parts[0])||!own(DIMENSIONS,parts[1]))fail('ugyldig størrelse i enhedsvalget.');
+        try{Units.get(parts[1],id);}catch(_){fail('en inputenhed passer ikke til størrelsen.');}
+        model.inputUnits[key]=id;
+      }
+    }
+    if(input.version>=4){
       if(!input.tank||typeof input.tank!=='object'||Array.isArray(input.tank))fail('fælles pladetykkelse mangler.');
       model.tank.thickness=cleanExpr(input.tank.thickness,'length');
     }
@@ -5584,7 +5702,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       }
       const shape={ id:s.id,type:s.type,name:s.name,ordinal:s.ordinal,include:s.include,faces,inputs:Object.fromEntries(Object.entries(type.inputs).map(([k,a])=>[k,cleanExpr(s.inputs?.[k],a.dimension)])) };
       if(diameterKeys(shape).length){
-        if(input.version===4){
+        if(input.version>=4){
           if(!s.diameter||!['inner','outer'].includes(s.diameter.basis))fail('ugyldigt valg af indre/ydre diameter.');
           shape.diameter={basis:s.diameter.basis,thickness:cleanExpr(s.diameter.thickness,'length')};
         }else shape.diameter=defaultDiameter(shape);
@@ -5594,7 +5712,12 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     for (const f of input.formulas) {
       identity(f);
       if (!own(DIMENSIONS,f.dimension) || !validSymbol(f.symbol)) fail('ugyldigt formelsymbol.');
-      model.formulas.push({ id:f.id,name:f.name,symbol:f.symbol,dimension:f.dimension,expression:cleanExpr(f.expression,f.dimension) });
+      const formula={ id:f.id,name:f.name,symbol:f.symbol,dimension:f.dimension,expression:cleanExpr(f.expression,f.dimension) };
+      if(f.resultUnit!==undefined){
+        try{Units.get(f.dimension,f.resultUnit);}catch(_){fail('resultatenheden passer ikke til formlen.');}
+        formula.resultUnit=f.resultUnit;
+      }
+      model.formulas.push(formula);
     }
     if(input.version<4){
       const tanks=model.formulas.filter(f=>f.expression.kind==='formula'&&f.expression.formula==='tankMass');
@@ -5625,7 +5748,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     // Missing references and cycles remain visible as actionable errors, never guessed away.
     return model;
   }
-  return { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
 
 </script>
@@ -5888,7 +6011,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     preview3D?.redraw();
   }
   function formulaSummary(expression, dimension, ctx, lhs) {
-    try { return E.math(ctx.expand(expression,dimension,'compact'),lhs); }
+    try { return E.math(ctx.expand(expression,dimension,'compact'),lhs,E.Units.base(dimension).label); }
     catch (error) { return `<p class="inline-error">${esc(error.message)}</p>`; }
   }
   function renderSidebar() {
@@ -5912,7 +6035,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const groups=E.components(model).filter(ids=>ids.length>1);
     const joints=model.connections||[];
     const summaries=['volume','area'].map(dimension=>{
-      try{return `<div class="assembly-formula"><div><span>${dimension==='volume'?'Samlet rumfang':'Samlet pladeareal'}</span><button class="text-button" data-action="use-assembly" data-dimension="${dimension}">Brug formel</button></div><div class="assembly-equation">${E.math(ctx.expand(E.assembly(dimension),dimension),dimension==='volume'?'V_samlet':'A_plade')}</div></div>`;}catch(error){return `<p class="inline-error">${esc(error.message)}</p>`;}
+      try{return `<div class="assembly-formula"><div><span>${dimension==='volume'?'Samlet rumfang':'Samlet pladeareal'}</span><button class="text-button" data-action="use-assembly" data-dimension="${dimension}">Brug formel</button></div><div class="assembly-equation">${E.math(ctx.expand(E.assembly(dimension),dimension),dimension==='volume'?'V_samlet':'A_plade',E.Units.base(dimension).label)}</div></div>`;}catch(error){return `<p class="inline-error">${esc(error.message)}</p>`;}
     }).join('');
     const viewer=geometryView==='3d'?'<div class="solid-viewer"><canvas class="model-viewer-canvas" tabindex="0" role="img" aria-label="Interaktiv 3D-visning af dine figurer. Træk eller brug piletasterne for at dreje. Brug plus og minus for zoom.">Din browser kan ikke vise 3D-forhåndsvisningen. Vælg Skitse.</canvas><div class="viewer-controls"><button class="icon-button" data-action="zoom-out" aria-label="Zoom ud">−</button><button class="icon-button" data-action="zoom-in" aria-label="Zoom ind">+</button><button class="text-button" data-action="reset-camera">Nulstil vinkel</button></div><p>Træk for at dreje · scroll for zoom</p></div>':`<div class="compound-grid">${E.components(model).map(ids=>`<div class="compound-wrap">${window.PPGeometry.render(model,ids,selected?.type==='shape'?selected.id:null)}</div>`).join('')}</div>`;
     $('#assembly-overview').innerHTML = model.shapes.length ? `<section class="assembly-section"><div class="assembly-heading"><h3>${groups.length?'Sammensatte figurer':'Din figursamling'}</h3><div class="segmented" role="group" aria-label="Figurvisning"><button data-action="geometry-view" data-mode="3d" aria-pressed="${geometryView==='3d'}">3D</button><button data-action="geometry-view" data-mode="sketch" aria-pressed="${geometryView==='sketch'}">Skitse</button></div></div><p class="geometry-caption">Skematisk visning · ikke målfast. Separate figurer vises ved siden af hinanden.</p>${viewer}${groups.length?`<div class="joint-list">${joints.map(c=>{
@@ -5927,19 +6050,28 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       $('#formula-preview').innerHTML = '<div class="empty-preview"><span class="large-function">ƒ</span><h2>Find din næste formel</h2><p>Vælg, hvad du vil finde. Tilpas derefter formlens dele til det, du kender fra opgaven.</p><button class="button primary" data-action="add-formula">Vælg en formel</button></div>';
       $('#formula-chain').innerHTML = ''; $('#symbol-guide').innerHTML = ''; return;
     }
-    const r = ctx.safe(`formula:${f.id}`,expanded ? 'expanded' : 'compact');
+    const r = ctx.safe(`formula:${f.id}`,expanded ? 'expanded' : 'compact',true);
     const full = ctx.safe(`formula:${f.id}`);
     const definition=f.expression.kind==='formula'?E.FORMULAS[f.expression.formula]:null;
     const source=schoolRef(definition);
     let note=definition?.note||'';
     if (f.expression.kind === 'assembly') note = f.dimension === 'volume' ? 'Geometrisk rumfang af de valgte dele. Åbne sider ændrer ikke rumfanget; delene må ikke overlappe.' : 'Åbne flader og endeflader i samlinger er automatisk udeladt.';
-    $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div><div class="formula-display">${r.ok ? E.math(r.ast,f.symbol) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}${source?`<p class="formula-source">Skolens formelsamling · ${esc(source)}</p>`:''}`;
+    $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div><div class="formula-display">${r.ok ? E.math(r.ast,f.symbol,E.resultUnit(f).label) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}${source?`<p class="formula-source">Skolens formelsamling · ${esc(source)}</p>`:''}`;
     let steps;
     try { steps = ctx.steps(`formula:${f.id}`); } catch (_) { steps = []; }
     $('#formula-chain').innerHTML = steps.length ? `<details class="chain-details" data-detail-key="chain-${esc(f.id)}"><summary><span>Se formelkæden</span><span class="chain-count">${steps.length} ${steps.length === 1 ? 'formel' : 'formler'}</span></summary><ol class="chain-list">${steps.map(d => `<li><div class="chain-step-heading"><span>${esc(d.name)}</span><button class="text-button" data-action="inspect-reference" data-target="${esc(d.target)}">Tilpas</button></div><div class="chain-math">${formulaSummary(d.expression,d.dimension,ctx,d.symbol)}</div></li>`).join('')}</ol></details>` : '';
     if (!full.ok) { $('#symbol-guide').innerHTML = ''; return; }
-    const vars = E.variables(full.ast);
-    $('#symbol-guide').innerHTML = `<div class="guide-heading"><h2>Størrelserne i formlen</h2><span>Enheder ved brug af SI</span></div><dl class="symbol-list">${vars.map(v => `<div><dt>${symbolHtml(v.symbol)}<span>${esc(v.label || E.DIMENSIONS[v.dimension].name)}</span></dt><dd>${esc(E.DIMENSIONS[v.dimension].unit)}</dd></div>`).join('')}</dl>`;
+    renderUnitGuide(full.ast,f);
+  }
+  function unitOptions(dimension,selected) {
+    return E.Units.choices(dimension).map(u=>`<option value="${esc(u.id)}" ${u.id===selected?'selected':''}>${esc(u.label)}</option>`).join('');
+  }
+  function renderUnitGuide(ast,f) {
+    const vars=E.variables(ast),output=E.resultUnit(f),base=E.Units.base(f.dimension);
+    $('#symbol-guide').innerHTML=`<div class="guide-heading"><h2>Størrelserne i formlen</h2><span>Din enhed → formlens enhed</span></div><p class="unit-intro">Vælg enhederne fra opgaven. Omregningerne indsættes i formlen, så du kan bruge de oplyste tal direkte.</p><dl class="symbol-list unit-symbol-list">${vars.map(v=>{
+      const unit=E.inputUnit(model,v),expected=E.Units.base(v.dimension);
+      return `<div><dt>${symbolHtml(v.symbol)}<span>${esc(v.label||E.DIMENSIONS[v.dimension].name)}</span></dt><dd><div class="unit-pair"><select class="unit-select" data-action="input-unit" data-id="${esc(E.Units.key(v))}" data-symbol="${esc(v.symbol)}" data-dimension="${esc(v.dimension)}" aria-label="Din enhed for ${esc(pretty(v.symbol))} · ${esc(E.DIMENSIONS[v.dimension].name)}">${unitOptions(v.dimension,unit.id)}</select><span aria-hidden="true">→</span><span>${esc(expected.label)}</span></div><span class="unit-operation">${esc(E.Units.hint(unit))}</span></dd></div>`;
+    }).join('')}</dl><div class="result-unit-row"><div><label for="result-unit">Resultatets enhed</label><p>${symbolHtml(f.symbol)}<span>Vælg enheden for svaret</span></p></div><div><div class="unit-pair"><span>${esc(base.label)}</span><span aria-hidden="true">→</span><select id="result-unit" class="unit-select" data-action="result-unit" data-id="${esc(f.id)}" aria-label="Resultatets enhed">${unitOptions(f.dimension,output.id)}</select></div><span class="unit-operation">${esc(E.Units.hint(output,'fromBase'))}</span></div></div><p class="unit-footnote">Samme symbol bruger samme inputenhed i hele opsætningen. Resultatenheden vælges for hver formel. Valgene følger med, når du gemmer.</p>`;
   }
   function expressionEditor(expr, dimension, path, defaultSymbol, ctx, depth = 0) {
     if (depth > 12) return '<div class="error-box">Formlen er for dyb til at blive vist.</div>';
@@ -5979,12 +6111,12 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const settings=E.diameterSettings(s),sloped=E.slopedWall(s);
     const lines=keys.map(key=>{
       const d=ctx.map.get(`shape:${s.id}:inner:${key}`),result=ctx.safe(d.target);
-      return `<div class="diameter-equation">${result.ok?E.math(result.ast,d.symbol):`<p class="inline-error">${esc(result.error)}</p>`}</div>`;
+      return `<div class="diameter-equation">${result.ok?E.math(result.ast,d.symbol,E.Units.base(d.dimension).label):`<p class="inline-error">${esc(result.error)}</p>`}</div>`;
     }).join('');
     return `<section class="diameter-settings"><label class="field-label">Den oplyste diameter er<select class="source-select" data-action="diameter-basis" data-id="${esc(s.id)}" aria-label="Diameteren på ${esc(s.name)} er"><option value="inner" ${settings.basis==='inner'?'selected':''}>Indvendig diameter</option><option value="outer" ${settings.basis==='outer'?'selected':''}>Udvendig diameter</option></select></label><p class="field-note">Rumfang og flow bruger den indvendige diameter. Højde og længde skal fortsat være indvendige mål.${keys.length>1?' Valget gælder både D og d.':''}</p><details class="diameter-wall" data-detail-key="wall-${esc(s.id)}" ${settings.basis==='outer'?'open':''}><summary>${sloped?'Radial godstykkelse':'Godstykkelse til omregning'}</summary>${expressionEditor(settings.thickness,'length',['shapes',index,'diameter','thickness'],sloped?'t_radial'+s.ordinal:'t_væg'+s.ordinal,ctx)}<p class="field-note">${sloped?'På en skrå væg er dette tykkelsen i diameterretningen ved samme endeflade. T9 bruger pladetykkelsen vinkelret på væggen. Ved kendt væghældning kan du vælge formlen t_radial = t_plade · s / h.':'Som standard bruges samme fælles pladetykkelse som i T9. Har denne del en anden tykkelse, skal dens masse også beregnes med den tykkelse.'}</p><button class="text-button" data-action="edit-tank">Tilpas fælles pladetykkelse · T9</button></details><div class="diameter-derived"><span>Indvendige mål i formlerne</span>${lines}</div>${settings.basis==='outer'?'<p class="field-note">Den udvendige diameter skal være større end to gange den radiale godstykkelse.</p>':''}</section>`;
   }
   function renderTankInspector(ctx) {
-    return `<div class="inspector-top"><span class="eyebrow">FÆLLES MÅL</span><div class="inspector-heading"><div class="inspector-icon">${symbolHtml('t_plade')}</div><div><h2>Pladetykkelse</h2><p>Bruges af T9 og diametermål</p></div></div></div><div class="inspector-content"><p class="inspector-intro">Vælg den fælles tykkelse som et kendt symbol eller en formel. Tankens egenvægt og de diametermål, der henviser hertil, følger samme kilde.</p>${expressionEditor(model.tank.thickness,'length',['tank','thickness'],'t_plade',ctx)}<p class="field-note">Tykkelsen er i meter. Divider opgavens millimeter med 1000, når du bruger formlen.</p><div class="inspector-actions"><button class="text-button" data-action="back-to-formula">Tilbage til formlen</button></div></div>`;
+    return `<div class="inspector-top"><span class="eyebrow">FÆLLES MÅL</span><div class="inspector-heading"><div class="inspector-icon">${symbolHtml('t_plade')}</div><div><h2>Pladetykkelse</h2><p>Bruges af T9 og diametermål</p></div></div></div><div class="inspector-content"><p class="inspector-intro">Vælg den fælles tykkelse som et kendt symbol eller en formel. Tankens egenvægt og de diametermål, der henviser hertil, følger samme kilde.</p>${expressionEditor(model.tank.thickness,'length',['tank','thickness'],'t_plade',ctx)}<p class="field-note">Vælg fx mm for tykkelsens symbol under Størrelserne i formlen. Omregningen til meter indsættes automatisk.</p><div class="inspector-actions"><button class="text-button" data-action="back-to-formula">Tilbage til formlen</button></div></div>`;
   }
   function renderShapeInspector(s, index, ctx) {
     const type=E.SHAPES[s.type];
@@ -6015,7 +6147,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     }
   }
   function renderLibrary() {
-    $('#panel-library').innerHTML = `<div class="library-intro"><h2>Find formlen fra din opgave.</h2><p>Med T1–T39 fra skolens formelsamling. Vælg en formel, og forbind dens størrelser med figurer eller andre formler.</p></div><label class="formula-search">Søg i formelsamlingen<input type="search" data-action="search-formulas" value="${esc(libraryQuery)}" placeholder="Fx T9, tank, varme eller gearing" autocomplete="off"></label><div class="library-results"></div><details class="unit-guide"><summary>Enheder og omregninger</summary><p>Formlernes enhedsforklaringer bruger SI. Omregn opgavens værdier til de viste enheder, før du bruger formlen. Der indsættes ingen ekstra tidsfaktor i SI-formlerne.</p><div class="unit-table-wrap"><table><thead><tr><th scope="col">Størrelse</th><th scope="col">Fra → til</th><th scope="col">Omregning</th><th scope="col">Husk</th></tr></thead><tbody>${E.UNIT_GUIDE.map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details><p class="school-source-note">Grundlag: ${esc(E.SCHOOL_SOURCE.title)} · ${esc(E.SCHOOL_SOURCE.school)} · ${esc(E.SCHOOL_SOURCE.date)}. Side- og T-numre henviser til jeres PDF. Der er både grundformler og omskrivninger. Forudsætninger og enhedstilpasninger står ved formlerne.</p>`;
+    $('#panel-library').innerHTML = `<div class="library-intro"><h2>Find formlen fra din opgave.</h2><p>Med T1–T39 fra skolens formelsamling. Vælg en formel, og forbind dens størrelser med figurer eller andre formler.</p></div><label class="formula-search">Søg i formelsamlingen<input type="search" data-action="search-formulas" value="${esc(libraryQuery)}" placeholder="Fx T9, tank, varme eller gearing" autocomplete="off"></label><div class="library-results"></div><details class="unit-guide"><summary>Enheder og omregninger</summary><p>Grundformlerne bruger SI. I formelbyggeren kan du vælge opgavens enheder under Størrelserne i formlen og vælge resultatets enhed. Omregningsfaktorerne indsættes automatisk; tilføj dem ikke igen.</p><div class="unit-table-wrap"><table><thead><tr><th scope="col">Størrelse</th><th scope="col">Fra → til</th><th scope="col">Omregning</th><th scope="col">Husk</th></tr></thead><tbody>${E.UNIT_GUIDE.map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details><p class="school-source-note">Grundlag: ${esc(E.SCHOOL_SOURCE.title)} · ${esc(E.SCHOOL_SOURCE.school)} · ${esc(E.SCHOOL_SOURCE.date)}. Side- og T-numre henviser til jeres PDF. Der er både grundformler og omskrivninger. Forudsætninger og enhedstilpasninger står ved formlerne.</p>`;
     renderLibraryResults();
   }
   function renderLibraryResults() {
@@ -6155,8 +6287,9 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   }
   async function copyFormula() {
     const f=active();if(!f)return;
-    const r=E.context(model).safe('formula:'+f.id,expanded?'expanded':'compact');if(!r.ok)return;
-    const text=f.symbol+' = '+E.plain(r.ast);
+    const ctx=E.context(model),r=ctx.safe('formula:'+f.id,expanded?'expanded':'compact',true);if(!r.ok)return;
+    const quantities=E.variables(r.ast).map(v=>v.symbol+': '+(v.reference?E.resultUnit(ctx.map.get(v.reference)):E.inputUnit(model,v)).label);
+    const text=f.symbol+' ['+E.resultUnit(f).label+'] = '+E.plain(r.ast)+(quantities.length?'\n\nIndsæt størrelserne i disse enheder:\n'+quantities.join('\n'):'');
     try { if(!navigator.clipboard?.writeText)throw new Error('Unavailable');await navigator.clipboard.writeText(text);notify('Formlen er kopieret.'); }
     catch(_) {
       const area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();let success=false;
@@ -6201,11 +6334,11 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     else if(a==='export')exportSetup();
     else if(a==='import')$('#file-input').click();
     else if(a==='copy-formula')void copyFormula();
-    else if(a==='new')replaceSetup({version:4,title:'Ny opsætning',tank:E.defaultTank(),shapes:[],formulas:[],connections:[]},'Start en tom opsætning?');
+    else if(a==='new')replaceSetup({version:5,inputUnits:{},title:'Ny opsætning',tank:E.defaultTank(),shapes:[],formulas:[],connections:[]},'Start en tom opsætning?');
     else if(a==='example')replaceSetup(E.example(),'Indlæs bassin-eksemplet?');
     else if(a==='close-dialog')closeDialog();
     else if(a==='confirm'){const action=pending;closeDialog();if(action)action();}
-    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Tankens egenvægt · T9</h3><p>Tryk <strong>Brug T9</strong> under figurerne. Pladearealet følger automatisk dine åbninger og samlinger. Vælg pladetykkelse og materialets massefylde som kendte symboler, formler eller referencer. Med tykkelse i meter og massefylde i kg/m³ fås tankens masse i kg. Dette er selve tankmaterialet, uden væske. Ved forskellig tykkelse eller materiale kan du lave én masseformel pr. del og summere dem.</p><p><strong>Tank med indhold</strong> lægger tankens egenvægt sammen med væskens masse. Vælg det faktiske væskevolumen. I <strong>Formelsamling</strong> kan du søge efter fx T9, varme eller gearing og slå enheder op.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Tankens egenvægt · T9</h3><p>Tryk <strong>Brug T9</strong> under figurerne. Pladearealet følger automatisk dine åbninger og samlinger. Vælg pladetykkelse og materialets massefylde som kendte symboler, formler eller referencer. Med tykkelse i meter og massefylde i kg/m³ fås tankens masse i kg. Dette er selve tankmaterialet, uden væske. Ved forskellig tykkelse eller materiale kan du lave én masseformel pr. del og summere dem.</p><p><strong>Tank med indhold</strong> lægger tankens egenvægt sammen med væskens masse. Vælg det faktiske væskevolumen. I <strong>Formelsamling</strong> kan du søge efter fx T9, varme eller gearing og slå enheder op.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Fx giver <strong>mm → m</strong> division med 1000 inde i formlen. Du skal derefter bruge tallet fra opgaven uden først at omregne det. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Samme symbol og størrelse har samme inputenhed i hele opsætningen. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
   });
   document.addEventListener('change',event=>{
     const el=event.target,a=el.dataset.action;
@@ -6222,7 +6355,15 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       if(el.value.startsWith('saved:'))select('formula',el.value.slice(6));
       else if(el.value.startsWith('new:'))addFormula(el.value.slice(4));return;
     }
-    if(a==='source'){
+    if(a==='input-unit'){
+      const variable={symbol:el.dataset.symbol,dimension:el.dataset.dimension},unit=E.Units.get(variable.dimension,el.value),key=E.Units.key(variable);
+      model.inputUnits||={};
+      if(unit.id===E.Units.base(variable.dimension).id)delete model.inputUnits[key];else model.inputUnits[key]=unit.id;
+      expanded=true;save();render(true);
+    }else if(a==='result-unit'){
+      const f=model.formulas.find(f=>f.id===el.dataset.id);
+      if(f){f.resultUnit=E.Units.get(f.dimension,el.value).id;expanded=true;save();render(true);}
+    }else if(a==='source'){
       const path=JSON.parse(el.dataset.path),old=getAt(path);
       const next=el.value==='symbol'?E.symbol(el.dataset.symbol):el.value==='zero'?{kind:'zero',dimension:'area'}:el.value==='assembly'?E.assembly(el.dataset.dimension):el.value.startsWith('formula:')?E.newExpression(el.value.slice(8)):E.ref(el.value.slice(4));
       setAt(path,next);try{E.validateModel(model);save();render(true);}catch(_){setAt(path,old);render(true);notify('Formlen bliver for dyb. Tilføj en separat formel og brug en reference.');}

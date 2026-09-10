@@ -809,7 +809,7 @@
         "A",
         "v"
       ],
-      "note": "Med middelhastighed i m/s og areal i m² fås m³/s. Skolens faktor k omregner kun tidsenheden; gang med 3600 for m³/h.",
+      "note": "Grundformlen bruger middelhastighed i m/s og areal i m² og giver m³/s. Vælg fx m³/h som resultatenhed; skolens tidsfaktor indsættes via enhedsvalget.",
       "source": {
         "pages": [
           4,
@@ -1258,7 +1258,7 @@
         ],
         "eta"
       ],
-      "note": "H er den samlede løftehøjde. η er virkningsgraden som decimaltal. g er tyngdeaccelerationen. Brug SI-enheder.",
+      "note": "H er den samlede løftehøjde. g er tyngdeaccelerationen. Grundformlen bruger SI og η som decimaltal; vælger du % som inputenhed, indsættes division med 100.",
       "source": {
         "pages": [
           5,
@@ -1442,7 +1442,7 @@
         "thickness",
         "rho"
       ],
-      "note": "Tankmaterialets masse uden væske, ben, studs og andet udstyr. Ens materiale og pladetykkelse; figurernes arealer er baseret på indvendige mål og krumme flader behandles som tynd plade. t_plade er tykkelse, ikke tid. Brug m og kg/m³ for kg; med ton/m³ fås ton.",
+      "note": "Tankmaterialets masse uden væske, ben, studs og andet udstyr. Ens materiale og pladetykkelse; figurernes arealer er baseret på indvendige mål og krumme flader behandles som tynd plade. t_plade er tykkelse, ikke tid. Grundformlen bruger m og kg/m³ og giver kg. Andre inputenheder og fx resultat i ton vælges under Størrelserne i formlen.",
       "source": {
         "pages": [
           3,
@@ -2752,7 +2752,7 @@
         "E",
         "t"
       ],
-      "note": "J og s giver W. kJ og s giver kW.",
+      "note": "Grundformlen bruger J og s og giver W. Vælg fx kJ som inputenhed og kW som resultatenhed for at indsætte omregningerne.",
       "source": {
         "pages": [
           4,
@@ -3119,7 +3119,7 @@
         "P",
         "eta"
       ],
-      "note": "Fx 80 % skrives 0,80. Virkningsgraden er større end 0 og højst 1.",
+      "note": "Brug fx 0,80 med inputenheden tal eller 80 med inputenheden %. Virkningsgraden er større end 0 og højst 1 som decimaltal.",
       "source": {
         "pages": [
           5,
@@ -3154,7 +3154,7 @@
         "out",
         "input"
       ],
-      "note": "Resultatet er et decimaltal; gang med 100 for procent.",
+      "note": "Grundformlen giver et decimaltal. Vælg % under Resultatets enhed for at indsætte multiplikation med 100.",
       "source": {
         "pages": [
           12
@@ -3515,7 +3515,7 @@
         "n",
         "eta"
       ],
-      "note": "D > d. SI: n i omdr./s giver m³/s. Skolens n i omdr./min og faktor 60 giver m³/h.",
+      "note": "D > d. Grundformlen bruger n i omdr./s og giver m³/s. Vælg omdr./min som inputenhed og fx m³/h som resultatenhed; tidsfaktorerne indsættes automatisk.",
       "source": {
         "pages": [
           6
@@ -3687,7 +3687,7 @@
         "cp",
         "dT"
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7,
@@ -3730,7 +3730,7 @@
           "cp"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -3772,7 +3772,7 @@
           "dT"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -3814,7 +3814,7 @@
           "dT"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -3847,7 +3847,7 @@
         "m",
         "H"
       ],
-      "note": "Kun faseændringen. Brug Hf ved stoffets aktuelle tryk og temperatur. J/kg giver J; kJ/kg giver kJ.",
+      "note": "Kun faseændringen. Brug Hf ved stoffets aktuelle tryk og temperatur. Grundformlen bruger J/kg og giver J; kJ/kg og resultat i kJ vælges under Størrelserne i formlen.",
       "source": {
         "pages": [
           12
@@ -3886,7 +3886,7 @@
         "cp",
         "dT"
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7,
@@ -3930,7 +3930,7 @@
           "cp"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -3972,7 +3972,7 @@
           "dT"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -4014,7 +4014,7 @@
           "dT"
         ]
       ],
-      "note": "Ingen faseændring, konstant specifik varmekapacitet. SI: cₚ i J/(kg·K) giver J eller W. Skolens kJ/(kg·K) giver kJ eller kW. En temperaturforskel på 1 °C er 1 K.",
+      "note": "Ingen faseændring, konstant specifik varmekapacitet. Grundformlen bruger cₚ i J/(kg·K). Skolens kJ/(kg·K) kan vælges som inputenhed. Vælg resultatets enhed særskilt, fx kJ for energi eller kW for effekt. En temperaturforskel på 1 °C er 1 K.",
       "source": {
         "pages": [
           7
@@ -4157,7 +4157,7 @@
           ]
         ]
       ],
-      "note": "Ingen varmetab, faseændring eller blandingsvarme; konstante varmekapaciteter. Begge temperaturer på samme skala: K eller °C. Resultatet får samme skala.",
+      "note": "Ingen varmetab, faseændring eller blandingsvarme; konstante varmekapaciteter. Temperaturerne omregnes til K. Vælg fx °C som input- og resultatenhed; tillæg og fradrag af 273,15 indsættes automatisk.",
       "source": {
         "pages": [
           7

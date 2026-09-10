@@ -123,7 +123,7 @@ test('legacy surface presets migrate without changing their areas or references'
     const legacy=model(type);legacy.version=2;delete legacy.connections;
     legacy.shapes[0].surface=surface;delete legacy.shapes[0].faces;
     const migrated=E.validateModel(legacy);
-    assert.equal(migrated.version,4);assert.deepEqual(migrated.connections,[]);
+    assert.equal(migrated.version,5);assert.deepEqual(migrated.connections,[]);
     const vars={D_1:8,d_1:4,h_1:11,L_1:7,B_1:5};
     // Pipe length has the symbol L rather than h.
     const rawVars=Object.fromEntries(Object.entries(definition.inputs).map(([key,a])=>[E.FORMULAS[formula].args[key]?.symbol||a.symbol,vars[a.symbol+'_1']]));
@@ -310,7 +310,7 @@ test('version 3 setups retain inside diameters and reuse the existing T9 thickne
   const old=model('cylinder');old.version=3;delete old.tank;delete old.shapes[0].diameter;
   const f=E.newFormula('tank','tankMass');f.expression.args.A=E.assembly('area');f.expression.args.thickness=E.symbol('s_plate');old.formulas.push(f);
   const migrated=E.validateModel(old);
-  assert.equal(migrated.version,4);
+  assert.equal(migrated.version,5);
   assert.equal(migrated.shapes[0].diameter.basis,'inner');
   assert.deepEqual(migrated.tank.thickness,E.symbol('s_plate'));
   assert.deepEqual(migrated.formulas[0].expression.args.thickness,E.ref('tank:thickness'));

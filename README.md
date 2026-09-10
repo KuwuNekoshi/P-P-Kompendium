@@ -19,11 +19,29 @@ Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
 - Vælg en figur, angiv **Indvendig diameter** eller **Udvendig diameter**, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra pladearealet.
 - Vælg ved hver størrelse: **kendt størrelse**, **indsæt en formel** eller **brug en reference**.
+- Vælg opgavens enheder under **Størrelserne i formlen**, og vælg **Resultatets enhed** nederst. Omregningerne sættes ind i formlen med parenteser.
 - Skift mellem **Kort** og **Udfoldet**. Se hele sammenhængen under **Se formelkæden**, eller kopiér formlen som tekst.
 
 En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af kildens aktuelle formel; eventuelle underreferencer i kopien bliver ved med at følge deres egne kilder.
 
 Indsatte delformler og figursummer får **tydelige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx ganges hele summen af tankens pladearealer med pladetykkelse og massefylde. Nævnere, subtraherede summer og udtryk under potenser grupperes også.
+
+### Input- og resultatenheder
+
+Hver kendt størrelse har et enhedsvalg, fx **mm → m**, **L/min → m³/s** eller **% → tal**. Brug derefter tallet fra opgaven direkte som det viste symbol. Omregningsfaktorerne er allerede med i formlen; der er fortsat ingen talindtastning eller numerisk resultatberegning i kompendiet.
+
+**Resultatets enhed** omregner hele det færdige udtryk, fx fra m³ til liter, sekunder til minutter, kg til ton eller W til kW. Den valgte enhed står ved formelresultatet. Eksempel med diameter i mm, indvendig højde i cm og rumfang i liter:
+
+```text
+V [L] = ((π / 4) · (D / 1000)² · (h / 100)) · 1000
+```
+
+- En længde i mm divideres med 1000, et areal i mm² med 1.000.000 og et rumfang i mm³ med 1.000.000.000. En diameter omregnes før kvadrering.
+- Flow og sammensatte enheder får både volumen-/massefaktoren og tidsfaktoren. Fx omregnes L/min til m³/s med division med 60.000.
+- Absolutte temperaturer i °C får tillæg af 273,15 til K. Resultater i °C får det modsatte fradrag. **Temperaturforskelle** i °C og K har samme tal og får intet tillæg.
+- Samme symbol og dimension har samme inputenhed i hele opsætningen. Hver gemt formel har sin egen resultatenhed. Ændringer åbner automatisk den udfoldede visning.
+- En beregnet reference har en konsekvent grundværdi i SI. Resultatenheden ændrer dens visning, uden at omregningen gentages i en udfoldet kæde. I **Kort** vises en reference i sin kildes valgte resultatenhed og omregnes tilbage, hvor den indsættes. Kædens delformler og figurernes oversigter angiver deres grundenhed.
+- **Kopiér formel** tager parenteser, omregninger, resultatenhed og en liste over inputenheder med. Gemte opsætninger bevarer valgene; version 2–4 åbnes med de hidtidige SI-enheder i version 5.
 
 ### Indvendig eller udvendig diameter
 
@@ -54,7 +72,7 @@ m_tank = (A_cylinder + A_endestykke + …) · t_plade · ρ_mat
 
 Pladearealet følger de valgte beholderdele. Åbne flader og fælles samleflader bidrager ikke med materiale. Lukker du en fri ende, kommer dens pladeareal automatisk med. Indløbsrør, der er fravalgt som beholderdele, tælles ikke med.
 
-Vælg **pladetykkelse** og **materialets massefylde** som kendte symboler, formler eller referencer. `t_plade` er en længde, ikke tid. Med areal i m², tykkelse i m og massefylde i kg/m³ fås kg. Tykkelse i mm skal først divideres med 1000; massefylde i ton/m³ ganges med 1000 for at få kg/m³. Bruges ton/m³ direkte sammen med m² og m, fås massen i ton.
+Vælg **pladetykkelse** og **materialets massefylde** som kendte symboler, formler eller referencer. `t_plade` er en længde, ikke tid. Grundformlen bruger areal i m², tykkelse i m og massefylde i kg/m³ og giver kg. Vælg fx **mm** for tykkelsen, **ton/m³** for massefylden og **ton** som resultatenhed; alle tre omregninger indsættes automatisk.
 
 T9 er skolens plademodel `m = A · t · ρ` (side 3 og 10). Den bruger ens materiale og tykkelse. For krumme flader med indvendige mål er materialerumfanget en tilnærmelse for tynd plade. Ben, studs, svejsninger og andet ekstraudstyr er ikke med. Ved forskelligt materiale eller forskellig tykkelse kan du vælge hver figurs areal i sin egen T9-formel og bruge **Sum af masser**.
 
@@ -127,6 +145,7 @@ npm run check
 ```
 
 - `dist/catalog.js`: formeldefinitioner, symbolske skabeloner, figurer og forklaringer.
+- `dist/units.js`: enheder, eksakte omregningsfaktorer og symbolske temperaturforskydninger.
 - `dist/engine.js`: referencegraf, substitution, MathML, tekstformat, LaTeX og validering.
 - `dist/geometry.js`: placering af sammenføjede figurer og klikbare snitskitser.
 - `dist/solid-preview.js`: 3D-geometri, perspektiv, lys samt rotation og zoom på canvas.
@@ -137,6 +156,6 @@ npm run check
 
 Formlernes skabeloner består af faste matematiske operationer. Der bruges hverken `eval`, dynamisk kodegenerering eller en tjeneste til at behandle opsætninger. MathML vises af browseren.
 
-Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Kontroller af parenteser, skoleformler, enheder, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
+Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
