@@ -1,4 +1,4 @@
-/* Offline symbolic formula catalogue. School sources are page/T references, not network links. */
+/* Offline symbolic formula catalogue. */
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.PPCatalog=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){return {
   "FORMULAS": {
     "circleArea": {
@@ -1442,7 +1442,7 @@
         "thickness",
         "rho"
       ],
-      "note": "Tankmaterialets masse uden væske, ben, studs og andet udstyr. Ens materiale og pladetykkelse; krumme flader behandles som tynd plade. t_plade er tykkelse, ikke tid. Brug m og kg/m³ for kg; med ton/m³ fås ton.",
+      "note": "Tankmaterialets masse uden væske, ben, studs og andet udstyr. Ens materiale og pladetykkelse; figurernes arealer er baseret på indvendige mål og krumme flader behandles som tynd plade. t_plade er tykkelse, ikke tid. Brug m og kg/m³ for kg; med ton/m³ fås ton.",
       "source": {
         "pages": [
           3,
@@ -4400,6 +4400,98 @@
           "T39"
         ]
       }
+    },
+    "innerDiameter": {
+      "name": "Indvendig diameter fra udvendig",
+      "group": "Geometri",
+      "symbol": "D_indre",
+      "dimension": "length",
+      "equation": "Dindre = Dydre − 2 · tradial",
+      "args": {
+        "D": {
+          "symbol": "D_ydre",
+          "label": "Udvendig diameter",
+          "dimension": "length"
+        },
+        "t": {
+          "symbol": "t_radial",
+          "label": "Radial godstykkelse pr. side",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "sub",
+        "D",
+        [
+          "mul",
+          "2",
+          "t"
+        ]
+      ],
+      "note": "Diameteren måles fra side til side, så tykkelsen trækkes fra to gange. Dydre skal være større end 2 · tradial. På cylinder, rør og kugledele er tradial vægtykkelsen. På skrå vægge bruges tykkelsen i diameterretningen ved samme endeflade."
+    },
+    "outerDiameter": {
+      "name": "Udvendig diameter fra indvendig",
+      "group": "Geometri",
+      "symbol": "D_ydre",
+      "dimension": "length",
+      "equation": "Dydre = Dindre + 2 · tradial",
+      "args": {
+        "D": {
+          "symbol": "D_indre",
+          "label": "Indvendig diameter",
+          "dimension": "length"
+        },
+        "t": {
+          "symbol": "t_radial",
+          "label": "Radial godstykkelse pr. side",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "add",
+        "D",
+        [
+          "mul",
+          "2",
+          "t"
+        ]
+      ],
+      "note": "På skrå vægge er den radiale tykkelse i diameterretningen ikke det samme som pladetykkelsen vinkelret på væggen."
+    },
+    "radialThickness": {
+      "name": "Radial godstykkelse på skrå væg",
+      "group": "Geometri",
+      "symbol": "t_radial",
+      "dimension": "length",
+      "equation": "tradial = tplade · s / h",
+      "args": {
+        "t": {
+          "symbol": "t_plade",
+          "label": "Pladetykkelse vinkelret på væggen",
+          "dimension": "length"
+        },
+        "s": {
+          "symbol": "s",
+          "label": "Skrå længde ved kendt væghældning",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Tilhørende aksial højde",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "div",
+        [
+          "mul",
+          "t",
+          "s"
+        ],
+        "h"
+      ],
+      "note": "Parallelle, rette vægsider. s og h beskriver samme væghældning. Den radiale afstand er målt ved samme tværsnitsplan. Brug ikke en ukendt indvendig diameter til at definere sin egen omregning."
     }
   },
   "SHAPES": {

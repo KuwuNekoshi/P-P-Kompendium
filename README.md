@@ -17,13 +17,32 @@ Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser
 - Vælg, hvad du vil finde, fx fyldetid, volumenflow eller rumfang.
 - Indsæt cylinder, kegle, **halvkugle**, keglestub, kasse, kugle eller rør.
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
-- Vælg en figur, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra den ydre overflade.
+- Vælg en figur, angiv **Indvendig diameter** eller **Udvendig diameter**, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra pladearealet.
 - Vælg ved hver størrelse: **kendt størrelse**, **indsæt en formel** eller **brug en reference**.
 - Skift mellem **Kort** og **Udfoldet**. Se hele sammenhængen under **Se formelkæden**, eller kopiér formlen som tekst.
 
 En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af kildens aktuelle formel; eventuelle underreferencer i kopien bliver ved med at følge deres egne kilder.
 
 Indsatte delformler og figursummer får **tydelige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx ganges hele summen af tankens pladearealer med pladetykkelse og massefylde. Nævnere, subtraherede summer og udtryk under potenser grupperes også.
+
+### Indvendig eller udvendig diameter
+
+Vælg figuren og brug **Den oplyste diameter er**. Valget gælder cylinder, rør, kugle, halvkugle, kegle og keglestub; på keglestubben gælder det både den store og den lille diameter.
+
+```text
+D_indre = (D_ydre − (2 · t_radial))
+D_ydre  = (D_indre + (2 · t_radial))
+```
+
+Rumfang, flowtværsnit og pladeareal i T9 bruger **indvendige mål**. Med en oplyst udvendig diameter indsættes omregningen automatisk, inklusive parenteser under fx `D²`. Højde og længde skal oplyses indvendigt; diametervalget ændrer ikke deres betydning. Den udvendige diameter skal være større end to gange den radiale godstykkelse.
+
+På cylinder, rør og kugledele bruger **Godstykkelse til omregning** som standard samme fælles pladetykkelse som T9. **Tilpas fælles pladetykkelse · T9** ændrer denne kilde ét sted. Et rør kan få sin egen tykkelse, og hvis en beholderdel får anden pladetykkelse, skal dens delmasse beregnes med samme tykkelse.
+
+På kegle og keglestub bruges et separat **Radial godstykkelse**-felt: afstanden i diameterretningen ved samme endeflade. Den er forskellig fra tykkelsen vinkelret på en skrå plade. Ved kendt væghældning kan formlen `t_radial = (t_plade · s) / h` vælges. Her skal skrå længde `s` og aksial højde `h` beskrive samme væghældning. Der gættes ikke på denne hældning ud fra en diameter, som omregningen selv skal finde.
+
+Samlinger deler den **indvendige diameter**. En figur med udvendigt mål kan derfor samles med en figur med indvendigt mål. Omregningen foretages én gang på kildens diameter; hver del viser derefter den valgte indre eller ydre diameter. **Skil ad** gendanner delens egne diametermål og tykkelsesvalg.
+
+Gamle opsætninger åbnes med indvendige diametre, som før. Hvis en gammel opsætning har én T9-formel, genbruges dens tykkelsesformel som fælles pladetykkelse.
 
 ### Tankens egenvægt · T9
 
@@ -61,7 +80,7 @@ Begge visninger er skematiske og uden målestok. Der indtastes stadig ingen tal.
 
 For en cylinder med kuglespids: vælg **Sammensæt → Cylinder → Bund → Ny halvkugle → Sæt sammen**. En halvkugle har højde `D/2`, rumfang `πD³/12` og krumt areal `πD²/2`. Dens plane cirkel og cylinderens tilstødende endeflade tælles ikke med, når de er sammenføjet. Lukning af cylinderens frie ende lægger én cirkelflade til det ydre areal.
 
-Samlinger forbinder hele, passende endeflader: cirkel med cirkel eller rektangel med rektangel. Den første figur leverer de fælles mål. Samlede dele følges ad i beholderens sum. Under visningen findes formlerne for samlet rumfang og ydre overflade med **Brug formel**.
+Samlinger forbinder hele, passende endeflader: cirkel med cirkel eller rektangel med rektangel. Den første figur leverer de fælles indvendige mål. Samlede dele følges ad i beholderens sum. Under visningen findes formlerne for samlet rumfang og pladeareal med **Brug formel**.
 
 **Skil ad** løsner en samling og gendanner figurernes egne mål og fladevalg. **Fjern** under hvert figurkort sletter figuren og løsner dens samlinger. Direkte formelreferencer til en slettet kilde vises som fejl, så du kan vælge en ny kilde.
 
@@ -86,14 +105,14 @@ t = [(π/4) · D₁² · h₁ + (1/3) · (π/4) · D₁² · h₂]
 
 Keglebunden deler diameter med cylinderen. Røret leverer tværsnitsarealet til flowformlen og indgår ikke i beholderens rumfang. Kendes flowet allerede, vælger du **Kendt størrelse · Qv** ved flowet; så forsvinder rørdiameter og hastighed fra den udfoldede formel.
 
-Der er 111 valgbare formler. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
+Der er 114 valgbare formler. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
 
 ## Forudsætninger
 
 - Fyldetid bruger konstant, positivt nettoflow. Brug restvolumen ved et delvist fyldt bassin og nettoflow ved samtidig ind- og udstrømning.
 - Summer af rumfang forudsætter, at beholderdelene ikke overlapper.
 - Overfladearealer omfatter krumme kapper og de valgte lukkede flader. Fælles endeflader i en samling fjernes automatisk. Det åbne bassin-eksempel bruger cylinderkappe og keglekappe.
-- Geometrien bruger indvendige mål og ser bort fra vægtykkelse. Et åbent/lukket valg ændrer arealet, men ikke det geometriske rumfang. Visningen viser ingen målestok eller væskeniveau.
+- Rumfang og pladeareal bruger indvendige mål; en oplyst udvendig diameter omregnes med godstykkelsen. T9 er fortsat skolens tilnærmelse med tynde plader og indvendigt areal, ikke et eksakt rumfang af alle tankvægge og samlinger. Et åbent/lukket valg ændrer arealet, men ikke det geometriske rumfang. Visningen er skematisk og viser ingen målestok, vægtykkelse eller væskeniveau.
 - Kompendiet omskriver ved substitution. Det isolerer ikke automatisk en vilkårlig ubekendt og foretager ikke algebraisk reduktion. Vælg den ønskede formel fra samlingen.
 - Referencer af forkert størrelse afvises. Cirkler og manglende kilder vises som fejl. Ens dimension garanterer ikke, at et valg passer til opgavens fysiske forudsætninger.
 
@@ -118,6 +137,6 @@ npm run check
 
 Formlernes skabeloner består af faste matematiske operationer. Der bruges hverken `eval`, dynamisk kodegenerering eller en tjeneste til at behandle opsætninger. MathML vises af browseren.
 
-Testene dækker bassinets referencekæde, tankens egenvægt, adskillelse af tank og indhold, parenteser i alle eksportformater, enhedsomregninger, alle T-henvisninger og dimensionerne i samtlige katalogformler. De eksisterende kontroller af samlinger, fladevalg, sletning, gamle opsætninger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
+Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Kontroller af parenteser, skoleformler, enheder, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.

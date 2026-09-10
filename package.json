@@ -1,6 +1,6 @@
 {
   "name": "pp-kompendium",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Et offline P&P-kompendium med figurer og sammenkædede symbolske formler.",
   "scripts": {

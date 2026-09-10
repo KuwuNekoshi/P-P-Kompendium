@@ -6,7 +6,7 @@ const G = require('../dist/geometry.js');
 const S = require('../dist/solid-preview.js');
 
 function model(...types) {
-  return {version:3,title:'Samling',shapes:types.map((type,i)=>E.newShape(type,'part'+i,i+1)),formulas:[],connections:[]};
+  return {version:4,title:'Samling',tank:E.defaultTank(),shapes:types.map((type,i)=>E.newShape(type,'part'+i,i+1)),formulas:[],connections:[]};
 }
 const end = (shape,face) => ({shape:'part'+shape,face});
 const closeAll = m => {for(const s of m.shapes)for(const face of Object.keys(s.faces))s.faces[face]='closed';return m;};
@@ -123,7 +123,7 @@ test('legacy surface presets migrate without changing their areas or references'
     const legacy=model(type);legacy.version=2;delete legacy.connections;
     legacy.shapes[0].surface=surface;delete legacy.shapes[0].faces;
     const migrated=E.validateModel(legacy);
-    assert.equal(migrated.version,3);assert.deepEqual(migrated.connections,[]);
+    assert.equal(migrated.version,4);assert.deepEqual(migrated.connections,[]);
     const vars={D_1:8,d_1:4,h_1:11,L_1:7,B_1:5};
     // Pipe length has the symbol L rather than h.
     const rawVars=Object.fromEntries(Object.entries(definition.inputs).map(([key,a])=>[E.FORMULAS[formula].args[key]?.symbol||a.symbol,vars[a.symbol+'_1']]));
@@ -230,4 +230,102 @@ test('school mixing and head-sign formulas keep their physical meaning',()=>{
   assert.throws(()=>E.validateModel(m),/forkert størrelse/);
   assert.equal(E.FORMULAS.massMoment.dimension,'massMoment');
   assert.equal(E.FORMULAS.torque.dimension,'torque');
+});
+
+test('outside diameter converts once to inside diameter for cylinders, pipes and spherical parts',()=>{
+  for(const [type,expected]of [['cylinder',3*Math.PI],['pipe',3*Math.PI],['sphere',4*Math.PI/3],['hemisphere',2*Math.PI/3]]){
+    const m=E.setDiameterBasis(model(type),'part0','outer');
+    const vars={D_1:2.2,h_1:3,L_1:3,t_plade:.1},c=E.context(m);
+    near(value(c.target('shape:part0:inner:D'),vars),2);
+    near(value(c.target('shape:part0:outer:D'),vars),2.2);
+    near(value(c.target('shape:part0:volume'),vars),expected);
+    assert.match(E.plain(c.target('shape:part0:volume')),/D_1 − \(2 · t_plade\)/);
+    if(type==='pipe')near(value(c.target('shape:part0:crossSection'),vars),Math.PI);
+  }
+});
+
+test('joined inside and outside declarations share the bore rather than raw diameter labels',()=>{
+  let m=E.setDiameterBasis(model('cylinder','hemisphere'),'part0','outer');
+  m=E.connect(m,end(0,'bottom'),end(1,'base'),'joint');
+  let vars={D_1:2.02,h_1:3,t_plade:.01};
+  near(value(total(m,'volume'),vars),11*Math.PI/3);
+  near(value(E.context(m).target('shape:part1:input:D'),vars),2);
+  m.shapes[1].diameter.thickness=E.symbol('t_tip');vars.t_tip=.02;
+  m=E.setDiameterBasis(m,'part1','outer');
+  near(value(E.context(m).target('shape:part1:input:D'),vars),2.04);
+  near(value(E.context(m).target('shape:part1:inner:D'),vars),2);
+  near(value(total(m,'volume'),vars),11*Math.PI/3);
+  assert.deepEqual(E.validateModel(E.clone(m)),m);
+});
+
+test('a pipe can use its own wall thickness without replacing the tank plate thickness',()=>{
+  let m=E.setDiameterBasis(model('cylinder','pipe'),'part1','outer');
+  m.shapes[1].diameter.thickness=E.symbol('t_pipe');
+  const vars={D_1:2,h_1:3,D_2:.06,t_pipe:.005,t_plade:.02,'ρ_mat':7850};
+  m.formulas.push(E.newTankMass(m,'tank'));
+  near(value(E.context(m).target('shape:part1:crossSection'),vars),Math.PI/4*.05**2);
+  near(value(E.context(m).target('formula:tank'),vars),7*Math.PI*.02*7850);
+});
+
+test('sloped parts use radial distance separately from normal plate thickness',()=>{
+  let m=E.setDiameterBasis(model('frustum'),'part0','outer');
+  const vars={D_1:4.2,d_1:2.2,h_1:3,t_radial1:.1,t_plade:.08};
+  near(value(E.context(m).target('shape:part0:inner:D'),vars),4);
+  near(value(E.context(m).target('shape:part0:inner:d'),vars),2);
+  near(value(E.context(m).target('shape:part0:volume'),vars),7*Math.PI);
+  assert(!E.variables(E.context(m).target('shape:part0:volume')).some(v=>v.symbol==='t_plade'));
+  near(value(E.formulaAst('radialThickness'),{t_plade:.08,s:5,h:4}),.1);
+  m=E.setDiameterBasis(model('cone'),'part0','outer');
+  near(value(E.context(m).target('shape:part0:volume'),{D_1:2.2,h_1:3,t_radial1:.1}),Math.PI);
+});
+
+test('changing the shared plate thickness updates both outside-to-inside conversion and T9',()=>{
+  const m=E.setDiameterBasis(model('cylinder'),'part0','outer');
+  m.formulas.push(E.newTankMass(m,'tank'));
+  m.tank.thickness=E.form('diameter',{r:E.symbol('t_half')});
+  for(const half of [.005,.01]){
+    const t=2*half,D=2.02-2*t,vars={D_1:2.02,h_1:3,t_half:half,'ρ_mat':7850};
+    near(value(E.context(m).target('shape:part0:volume'),vars),Math.PI/4*D**2*3);
+    near(value(E.context(m).target('formula:tank'),vars),(Math.PI*D*3+Math.PI/4*D**2)*t*7850);
+  }
+});
+
+test('diameter toggles and disconnections preserve declared values and per-part conventions',()=>{
+  const original=model('cylinder','hemisphere');
+  const before=E.plain(total(original,'volume'));
+  let m=E.setDiameterBasis(original,'part0','outer');
+  assert.deepEqual(m.shapes[0].inputs,original.shapes[0].inputs);
+  m=E.setDiameterBasis(m,'part0','inner');
+  assert.equal(E.plain(total(m,'volume')),before);
+  m=E.setDiameterBasis(m,'part1','outer');
+  const unjoined=E.clone(m);
+  m=E.connect(m,end(0,'bottom'),end(1,'base'),'joint');
+  const detached=E.disconnect(m,'joint');
+  assert.deepEqual(detached,unjoined);
+  const removed=E.removeShape(m,'part0');
+  near(value(E.context(removed).target('shape:part1:inner:D'),{D_2:1.2,t_plade:.1}),1);
+});
+
+test('version 3 setups retain inside diameters and reuse the existing T9 thickness',()=>{
+  const old=model('cylinder');old.version=3;delete old.tank;delete old.shapes[0].diameter;
+  const f=E.newFormula('tank','tankMass');f.expression.args.A=E.assembly('area');f.expression.args.thickness=E.symbol('s_plate');old.formulas.push(f);
+  const migrated=E.validateModel(old);
+  assert.equal(migrated.version,4);
+  assert.equal(migrated.shapes[0].diameter.basis,'inner');
+  assert.deepEqual(migrated.tank.thickness,E.symbol('s_plate'));
+  assert.deepEqual(migrated.formulas[0].expression.args.thickness,E.ref('tank:thickness'));
+  near(value(E.context(migrated).target('formula:tank'),{D_1:2,h_1:3,s_plate:.01,'ρ_mat':7850}),7*Math.PI*.01*7850);
+  assert.deepEqual(E.validateModel(E.clone(migrated)),migrated);
+});
+
+test('invalid diameter bases, non-length thicknesses and newly circular conversions are rejected',()=>{
+  const m=model('cylinder');m.shapes[0].diameter.basis='average';
+  assert.throws(()=>E.validateModel(m),/indre\/ydre diameter/);
+  m.shapes[0].diameter.basis='inner';m.formulas.push(E.newFormula('mass','mass'));
+  m.shapes[0].diameter.thickness=E.ref('formula:mass');
+  assert.throws(()=>E.validateModel(m),/forkert størrelse/);
+  const cycle=model('cylinder');cycle.tank.thickness=E.ref('shape:part0:inner:D');
+  assert(E.context(cycle).safe('shape:part0:volume').ok);
+  assert.throws(()=>E.setDiameterBasis(cycle,'part0','outer'),/cirkulær målreference/);
+  assert.equal(cycle.shapes[0].diameter.basis,'inner');
 });
