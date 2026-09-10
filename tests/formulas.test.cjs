@@ -46,9 +46,8 @@ test('replacing a reference with a formula copy keeps its child references live'
   assert(E.plain(E.context(m).target('formula:time')).includes('d_pipe'));
 });
 
-test('a separate cone diameter introduces the independent symbol', () => {
-  const m = E.example();
-  m.shapes[1].inputs.D = E.symbol('D_2');
+test('disconnecting the cone restores its independent diameter symbol', () => {
+  const m = E.disconnect(E.example(),'basin-joint');
   assert(E.variables(E.context(m).target('formula:time')).some(v=>v.symbol==='D_2'));
 });
 
@@ -56,8 +55,10 @@ test('assembly follows included shapes and reports an empty selection', () => {
   const m = E.example();
   const s = E.newShape('box','box',4);m.shapes.push(s);
   assert(E.plain(E.context(m).target('formula:volume')).includes('B_4'));
-  m.shapes[1].include=false;
+  E.setIncluded(m,'cone',false);
   assert(!E.plain(E.context(m).target('formula:volume')).includes('h_2'));
+  assert(!m.shapes[0].include);
+  assert(m.shapes.find(s=>s.id==='box').include);
   for(const shape of m.shapes)shape.include=false;
   assert.match(E.context(m).safe('formula:volume').error,/mindst én figur/);
 });
@@ -69,7 +70,7 @@ test('the default open basin surface consists of cylinder and cone mantles only'
   assert.equal(ast.children.length,2);
   assert.equal(ast.children[0].type,'mul');
   assert.equal(ast.children[1].type,'mul');
-  m.shapes[0].surface='open';
+  m.shapes[0].faces.top='closed';
   assert.equal(E.context(m).expand(E.assembly('area'),'area').children[0].type,'add');
 });
 

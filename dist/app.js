@@ -6,7 +6,8 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const pathAttr = p => esc(JSON.stringify(p));
   let model = E.example(), activeId = 'time', selected = { type:'formula', id:'time' };
-  let view = 'builder', expanded = true, uid = 0, toastTimer, pending = null, dialogOrigin = null, notice = '';
+  let view = 'builder', expanded = true, uid = 0, toastTimer, pending = null, dialogOrigin = null, notice = '', joinDraft = null;
+  let geometryView='3d',preview3D=null,previewPose=null;
   try {
     const saved = localStorage.getItem(STORAGE);
     if (saved) { model = E.validateModel(JSON.parse(saved)); activeId = model.formulas.at(-1)?.id || null; selected = activeId ? { type:'formula',id:activeId } : null; }
@@ -29,6 +30,7 @@
       frustum:'<ellipse cx="25" cy="10" rx="18" ry="6"/><path d="m7 10 8 28c2 5 18 5 20 0l8-28"/><path d="M15 38c2-5 18-5 20 0" stroke-dasharray="3 3"/>',
       box:'<path d="m7 15 27-9 12 10-27 9-12-10Zm0 0v22l12 10 27-9V16M19 25v22"/><path d="M34 6v22L7 37m27-9 12 10" stroke-dasharray="3 3"/>',
       sphere:'<circle cx="25" cy="25" r="19"/><ellipse cx="25" cy="25" rx="19" ry="7"/><ellipse cx="25" cy="25" rx="8" ry="19" stroke-dasharray="3 3"/>',
+      hemisphere:'<path d="M6 31a19 19 0 0 1 38 0"/><ellipse cx="25" cy="31" rx="19" ry="7"/>',
       pipe:'<ellipse cx="11" cy="28" rx="7" ry="14"/><path d="m11 14 27-8c10 0 10 28 0 28l-27 8"/><path d="M38 6c-10 0-10 28 0 28" stroke-dasharray="3 3"/>'
     };
     return `<svg viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round" aria-hidden="true">${drawings[type]}</svg>`;
@@ -53,6 +55,7 @@
     $('#theme-toggle').innerHTML = icon(theme === 'dark' ? 'sun' : 'moon');
     const title = `Skift til ${theme === 'dark' ? 'lyst' : 'mørkt'} tema`;
     $('#theme-toggle').setAttribute('aria-label',title); $('#theme-toggle').title = title;
+    preview3D?.redraw();
   }
   function formulaSummary(expression, dimension, ctx, lhs) {
     try { return E.math(ctx.expand(expression,dimension,'compact'),lhs); }
@@ -67,13 +70,25 @@
     $('#goal-select').innerHTML = (model.formulas.length ? '<optgroup label="Mine formler">' + model.formulas.map(f => `<option value="saved:${esc(f.id)}" ${f.id === activeId ? 'selected' : ''}>${esc(f.name)} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>' : '<option value="" selected>Vælg en formel…</option>') + '<optgroup label="Tilføj en ny formel">' + Object.entries(E.FORMULAS).map(([id,f]) => `<option value="new:${id}">${esc(f.name)} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>';
   }
   function renderFigures(ctx) {
+    if(preview3D){previewPose=preview3D.getPose();preview3D.destroy();preview3D=null;}
     $('#shape-count').textContent = `${model.shapes.length} ${model.shapes.length === 1 ? 'figur' : 'figurer'}`;
     $('#figure-tray').innerHTML = model.shapes.length ? model.shapes.map(s => {
-      const linked = Object.values(s.inputs).some(e => e.kind === 'ref');
-      return `<button class="figure-tile ${selected?.type === 'shape' && selected.id === s.id ? 'selected' : ''}" data-action="select-shape" data-id="${esc(s.id)}" aria-pressed="${selected?.type === 'shape' && selected.id === s.id}"><span class="figure-number">${String(s.ordinal).padStart(2,'0')}</span><div class="figure-icon">${shapeIcon(s.type)}</div><span class="figure-name">${esc(s.name)}</span><span class="figure-role">${s.include ? 'Beholderdel' : 'Separat figur'}${linked ? ' · fælles mål' : ''}</span></button>`;
+      const joined = (model.connections||[]).some(c=>c.a.shape===s.id||c.b.shape===s.id);
+      return `<div class="figure-card"><button class="figure-tile ${selected?.type === 'shape' && selected.id === s.id ? 'selected' : ''}" data-action="select-shape" data-id="${esc(s.id)}" aria-pressed="${selected?.type === 'shape' && selected.id === s.id}"><span class="figure-number">${String(s.ordinal).padStart(2,'0')}</span><div class="figure-icon">${shapeIcon(s.type)}</div><span class="figure-name">${esc(s.name)}</span><span class="figure-role">${joined?'Sammenføjet':s.include?'Beholderdel':'Separat figur'}</span></button><button class="figure-remove" data-action="delete" data-type="shape" data-id="${esc(s.id)}" aria-label="Fjern ${esc(s.name)}" title="Fjern ${esc(s.name)}">${icon('trash')}<span>Fjern</span></button></div>`;
     }).join('') : '<div class="empty-figures">Indsæt en figur fra værktøjskassen, hvis din formel skal bruge et areal eller et rumfang.</div>';
     const included = model.shapes.filter(s => s.include);
-    $('#construction-note').textContent = included.length ? included.map(s => s.name).join(' + ') + ' indgår i beholderens sum. Klik på en figur for at vælge flader og fælles mål.' : 'Du kan også bruge formlerne uden figurer. Behold de størrelser, du allerede kender, som symboler.';
+    $('#construction-note').textContent = included.length ? 'Vælg en figur for at åbne eller lukke dens ender. Brug Sammensæt til at sætte en anden figur på en ende.' : 'Du kan også bruge formlerne uden figurer. Behold de størrelser, du allerede kender, som symboler.';
+    const groups=E.components(model).filter(ids=>ids.length>1);
+    const joints=model.connections||[];
+    const summaries=['volume','area'].map(dimension=>{
+      try{return `<div class="assembly-formula"><div><span>${dimension==='volume'?'Samlet rumfang':'Samlet ydre overflade'}</span><button class="text-button" data-action="use-assembly" data-dimension="${dimension}">Brug formel</button></div><div class="assembly-equation">${E.math(ctx.expand(E.assembly(dimension),dimension),dimension==='volume'?'V_samlet':'A_ydre')}</div></div>`;}catch(error){return `<p class="inline-error">${esc(error.message)}</p>`;}
+    }).join('');
+    const viewer=geometryView==='3d'?'<div class="solid-viewer"><canvas class="model-viewer-canvas" tabindex="0" role="img" aria-label="Interaktiv 3D-visning af dine figurer. Træk eller brug piletasterne for at dreje. Brug plus og minus for zoom.">Din browser kan ikke vise 3D-forhåndsvisningen. Vælg Skitse.</canvas><div class="viewer-controls"><button class="icon-button" data-action="zoom-out" aria-label="Zoom ud">−</button><button class="icon-button" data-action="zoom-in" aria-label="Zoom ind">+</button><button class="text-button" data-action="reset-camera">Nulstil vinkel</button></div><p>Træk for at dreje · scroll for zoom</p></div>':`<div class="compound-grid">${E.components(model).map(ids=>`<div class="compound-wrap">${window.PPGeometry.render(model,ids,selected?.type==='shape'?selected.id:null)}</div>`).join('')}</div>`;
+    $('#assembly-overview').innerHTML = model.shapes.length ? `<section class="assembly-section"><div class="assembly-heading"><h3>${groups.length?'Sammensatte figurer':'Din figursamling'}</h3><div class="segmented" role="group" aria-label="Figurvisning"><button data-action="geometry-view" data-mode="3d" aria-pressed="${geometryView==='3d'}">3D</button><button data-action="geometry-view" data-mode="sketch" aria-pressed="${geometryView==='sketch'}">Skitse</button></div></div><p class="geometry-caption">Skematisk visning · ikke målfast. Separate figurer vises ved siden af hinanden.</p>${viewer}${groups.length?`<div class="joint-list">${joints.map(c=>{
+      const a=E.faceInfo(model,c.a.shape,c.a.face),b=E.faceInfo(model,c.b.shape,c.b.face);
+      return `<div><span>${esc(a.shape.name)} · ${esc(a.info.label)} <span aria-hidden="true">↔</span> ${esc(b.shape.name)} · ${esc(b.info.label)}</span><button class="text-button" data-action="disconnect" data-id="${esc(c.id)}">Skil ad</button></div>`;
+    }).join('')}</div>`:'<p class="assembly-hint">Sæt fx en halvkugle på cylinderens bund. Fælles endeflader udelades automatisk fra overfladearealet.</p>'}${included.length?`<details class="assembly-totals" data-detail-key="assembly-totals"><summary>Rumfang og overflade for valgte beholderdele</summary>${summaries}<p class="field-note">Åbninger og samlinger bidrager ikke med en plan endeflade. Rumfanget er geometrisk og ændres ikke af et åbent/lukket valg.</p></details>`:''}</section>` : '';
+    if(model.shapes.length&&geometryView==='3d')preview3D=window.PPSolidPreview.mount($('.model-viewer-canvas'),model,selected?.type==='shape'?selected.id:null,previewPose);
   }
   function renderPreview(ctx) {
     const f = active();
@@ -84,7 +99,7 @@
     const r = ctx.safe(`formula:${f.id}`,expanded ? 'expanded' : 'compact');
     const full = ctx.safe(`formula:${f.id}`);
     let note = f.expression.kind === 'formula' ? E.FORMULAS[f.expression.formula].note : '';
-    if (f.expression.kind === 'assembly') note = f.dimension === 'volume' ? 'Læg kun rumfang sammen for dele, der ikke overlapper.' : 'Vælg kun de udvendige flader. Fælles endeflader skal udelades.';
+    if (f.expression.kind === 'assembly') note = f.dimension === 'volume' ? 'Geometrisk rumfang af de valgte dele. Åbne sider ændrer ikke rumfanget; delene må ikke overlappe.' : 'Åbne flader og endeflader i samlinger er automatisk udeladt.';
     $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div><div class="formula-display">${r.ok ? E.math(r.ast,f.symbol) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}`;
     let steps;
     try { steps = ctx.steps(`formula:${f.id}`); } catch (_) { steps = []; }
@@ -95,10 +110,11 @@
   }
   function expressionEditor(expr, dimension, path, defaultSymbol, ctx, depth = 0) {
     if (depth > 12) return '<div class="error-box">Formlen er for dyb til at blive vist.</div>';
-    const current = expr.kind === 'symbol' ? 'symbol' : expr.kind === 'assembly' ? 'assembly' : expr.kind + ':' + (expr.formula || expr.target);
+    const current = expr.kind === 'symbol' ? 'symbol' : expr.kind === 'assembly' ? 'assembly' : expr.kind === 'zero' ? 'zero' : expr.kind + ':' + (expr.formula || expr.target);
     const owner = ownerTarget(path);
     const targets = ctx.list.filter(d => d.dimension === dimension && d.target !== owner && !E.dependsOn(model,d.target,owner));
     let options = `<option value="symbol">Kendt størrelse · ${esc(pretty(defaultSymbol))}</option>`;
+    if(expr.kind==='zero')options+='<option value="zero">Ingen valgte flader · 0</option>';
     if (['volume','area'].includes(dimension)) options += `<option value="assembly">Fra beholderdelene · samlet ${dimension === 'volume' ? 'rumfang' : 'areal'}</option>`;
     const formulas = Object.entries(E.FORMULAS).filter(([,f]) => f.dimension === dimension);
     if (formulas.length) options += '<optgroup label="Indsæt en formel">' + formulas.map(([id,f]) => `<option value="formula:${id}">${esc(f.equation)} · ${esc(f.name)}</option>`).join('') + '</optgroup>';
@@ -107,11 +123,12 @@
     options = options.replace(`value="${esc(current)}"`,`value="${esc(current)}" selected`);
     let html = `<div class="expression"><select class="source-select" data-action="source" data-path="${pathAttr(path)}" data-dimension="${dimension}" data-symbol="${esc(defaultSymbol)}" aria-label="Kilde til ${esc(pretty(defaultSymbol))}">${options}</select>`;
     if (expr.kind === 'symbol') html += `<div class="known-symbol">${symbolHtml(expr.symbol)}<span>Behold den oplyste størrelse</span></div>`;
+    else if(expr.kind==='zero')html+='<p class="field-note">Alle figurens flader er åbne eller sammenføjede.</p>';
     else if (expr.kind === 'ref') {
       const source = ctx.map.get(expr.target);
       html += `<div class="reference-preview">${source ? formulaSummary(source.expression,source.dimension,ctx,source.symbol) : '<p class="inline-error">Vælg en ny reference.</p>'}</div>${source ? `<div class="reference-actions"><button class="text-button" data-action="inspect-reference" data-target="${esc(source.target)}">Tilpas kilde</button>${source.expression.kind !== 'symbol' ? `<button class="text-button" data-action="inline" data-path="${pathAttr(path)}" title="Indsætter en kopi af kildens formel, som du kan tilpasse her">Indsæt formlen her</button>` : ''}</div>` : ''}`;
     } else if (expr.kind === 'assembly') {
-      html += `<div class="reference-preview">${formulaSummary(expr,dimension,ctx)}</div><p class="field-note">Følger de figurer, der er valgt som beholderdele.${dimension === 'area' ? ' Vælg flader på hver figur, så fælles endeflader ikke tælles med.' : ''}</p>`;
+      html += `<div class="reference-preview">${formulaSummary(expr,dimension,ctx)}</div><p class="field-note">Følger de figurer, der er valgt som beholderdele.${dimension === 'area' ? ' Åbne flader og endeflader i samlinger udelades automatisk.' : ''}</p>`;
     } else {
       const f = E.FORMULAS[expr.formula];
       html += `<div class="expression-formula">${formulaSummary(expr,dimension,ctx)}</div><div class="formula-args">${Object.entries(f.args).map(([key,a]) => `<div class="input-group"><div class="input-label">${symbolHtml(a.symbol)}<span>${esc(a.label)}</span></div>${expressionEditor(expr.args[key],a.dimension,[...path,'args',key],a.symbol,ctx,depth+1)}</div>`).join('')}</div>`;
@@ -124,13 +141,26 @@
   function inspectorHeader(type, object, subtitle) {
     return `<div class="inspector-top"><span class="eyebrow">${type === 'shape' ? 'TILPAS FIGUREN' : 'TILPAS FORMLENS DELE'}</span><div class="inspector-heading"><div class="inspector-icon">${type === 'shape' ? shapeIcon(object.type) : symbolHtml(object.symbol)}</div><div style="min-width:0;flex:1"><input class="inspector-title" value="${esc(object.name)}" data-action="rename" data-type="${type}" data-id="${esc(object.id)}" maxlength="120" aria-label="${type === 'shape' ? 'Figurens' : 'Formlens'} navn"><p>${esc(subtitle)}</p></div></div></div>`;
   }
+  function renderShapeInspector(s, index, ctx) {
+    const type=E.SHAPES[s.type];
+    const faces=Object.entries(type.faces).map(([key,face])=>{
+      const joint=E.connectionAt(model,s.id,key),other=joint?E.otherEnd(joint,s.id):null;
+      const otherName=other?model.shapes.find(shape=>shape.id===other.shape).name:'';
+      return `<div class="face-row" data-face-row="${key}"><label>${esc(face.label)}${joint?'<span class="joined-status">Sammenføjet</span>':`<select class="face-select" data-action="face-state" data-id="${esc(s.id)}" data-face="${key}" aria-label="${esc(s.name+' · '+face.label)}"><option value="open" ${s.faces[key]==='open'?'selected':''}>Åben</option><option value="closed" ${s.faces[key]==='closed'?'selected':''}>Lukket</option></select>`}</label>${joint?`<div class="face-link"><span>Til ${esc(otherName)}</span><button class="text-button" data-action="disconnect" data-id="${esc(joint.id)}">Skil ad</button></div>`:face.join?`<button class="text-button attach-face" data-action="join" data-id="${esc(s.id)}" data-face="${key}">+ Sæt figur på denne ende</button>`:''}</div>`;
+    }).join('');
+    const inputs=Object.entries(type.inputs).map(([key,a])=>{
+      const d=ctx.map.get(`shape:${s.id}:input:${key}`),source=d.sharedTarget&&ctx.map.get(d.sharedTarget);
+      return `<div class="input-group"><div class="input-label">${symbolHtml(a.symbol+'_'+s.ordinal)}<span>${esc(a.label)}</span></div>${source?`<div class="shared-measure">${symbolHtml(a.symbol+'_'+s.ordinal)}<span>=</span>${symbolHtml(source.symbol)}<span>via samlingen</span></div><button class="text-button" data-action="inspect-reference" data-target="${esc(source.target)}">Tilpas det fælles mål</button>`:expressionEditor(s.inputs[key],a.dimension,['shapes',index,'inputs',key],a.symbol+'_'+s.ordinal,ctx)}</div>`;
+    }).join('');
+    return inspectorHeader('shape',s,type.hint)+`<div class="inspector-content"><label class="include-choice"><input type="checkbox" data-action="include" data-id="${esc(s.id)}" ${s.include?'checked':''}><span>Indgår i beholderens sum</span></label><p class="field-note">${E.component(model,s.id).length>1?'Valget gælder alle sammenføjede dele.':'Brug fx røret separat, når kun dets tværsnit skal bruges til flow.'}</p><div class="inspector-divider"></div><div class="section-kicker">Åbne, lukkede og sammenføjede flader</div><div class="face-list">${faces||'<p class="field-note">En hel kugle har ingen plan endeflade. Brug en halvkugle som kuglespids på en cylinder.</p>'}</div><p class="field-note">Åbne flader og flader i en samling tælles ikke med i arealet. Rumfanget er stadig figurens geometriske rumfang.</p><div class="inspector-divider"></div><div class="section-kicker">Symboler og fælles mål</div>${inputs}<details class="shape-formulas" data-detail-key="shape-${esc(s.id)}"><summary>Figurens formler</summary>${ctx.list.filter(d=>d.ownerId===s.id&&d.output).map(d=>`<div class="shape-formula"><span>${esc(d.name.split(' · ').at(-1))}</span><div>${formulaSummary(d.expression,d.dimension,ctx,d.symbol)}</div></div>`).join('')}</details><div class="inspector-actions"><button class="text-button" data-action="back-to-formula">Tilbage til formlen</button><button class="delete-button" data-action="delete" data-type="shape" data-id="${esc(s.id)}">${icon('trash')} Fjern figur</button></div></div>`;
+  }
   function renderInspector(ctx) {
     if (!selected) { $('#inspector').innerHTML = '<div class="inspector-empty"><span class="large-function">ƒ</span><h2>Byg din formel</h2><p>Vælg en figur eller en formel for at tilpasse dens dele.</p></div>'; return; }
     if (selected.type === 'shape') {
       const i = model.shapes.findIndex(s => s.id === selected.id), s = model.shapes[i];
       if (!s) { selected = null; renderInspector(ctx); return; }
       const type = E.SHAPES[s.type];
-      $('#inspector').innerHTML = inspectorHeader('shape',s,type.hint) + `<div class="inspector-content"><label class="include-choice"><input type="checkbox" data-action="include" data-id="${esc(s.id)}" ${s.include ? 'checked' : ''}><span>Indgår i beholderens sum</span></label><p class="field-note">Brug fx røret separat, når kun dets tværsnit skal bruges til flow.</p><div class="inspector-divider"></div><div class="section-kicker">Symboler og fælles mål</div>${Object.entries(type.inputs).map(([key,a]) => `<div class="input-group"><div class="input-label">${symbolHtml(a.symbol+'_'+s.ordinal)}<span>${esc(a.label)}</span></div>${expressionEditor(s.inputs[key],a.dimension,['shapes',i,'inputs',key],a.symbol+'_'+s.ordinal,ctx)}</div>`).join('')}<div class="inspector-divider"></div><label class="field-label" for="surface-select">Flader i overfladearealet</label><select id="surface-select" class="source-select" data-action="surface" data-id="${esc(s.id)}">${Object.entries(type.surfaces).map(([id,[name]]) => `<option value="${id}" ${s.surface === id ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select><p class="field-note">${esc(E.FORMULAS[type.surfaces[s.surface][1]].note || 'Vælg de flader, opgaven handler om.')}</p><details class="shape-formulas" data-detail-key="shape-${esc(s.id)}"><summary>Figurens formler</summary>${ctx.list.filter(d=>d.ownerId===s.id&&d.output).map(d=>`<div class="shape-formula"><span>${esc(d.name.split(' · ').at(-1))}</span><div>${formulaSummary(d.expression,d.dimension,ctx,d.symbol)}</div></div>`).join('')}</details><div class="inspector-actions"><button class="text-button" data-action="back-to-formula">Tilbage til formlen</button><button class="delete-button" data-action="delete" data-type="shape" data-id="${esc(s.id)}">${icon('trash')} Fjern figur</button></div></div>`;
+      $('#inspector').innerHTML = renderShapeInspector(s, i, ctx);
     } else {
       const i = model.formulas.findIndex(f=>f.id===selected.id), f = model.formulas[i];
       if (!f) { selected = null; renderInspector(ctx); return; }
@@ -143,14 +173,14 @@
   }
   function render(keepFocus = false) {
     const el = document.activeElement;
-    const focus = keepFocus && el?.dataset.action ? { action:el.dataset.action,id:el.dataset.id,path:el.dataset.path,start:el.selectionStart,end:el.selectionEnd } : null;
+    const focus = keepFocus && el?.dataset.action ? { action:el.dataset.action,id:el.dataset.id,path:el.dataset.path,face:el.dataset.face,start:el.selectionStart,end:el.selectionEnd } : null;
     const open = [...document.querySelectorAll('details[open][data-detail-key]')].map(d=>d.dataset.detailKey);
     const ctx = E.context(model);
     $('#project-title').value = model.title;
     renderSidebar(); renderGoal(); renderFigures(ctx); renderPreview(ctx); renderInspector(ctx);
     for (const d of document.querySelectorAll('details[data-detail-key]')) if (open.includes(d.dataset.detailKey)) d.open = true;
     if (focus) {
-      const next = [...document.querySelectorAll('[data-action]')].find(e=>e.dataset.action===focus.action && e.dataset.id===focus.id && e.dataset.path===focus.path);
+      const next = [...document.querySelectorAll('[data-action]')].find(e=>e.dataset.action===focus.action && e.dataset.id===focus.id && e.dataset.path===focus.path && e.dataset.face===focus.face);
       if (next) { next.focus({preventScroll:true}); if (focus.start != null && next.setSelectionRange) next.setSelectionRange(focus.start,focus.end); }
     }
   }
@@ -159,7 +189,7 @@
     for (const b of document.querySelectorAll('[data-view]')) { const yes=b.dataset.view===view; b.setAttribute('aria-selected',yes); b.tabIndex=yes?0:-1; }
     $('#panel-builder').hidden = view !== 'builder'; $('#panel-library').hidden = view !== 'library';
     $('.app-shell').classList.toggle('library-view',view==='library');
-    if (view==='library') renderLibrary();
+    if (view==='library') renderLibrary();else preview3D?.redraw();
   }
   function select(type,id,scroll=false) {
     selected = {type,id};
@@ -179,7 +209,46 @@
     $('#dialog-content').innerHTML=`<div class="dialog-header"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-button" data-action="close-dialog" aria-label="Luk">${icon('close')}</button></div><div class="dialog-body">${body}</div>${footer?`<div class="dialog-footer">${footer}</div>`:''}`;
     $('#app-dialog').showModal();
   }
-  function closeDialog() { $('#app-dialog').close(); pending=null; if(dialogOrigin?.isConnected)dialogOrigin.focus({preventScroll:true}); }
+  function closeDialog() { $('#app-dialog').close(); pending=null; joinDraft=null; if(dialogOrigin?.isConnected)dialogOrigin.focus({preventScroll:true}); }
+  function freeFaces(s) { return Object.entries(E.SHAPES[s.type].faces).filter(([key,f])=>f.join&&!E.connectionAt(model,s.id,key)); }
+  function joinFields() {
+    const hosts=model.shapes.filter(s=>freeFaces(s).length);
+    if(!hosts.length)return '<p>Indsæt en cylinder, kegle, halvkugle, keglestub, kasse eller et rør med en fri endeflade først.</p>';
+    const host=hosts.find(s=>s.id===joinDraft.host)||hosts[0];joinDraft.host=host.id;
+    const faces=freeFaces(host),face=faces.find(([key])=>key===joinDraft.face)||faces[0];joinDraft.face=face[0];
+    const from={shape:host.id,face:face[0]},choices=[];
+    for(const s of model.shapes)for(const [key,f]of freeFaces(s))if(!E.canConnect(model,from,{shape:s.id,face:key}))choices.push({value:`existing:${s.id}:${key}`,label:`${s.name} · ${f.label}`,group:'Figurer i opsætningen'});
+    if(model.shapes.length<24)for(const [type,s]of Object.entries(E.SHAPES))for(const [key,f]of Object.entries(s.faces))if(f.join&&f.kind===face[1].kind)choices.push({value:`new:${type}:${key}`,label:`Ny ${s.name.toLowerCase()} · ${f.label}`,group:'Indsæt og sammensæt'});
+    if(!choices.some(c=>c.value===joinDraft.target))joinDraft.target=choices.find(c=>c.value==='new:hemisphere:base')?.value||choices[0]?.value||'';
+    return `<div class="join-fields"><label>På hvilken figur?<select data-action="join-host">${hosts.map(s=>`<option value="${esc(s.id)}" ${s.id===host.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label><label>På hvilken ende?<select data-action="join-face">${faces.map(([key,f])=>`<option value="${key}" ${key===joinDraft.face?'selected':''}>${esc(f.label)}</option>`).join('')}</select></label><label>Sæt denne figur på<select data-action="join-target">${choices.length?['Figurer i opsætningen','Indsæt og sammensæt'].map(group=>`<optgroup label="${group}">${choices.filter(c=>c.group===group).map(c=>`<option value="${esc(c.value)}" ${c.value===joinDraft.target?'selected':''}>${esc(c.label)}</option>`).join('')}</optgroup>`).join(''):'<option value="">Ingen ledige, passende endeflader</option>'}</select></label><div class="join-explanation">Samlefladerne får fælles mål fra den første figur og forsvinder fra den ydre overflade. Når delene skilles ad, bruges igen hver figurs egne mål og åbne/lukkede valg.</div><p class="field-note">En halvkugle er et kugleformet endestykke med højde D / 2. Samlinger forbinder hele, passende endeflader.</p></div>`;
+  }
+  function openJoin(id,face) {
+    joinDraft={host:id||(selected?.type==='shape'?selected.id:''),face:face||'',target:''};
+    const body=joinFields();
+    openDialog('Sammensæt figurer',body,'<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="confirm-join">Sæt sammen</button>');
+  }
+  function commitJoin() {
+    if(!joinDraft?.target){notify('Vælg en figur med en passende, ledig endeflade.');return;}
+    const next=E.clone(model),[kind,key,face]=joinDraft.target.split(':');let child;
+    if(kind==='existing')child=next.shapes.find(s=>s.id===key);
+    else if(kind==='new'&&Object.hasOwn(E.SHAPES,key)&&next.shapes.length<24){
+      child=E.newShape(key,newId('shape'),Math.max(0,...next.shapes.map(s=>s.ordinal))+1);
+      const n=next.shapes.filter(s=>s.type===key).length;if(n)child.name+=' '+(n+1);next.shapes.push(child);
+    }
+    if(!child){notify('Figuren kan ikke tilføjes.');return;}
+    try {
+      const candidate=E.connect(next,{shape:joinDraft.host,face:joinDraft.face},{shape:child.id,face},newId('joint'));
+      closeDialog();model=candidate;save();select('shape',child.id);notify('Figurerne er samlet. De fælles endeflader er udeladt fra overfladen.');
+    }catch(error){notify(error.message);}
+  }
+  function useAssembly(dimension) {
+    let f=model.formulas.find(f=>f.dimension===dimension&&f.expression.kind==='assembly');
+    if(!f){
+      if(model.formulas.length>=40){notify('Der er allerede 40 formler i opsætningen.');return;}
+      f=E.newFormula(newId('formula'),dimension==='volume'?'volumeSum':'areaSum');f.expression=E.assembly(dimension);f.symbol=dimension==='volume'?'V_samlet':'A_ydre';f.name=dimension==='volume'?'Samlet rumfang':'Samlet ydre overflade';model.formulas.push(f);save();
+    }
+    select('formula',f.id);
+  }
   function replaceSetup(candidate,title) {
     pending=()=>{model=candidate;activeId=model.formulas.at(-1)?.id||null;selected=activeId?{type:'formula',id:activeId}:null;save();changeView('builder');render();};
     openDialog(title,'<p>Din nuværende opsætning bliver erstattet. Gem den først, hvis du vil beholde den separat.</p>','<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="confirm">Erstat opsætning</button>');
@@ -214,8 +283,8 @@
     const list=type==='shape'?model.shapes:model.formulas, object=list.find(o=>o.id===id);
     if(!object)return;
     const users=E.usersOf(model,type,id);
-    pending=()=>{list.splice(list.indexOf(object),1);if(activeId===id)activeId=model.formulas.at(-1)?.id||null;selected=activeId?{type:'formula',id:activeId}:null;save();render();};
-    openDialog('Fjern '+object.name+'?',users.length?`<p>Disse formler bruger elementet:</p><ul>${users.map(name=>`<li>${esc(name)}</li>`).join('')}</ul><p>Figursummer følger de resterende beholderdele. Direkte referencer til det fjernede element markeres, så du kan vælge en ny kilde.</p>`:'<p>Elementet fjernes fra opsætningen.</p>','<button class="button outline" data-action="close-dialog">Annullér</button><button class="button danger" data-action="confirm">Fjern</button>');
+    pending=()=>{if(type==='shape')model=E.removeShape(model,id);else list.splice(list.indexOf(object),1);if(activeId===id)activeId=model.formulas.at(-1)?.id||null;selected=activeId?{type:'formula',id:activeId}:null;save();render();notify(object.name+' er fjernet.');};
+    openDialog('Fjern '+object.name+'?',users.length?`<p>Disse formler bruger elementet:</p><ul>${users.map(name=>`<li>${esc(name)}</li>`).join('')}</ul><p>Samlinger løsnes, og de resterende figurer beholder deres egne mål og fladevalg. Direkte referencer til det fjernede element markeres, så du kan vælge en ny kilde.</p>`:'<p>Elementet fjernes fra opsætningen.</p>','<button class="button outline" data-action="close-dialog">Annullér</button><button class="button danger" data-action="confirm">Fjern</button>');
   }
   function exportSetup() {
     const blob=new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -242,6 +311,19 @@
     else if(a==='select-formula')select('formula',b.dataset.id,true);
     else if(a==='select-shape')select('shape',b.dataset.id,true);
     else if(a==='add-shape')addShape(b.dataset.type);
+    else if(a==='geometry-view'){geometryView=b.dataset.mode;render(true);}
+    else if(a==='zoom-in')preview3D?.zoom(1.2);
+    else if(a==='zoom-out')preview3D?.zoom(1/1.2);
+    else if(a==='reset-camera')preview3D?.reset();
+    else if(a==='join')openJoin(b.dataset.id,b.dataset.face);
+    else if(a==='confirm-join')commitJoin();
+    else if(a==='disconnect'){model=E.disconnect(model,b.dataset.id);save();render();notify('Figurerne er skilt ad. Frie ender og egne mål er gendannet.');}
+    else if(a==='use-assembly')useAssembly(b.dataset.dimension);
+    else if(a==='inspect-face'){
+      select('shape',b.dataset.id,true);
+      const row=[...document.querySelectorAll('[data-face-row]')].find(el=>el.dataset.faceRow===b.dataset.face);
+      row?.querySelector('select,button')?.focus({preventScroll:true});
+    }
     else if(a==='add-formula')formulaPicker();
     else if(a==='use-formula'){if($('#app-dialog').open)closeDialog();addFormula(b.dataset.formula);}
     else if(a==='expansion'){expanded=b.dataset.expanded==='true';render(true);}
@@ -255,24 +337,36 @@
     else if(a==='export')exportSetup();
     else if(a==='import')$('#file-input').click();
     else if(a==='copy-formula')void copyFormula();
-    else if(a==='new')replaceSetup({version:2,title:'Ny opsætning',shapes:[],formulas:[]},'Start en tom opsætning?');
+    else if(a==='new')replaceSetup({version:3,title:'Ny opsætning',shapes:[],formulas:[],connections:[]},'Start en tom opsætning?');
     else if(a==='example')replaceSetup(E.example(),'Indlæs bassin-eksemplet?');
     else if(a==='close-dialog')closeDialog();
     else if(a==='confirm'){const action=pending;closeDialog();if(action)action();}
-    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><p>Ved overfladeareal skal du vælge de rigtige flader. For et åbent bassin med keglebund bruges cylinderkappe + keglekappe. Fælles endeflader skal ikke tælles med. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra det ydre overfladeareal. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
   });
   document.addEventListener('change',event=>{
     const el=event.target,a=el.dataset.action;
+    if(a==='join-host'||a==='join-face'||a==='join-target'){
+      if(!joinDraft)return;
+      joinDraft[a==='join-host'?'host':a==='join-face'?'face':'target']=el.value;
+      if(a!=='join-target'){
+        $('#app-dialog').querySelector('.dialog-body').innerHTML=joinFields();
+        [...$('#app-dialog').querySelectorAll('[data-action]')].find(e=>e.dataset.action===a)?.focus();
+      }
+      return;
+    }
     if(el.id==='goal-select'){
       if(el.value.startsWith('saved:'))select('formula',el.value.slice(6));
       else if(el.value.startsWith('new:'))addFormula(el.value.slice(4));return;
     }
     if(a==='source'){
       const path=JSON.parse(el.dataset.path),old=getAt(path);
-      const next=el.value==='symbol'?E.symbol(el.dataset.symbol):el.value==='assembly'?E.assembly(el.dataset.dimension):el.value.startsWith('formula:')?E.newExpression(el.value.slice(8)):E.ref(el.value.slice(4));
+      const next=el.value==='symbol'?E.symbol(el.dataset.symbol):el.value==='zero'?{kind:'zero',dimension:'area'}:el.value==='assembly'?E.assembly(el.dataset.dimension):el.value.startsWith('formula:')?E.newExpression(el.value.slice(8)):E.ref(el.value.slice(4));
       setAt(path,next);try{E.validateModel(model);save();render(true);}catch(_){setAt(path,old);render(true);notify('Formlen bliver for dyb. Tilføj en separat formel og brug en reference.');}
-    }else if(a==='include'){model.shapes.find(s=>s.id===el.dataset.id).include=el.checked;save();render(true);}
-    else if(a==='surface'){model.shapes.find(s=>s.id===el.dataset.id).surface=el.value;save();render(true);}
+    }else if(a==='include'){E.setIncluded(model,el.dataset.id,el.checked);save();render(true);}
+    else if(a==='face-state'){
+      const shape=model.shapes.find(s=>s.id===el.dataset.id);
+      if(shape&&!E.connectionAt(model,shape.id,el.dataset.face)){shape.faces[el.dataset.face]=el.value;save();render(true);}
+    }
   });
   document.addEventListener('input',event=>{
     const el=event.target;
@@ -288,7 +382,12 @@
     try{const candidate=E.validateModel(JSON.parse(await file.text()));replaceSetup(candidate,'Åbn '+candidate.title+'?');}
     catch(error){openDialog('Opsætningen kunne ikke åbnes',`<p>${esc(error instanceof SyntaxError?'Filen er ikke gyldig JSON. Vælg en fil gemt fra kompendiet.':error.message)}</p>`);}
   });
-  $('#app-dialog').addEventListener('cancel',()=>{pending=null;});
+  $('#app-dialog').addEventListener('cancel',()=>{pending=null;joinDraft=null;});
+  document.addEventListener('keydown',event=>{
+    if(['Enter',' '].includes(event.key)&&event.target.matches('svg [role="button"]')){
+      event.preventDefault();event.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    }
+  });
   $('#app-dialog').addEventListener('click',event=>{if(event.target===$('#app-dialog')){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeDialog();}});
   $('.brand').addEventListener('click',event=>{event.preventDefault();changeView('builder');});
   $('.view-tabs').addEventListener('keydown',event=>{

@@ -1130,6 +1130,119 @@
         "r"
       ],
       "note": ""
+    },
+    "rectangleArea": {
+      "name": "Rektanglets areal",
+      "group": "Geometri",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = L · B",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        "L",
+        "B"
+      ],
+      "note": ""
+    },
+    "hemisphereVolume": {
+      "name": "Halvkuglens rumfang",
+      "group": "Geometri",
+      "symbol": "V",
+      "dimension": "volume",
+      "equation": "V = (π / 12) · D³",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          "π",
+          "12"
+        ],
+        [
+          "pow",
+          "D",
+          "3"
+        ]
+      ],
+      "note": "En halvkugle som kugleformet endestykke. Højden er D / 2."
+    },
+    "hemisphereMantle": {
+      "name": "Halvkuglens krumme flade",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (π / 2) · D²",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          "π",
+          "2"
+        ],
+        [
+          "pow",
+          "D",
+          "2"
+        ]
+      ],
+      "note": "Kun den krumme flade; uden den plane cirkelflade."
+    },
+    "hemisphereClosed": {
+      "name": "Halvkugle med plan flade",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (3 · π / 4) · D²",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          [
+            "mul",
+            "3",
+            "π"
+          ],
+          "4"
+        ],
+        [
+          "pow",
+          "D",
+          "2"
+        ]
+      ],
+      "note": "Den krumme flade og den plane cirkelflade."
     }
   },
   "SHAPES": {
@@ -1164,7 +1277,36 @@
           "cylinderClosed"
         ]
       },
-      "surfaceDefault": "open"
+      "surfaceDefault": "open",
+      "body": "cylinderMantle",
+      "faces": {
+        "top": {
+          "label": "Top",
+          "kind": "circle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "circleArea",
+          "args": {
+            "D": "D"
+          }
+        },
+        "bottom": {
+          "label": "Bund",
+          "kind": "circle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": 1,
+          "join": true,
+          "formula": "circleArea",
+          "args": {
+            "D": "D"
+          }
+        }
+      }
     },
     "cone": {
       "name": "Kegle",
@@ -1193,7 +1335,23 @@
           "coneClosed"
         ]
       },
-      "surfaceDefault": "mantle"
+      "surfaceDefault": "mantle",
+      "body": "coneMantle",
+      "faces": {
+        "base": {
+          "label": "Plan endeflade",
+          "kind": "circle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "circleArea",
+          "args": {
+            "D": "D"
+          }
+        }
+      }
     },
     "frustum": {
       "name": "Keglestub",
@@ -1222,7 +1380,36 @@
           "frustumMantle"
         ]
       },
-      "surfaceDefault": "mantle"
+      "surfaceDefault": "mantle",
+      "body": "frustumMantle",
+      "faces": {
+        "top": {
+          "label": "Stor endeflade",
+          "kind": "circle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "circleArea",
+          "args": {
+            "D": "D"
+          }
+        },
+        "bottom": {
+          "label": "Lille endeflade",
+          "kind": "circle",
+          "dimensions": [
+            "d"
+          ],
+          "direction": 1,
+          "join": true,
+          "formula": "circleArea",
+          "args": {
+            "D": "d"
+          }
+        }
+      }
     },
     "box": {
       "name": "Kasse",
@@ -1255,7 +1442,99 @@
           "boxClosed"
         ]
       },
-      "surfaceDefault": "open"
+      "surfaceDefault": "open",
+      "faces": {
+        "top": {
+          "label": "Top",
+          "kind": "rectangle",
+          "dimensions": [
+            "L",
+            "B"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "L",
+            "B": "B"
+          }
+        },
+        "bottom": {
+          "label": "Bund",
+          "kind": "rectangle",
+          "dimensions": [
+            "L",
+            "B"
+          ],
+          "direction": 1,
+          "join": true,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "L",
+            "B": "B"
+          }
+        },
+        "front": {
+          "label": "Forside",
+          "kind": "rectangle",
+          "dimensions": [
+            "L",
+            "h"
+          ],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "L",
+            "B": "h"
+          }
+        },
+        "back": {
+          "label": "Bagside",
+          "kind": "rectangle",
+          "dimensions": [
+            "L",
+            "h"
+          ],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "L",
+            "B": "h"
+          }
+        },
+        "left": {
+          "label": "Venstre side",
+          "kind": "rectangle",
+          "dimensions": [
+            "B",
+            "h"
+          ],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "B",
+            "B": "h"
+          }
+        },
+        "right": {
+          "label": "Højre side",
+          "kind": "rectangle",
+          "dimensions": [
+            "B",
+            "h"
+          ],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "B",
+            "B": "h"
+          }
+        }
+      }
     },
     "sphere": {
       "name": "Kugle",
@@ -1275,7 +1554,9 @@
           "sphereArea"
         ]
       },
-      "surfaceDefault": "closed"
+      "surfaceDefault": "closed",
+      "body": "sphereArea",
+      "faces": {}
     },
     "pipe": {
       "name": "Rør",
@@ -1300,7 +1581,76 @@
           "cylinderMantle"
         ]
       },
-      "surfaceDefault": "mantle"
+      "surfaceDefault": "mantle",
+      "body": "cylinderMantle",
+      "faces": {
+        "top": {
+          "label": "Ende 1",
+          "kind": "circle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "circleArea",
+          "args": {
+            "D": "D"
+          }
+        },
+        "bottom": {
+          "label": "Ende 2",
+          "kind": "circle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": 1,
+          "join": true,
+          "formula": "circleArea",
+          "args": {
+            "D": "D"
+          }
+        }
+      }
+    },
+    "hemisphere": {
+      "name": "Halvkugle",
+      "hint": "Kuglespids · endestykke",
+      "inputs": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        }
+      },
+      "volume": "hemisphereVolume",
+      "crossSection": "circleArea",
+      "surfaces": {
+        "mantle": [
+          "Kun krum flade",
+          "hemisphereMantle"
+        ],
+        "closed": [
+          "Med plan flade",
+          "hemisphereClosed"
+        ]
+      },
+      "surfaceDefault": "closed",
+      "body": "hemisphereMantle",
+      "faces": {
+        "base": {
+          "label": "Plan samleflade",
+          "kind": "circle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": 1,
+          "join": true,
+          "formula": "circleArea",
+          "args": {
+            "D": "D"
+          }
+        }
+      }
     }
   },
   "DIMENSIONS": {

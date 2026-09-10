@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="styles.css">
   <script src="catalog.js" defer></script>
   <script src="engine.js" defer></script>
+  <script src="geometry.js" defer></script>
+  <script src="solid-preview.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -41,11 +43,11 @@
       <div class="workspace-header"><div><label class="eyebrow" for="project-title">MIN OPSÆTNING</label><input id="project-title" class="project-title" maxlength="120" value="Bassin med keglebund" aria-label="Opsætningens navn"></div><span class="save-status" id="save-status">Gemmes på denne computer</span></div>
       <nav class="view-tabs" aria-label="Visning" role="tablist">
         <button id="tab-builder" role="tab" aria-selected="true" aria-controls="panel-builder" tabindex="0" data-view="builder">Formelbygger</button>
-        <button id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1" data-view="library">Formelsamling <span class="tab-count">34</span></button>
+        <button id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1" data-view="library">Formelsamling <span class="tab-count">38</span></button>
       </nav>
       <section id="panel-builder" role="tabpanel" aria-labelledby="tab-builder">
         <div class="goal-row"><label for="goal-select"><span class="step-number">01</span> Hvad vil du finde?</label><select id="goal-select" aria-label="Vælg den formel, du vil arbejde med"></select></div>
-        <section class="construction" aria-labelledby="construction-heading"><div class="construction-heading"><h2 id="construction-heading"><span class="step-number">02</span> Vælg dine figurer</h2><span id="shape-count"></span></div><div id="figure-tray" class="figure-tray"></div><p class="construction-note" id="construction-note"></p></section>
+        <section class="construction" aria-labelledby="construction-heading"><div class="construction-heading"><h2 id="construction-heading"><span class="step-number">02</span> Vælg dine figurer</h2><div class="construction-actions"><span id="shape-count"></span><button class="button outline join-button" data-action="join">Sammensæt</button></div></div><div id="figure-tray" class="figure-tray"></div><p class="construction-note" id="construction-note"></p><div id="assembly-overview"></div></section>
         <section id="formula-preview" class="formula-preview" aria-label="Din samlede formel"></section>
         <div id="formula-chain" class="formula-chain"></div>
         <div id="symbol-guide" class="symbol-guide"></div>

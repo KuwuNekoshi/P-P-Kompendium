@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = name => fs.readFileSync(path.join(root, 'dist', name), 'utf8');
-const scripts = ['catalog.js', 'engine.js', 'app.js'];
+const scripts = ['catalog.js', 'engine.js', 'geometry.js', 'solid-preview.js', 'app.js'];
 let html = read('index.html');
 const css = read('styles.css');
 if (/<\/style/i.test(css)) throw new Error('Stylesheet contains a closing style tag.');
