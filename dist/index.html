@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="da" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Vælg figurer og kendte størrelser. Find og forbind formler i et interaktivt P&P-kompendium, der virker offline.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>P&P — Interaktivt kompendium</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231b1d21'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='Arial' font-size='36' fill='white'%3EP%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="catalog.js" defer></script>
+  <script src="engine.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Gå til formelbyggeren</a>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="P&P Kompendium, formelbygger"><span class="brand-mark">P<span>&</span>P</span><span class="brand-name">KOMPENDIUM</span></a>
+    <div class="local-badge" title="Hele kompendiet virker uden internet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8 12 3 3 5-6"/></svg><span>Offlineklar</span></div>
+    <div class="top-actions">
+      <button class="button subtle" data-action="import">Åbn opsætning</button>
+      <button class="button subtle" data-action="export"><span aria-hidden="true">↓</span> Gem opsætning</button>
+      <span class="top-divider"></span>
+      <button class="icon-button" id="theme-toggle" data-action="theme" aria-label="Skift til mørkt tema" title="Skift tema"></button>
+      <button class="icon-button help-button" data-action="help" aria-label="Hjælp" title="Hjælp">?</button>
+    </div>
+  </header>
+  <div class="app-shell">
+    <aside class="catalog" aria-label="Figurer og mine formler">
+      <div class="catalog-heading"><span class="eyebrow">VÆRKTØJSKASSE</span><span aria-hidden="true">+</span></div>
+      <h2>Indsæt en figur</h2>
+      <div id="shape-library" class="shape-library"></div>
+      <div class="catalog-separator"></div>
+      <div class="section-label"><h2>Mine formler</h2><span id="formula-count" class="count"></span></div>
+      <div id="saved-formulas" class="saved-formulas"></div>
+      <button class="button add-formula" data-action="add-formula"><span aria-hidden="true">+</span> Tilføj formel</button>
+      <div class="catalog-footer"><button class="text-button" data-action="example">Eksempel: bassin med keglebund</button><button class="text-button muted" data-action="new">Ny, tom opsætning</button></div>
+    </aside>
+    <main id="workspace" class="workspace" tabindex="-1">
+      <div class="workspace-header"><div><label class="eyebrow" for="project-title">MIN OPSÆTNING</label><input id="project-title" class="project-title" maxlength="120" value="Bassin med keglebund" aria-label="Opsætningens navn"></div><span class="save-status" id="save-status">Gemmes på denne computer</span></div>
+      <nav class="view-tabs" aria-label="Visning" role="tablist">
+        <button id="tab-builder" role="tab" aria-selected="true" aria-controls="panel-builder" tabindex="0" data-view="builder">Formelbygger</button>
+        <button id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1" data-view="library">Formelsamling <span class="tab-count">34</span></button>
+      </nav>
+      <section id="panel-builder" role="tabpanel" aria-labelledby="tab-builder">
+        <div class="goal-row"><label for="goal-select"><span class="step-number">01</span> Hvad vil du finde?</label><select id="goal-select" aria-label="Vælg den formel, du vil arbejde med"></select></div>
+        <section class="construction" aria-labelledby="construction-heading"><div class="construction-heading"><h2 id="construction-heading"><span class="step-number">02</span> Vælg dine figurer</h2><span id="shape-count"></span></div><div id="figure-tray" class="figure-tray"></div><p class="construction-note" id="construction-note"></p></section>
+        <section id="formula-preview" class="formula-preview" aria-label="Din samlede formel"></section>
+        <div id="formula-chain" class="formula-chain"></div>
+        <div id="symbol-guide" class="symbol-guide"></div>
+      </section>
+      <section id="panel-library" role="tabpanel" aria-labelledby="tab-library" hidden></section>
+    </main>
+    <aside id="inspector" class="inspector" aria-label="Tilpas figuren eller formlens dele"></aside>
+  </div>
+  <input id="file-input" type="file" accept=".json,application/json" hidden>
+  <dialog id="app-dialog" aria-labelledby="dialog-title"><div id="dialog-content"></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript><div class="no-script">Aktivér JavaScript i browseren for at bruge det interaktive kompendium. Der er ikke brug for internet.</div></noscript>
+</body>
+</html>
