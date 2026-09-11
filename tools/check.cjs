@@ -17,7 +17,7 @@ assert(html.includes("connect-src 'none'"), 'Offline page must block network con
 assert(!/\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(html), 'Unexpected network API.');
 assert(!/type="number"|inputmode="decimal"/.test(html), 'This is a symbolic compendium, not a numeric calculator.');
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-assert.equal(scripts.length, 6);
+assert.equal(scripts.length, 7);
 for (const [i, [, script]] of scripts.entries()) new vm.Script(script, { filename: 'inline-' + i + '.js' });
 assert(html.indexOf('<script>') > html.indexOf('id="app-dialog"'), 'Inline app must run after its markup.');
 const ids = [...source.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);

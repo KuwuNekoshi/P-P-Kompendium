@@ -52,5 +52,40 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     scrollbar-gutter:stable;
   }
 }
+/* Guided introduction. The transparent modal keeps the real interface visible
+   while the spotlight shades everything except the current teaching target. */
+.help-button{width:36px;height:36px;font-size:1rem;font-weight:550}
+.help-button:hover{border-color:var(--blue);color:var(--blue-ink);background:var(--blue-soft)}
+.tour-dialog{position:fixed;inset:0;margin:0;width:100%;height:100%;height:100dvh;max-width:none;max-height:none;border:0;border-radius:0;padding:0;background:transparent;box-shadow:none;overflow:hidden;color:var(--text)}
+.tour-dialog::backdrop{background:transparent;backdrop-filter:none}
+.tour-spotlight{position:fixed;pointer-events:none;border:2px solid var(--blue);border-radius:9px;box-shadow:0 0 0 150vmax rgb(8 13 23 / .66)}
+.tour-card{position:fixed;display:flex;flex-direction:column;width:min(25rem,calc(100vw - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 18px 60px #0005;overflow:hidden}
+.tour-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px 8px 22px;flex-shrink:0}
+.tour-counter{font-size:.75rem;font-weight:600;letter-spacing:.055em;line-height:1.5;color:var(--muted)}
+.tour-header .icon-button{font-size:1.7rem;line-height:1}
+.tour-progress{height:3px;background:var(--soft);flex-shrink:0}
+.tour-progress span{display:block;height:100%;background:var(--blue)}
+.tour-content{padding:20px 22px 8px;overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.tour-content h2{font-size:1.25rem;line-height:1.35;font-weight:600;margin:0 0 14px;outline:none;overflow-wrap:anywhere}
+.tour-content p{font-size:1rem;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere}
+.tour-content strong{font-weight:600}
+.tour-footer{flex-shrink:0;padding:8px 22px 18px}
+.tour-navigation{display:flex;justify-content:space-between;gap:12px}
+.tour-navigation .button{min-height:44px;font-size:.875rem}
+.tour-footnote{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:15px;line-height:1.5}
+.tour-footnote .text-button{font-size:.875rem}
+.tour-footnote>span{font-size:.75rem;color:var(--muted)}
+.tour-scroll-space{height:60vh;pointer-events:none}
+.tour-running #app-dialog[open]{position:fixed;top:12px;left:12px;margin:0;width:min(590px,calc(100vw - 24px));max-height:calc(100dvh - 24px);z-index:60;overflow-y:auto}
+@media(max-width:1050px){.tour-running #app-dialog[open]{max-height:calc(100dvh - var(--tour-card-height,320px) - 42px)}}
+@media(max-width:759px),(max-height:600px){
+  .tour-card{max-height:58vh;max-height:58dvh}
+  .tour-header{padding:6px 12px 4px 16px}
+  .tour-content{padding:14px 16px 2px}
+  .tour-content h2{font-size:1.1rem;margin-bottom:10px}
+  .tour-footer{padding:6px 16px 12px}
+  .tour-footnote{margin-top:10px}
+}
+@media print{.tour-dialog,.tour-scroll-space{display:none!important}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 @media print{.topbar,.catalog,.inspector,.view-tabs,.goal-row,.preview-header .segmented,.copy-button,.save-status,.chain-step-heading button,.figure-remove,.construction-actions,.viewer-controls,.assembly-heading .segmented,.joint-list button,.assembly-formula button{display:none!important}.app-shell{display:block}.workspace{padding:0}.workspace-header{margin-bottom:20px}:root{--bg:#fff;--surface:#fff;--text:#111;--muted:#444;--border:#ddd;--blue-ink:#222}.formula-preview,.figure-tile,.formula-card{break-inside:avoid}.formula-display{overflow:visible}.formula-display>math{font-size:1.2rem}.formula-grid{grid-template-columns:repeat(2,1fr)}}

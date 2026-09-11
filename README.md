@@ -14,6 +14,10 @@ Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser
 
 ## Fra opgave til formel
 
+**? øverst til højre** starter en guidet introduktion med 21 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
+
+Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, indsatte formler, formelkæden, enheder og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
+
 - Vælg, hvad du vil finde, fx fyldetid, volumenflow eller rumfang.
 - Indsæt cylinder, kegle, **halvkugle**, keglestub, kasse, kugle eller rør.
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
@@ -155,6 +159,7 @@ npm run check
 - `dist/engine.js`: referencegraf, substitution, MathML, tekstformat, LaTeX og validering.
 - `dist/geometry.js`: placering af sammenføjede figurer og klikbare snitskitser.
 - `dist/solid-preview.js`: 3D-geometri, perspektiv, lys samt rotation og zoom på canvas.
+- `dist/tour.js`: guidet introduktion med fremhævning, placering, scroll og tastaturnavigation.
 - `dist/app.js`: dansk grænseflade, figurvalg, temaskift og lokale opsætninger.
 - `dist/styles.css`: responsivt design og begge temaer.
 - `dist/index.html`: indgangspunkt for kildefilerne; kan også åbnes direkte lokalt.

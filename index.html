@@ -64,10 +64,46 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     scrollbar-gutter:stable;
   }
 }
+/* Guided introduction. The transparent modal keeps the real interface visible
+   while the spotlight shades everything except the current teaching target. */
+.help-button{width:36px;height:36px;font-size:1rem;font-weight:550}
+.help-button:hover{border-color:var(--blue);color:var(--blue-ink);background:var(--blue-soft)}
+.tour-dialog{position:fixed;inset:0;margin:0;width:100%;height:100%;height:100dvh;max-width:none;max-height:none;border:0;border-radius:0;padding:0;background:transparent;box-shadow:none;overflow:hidden;color:var(--text)}
+.tour-dialog::backdrop{background:transparent;backdrop-filter:none}
+.tour-spotlight{position:fixed;pointer-events:none;border:2px solid var(--blue);border-radius:9px;box-shadow:0 0 0 150vmax rgb(8 13 23 / .66)}
+.tour-card{position:fixed;display:flex;flex-direction:column;width:min(25rem,calc(100vw - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 18px 60px #0005;overflow:hidden}
+.tour-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px 8px 22px;flex-shrink:0}
+.tour-counter{font-size:.75rem;font-weight:600;letter-spacing:.055em;line-height:1.5;color:var(--muted)}
+.tour-header .icon-button{font-size:1.7rem;line-height:1}
+.tour-progress{height:3px;background:var(--soft);flex-shrink:0}
+.tour-progress span{display:block;height:100%;background:var(--blue)}
+.tour-content{padding:20px 22px 8px;overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.tour-content h2{font-size:1.25rem;line-height:1.35;font-weight:600;margin:0 0 14px;outline:none;overflow-wrap:anywhere}
+.tour-content p{font-size:1rem;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere}
+.tour-content strong{font-weight:600}
+.tour-footer{flex-shrink:0;padding:8px 22px 18px}
+.tour-navigation{display:flex;justify-content:space-between;gap:12px}
+.tour-navigation .button{min-height:44px;font-size:.875rem}
+.tour-footnote{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:15px;line-height:1.5}
+.tour-footnote .text-button{font-size:.875rem}
+.tour-footnote>span{font-size:.75rem;color:var(--muted)}
+.tour-scroll-space{height:60vh;pointer-events:none}
+.tour-running #app-dialog[open]{position:fixed;top:12px;left:12px;margin:0;width:min(590px,calc(100vw - 24px));max-height:calc(100dvh - 24px);z-index:60;overflow-y:auto}
+@media(max-width:1050px){.tour-running #app-dialog[open]{max-height:calc(100dvh - var(--tour-card-height,320px) - 42px)}}
+@media(max-width:759px),(max-height:600px){
+  .tour-card{max-height:58vh;max-height:58dvh}
+  .tour-header{padding:6px 12px 4px 16px}
+  .tour-content{padding:14px 16px 2px}
+  .tour-content h2{font-size:1.1rem;margin-bottom:10px}
+  .tour-footer{padding:6px 16px 12px}
+  .tour-footnote{margin-top:10px}
+}
+@media print{.tour-dialog,.tour-scroll-space{display:none!important}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 @media print{.topbar,.catalog,.inspector,.view-tabs,.goal-row,.preview-header .segmented,.copy-button,.save-status,.chain-step-heading button,.figure-remove,.construction-actions,.viewer-controls,.assembly-heading .segmented,.joint-list button,.assembly-formula button{display:none!important}.app-shell{display:block}.workspace{padding:0}.workspace-header{margin-bottom:20px}:root{--bg:#fff;--surface:#fff;--text:#111;--muted:#444;--border:#ddd;--blue-ink:#222}.formula-preview,.figure-tile,.formula-card{break-inside:avoid}.formula-display{overflow:visible}.formula-display>math{font-size:1.2rem}.formula-grid{grid-template-columns:repeat(2,1fr)}}
 
 </style>
+  
   
   
   
@@ -85,7 +121,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       <button class="button subtle" data-action="export"><span aria-hidden="true">↓</span> Gem opsætning</button>
       <span class="top-divider"></span>
       <button class="icon-button" id="theme-toggle" data-action="theme" aria-label="Skift til mørkt tema" title="Skift tema"></button>
-      <button class="icon-button help-button" data-action="help" aria-label="Hjælp" title="Hjælp">?</button>
+      <button class="icon-button help-button" data-action="tutorial" aria-label="Start en guidet introduktion" title="Guidet introduktion">?</button>
     </div>
   </header>
   <div class="app-shell">
@@ -5992,6 +6028,153 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 
 </script>
 <script>
+/* tour.js */
+(function (root, factory) {
+  'use strict';
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.PPTour = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  // Keep the explanation beside its target whenever there is room. Otherwise
+  // dock it below and let reveal() scroll the target into the remaining space.
+  function placement(rect, width, height, viewportWidth, viewportHeight) {
+    const gap = 18, edge = 12;
+    const clamp = (value, max) => Math.max(edge, Math.min(value, max - edge));
+    const beside = clamp(rect.top + (rect.height - height) / 2, viewportHeight - height);
+    const across = clamp(rect.left + (rect.width - width) / 2, viewportWidth - width);
+    if (viewportWidth >= 760) {
+      if (rect.left - gap - width >= edge) return {left:rect.left - gap - width, top:beside, docked:false};
+      if (rect.right + gap + width <= viewportWidth - edge) return {left:rect.right + gap, top:beside, docked:false};
+      if (rect.bottom + gap + height <= viewportHeight - edge) return {left:across, top:rect.bottom + gap, docked:false};
+      if (rect.top - gap - height >= edge) return {left:across, top:rect.top - gap - height, docked:false};
+    }
+    return {left:clamp((viewportWidth - width) / 2, viewportWidth - width), top:Math.max(edge, viewportHeight - height - edge), docked:true};
+  }
+
+  function start({steps, prepare, finish, help}) {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'tour-dialog';
+    dialog.setAttribute('aria-labelledby', 'tour-title');
+    dialog.setAttribute('aria-describedby', 'tour-description');
+    dialog.innerHTML = '<div class="tour-spotlight" aria-hidden="true"></div><section class="tour-card"><header class="tour-header"><span class="tour-counter"></span><button class="icon-button" data-tour="close" aria-label="Afslut introduktionen" title="Afslut introduktionen">×</button></header><div class="tour-progress" aria-hidden="true"><span></span></div><div class="tour-content"><h2 id="tour-title" tabindex="-1"></h2><div id="tour-description"></div></div><footer class="tour-footer"><div class="tour-navigation"><button class="button outline" data-tour="previous">Forrige</button><button class="button primary" data-tour="next">Næste →</button></div><div class="tour-footnote"><button class="text-button" data-tour="help">Læs hjælpen som tekst</button><span>Esc afslutter</span></div></footer></section>';
+    const find = selector => dialog.querySelector(selector);
+    const card = find('.tour-card'), spotlight = find('.tour-spotlight');
+    const spacer = document.createElement('div');
+    spacer.className = 'tour-scroll-space';
+    spacer.setAttribute('aria-hidden', 'true');
+    document.body.append(spacer, dialog);
+    document.body.classList.add('tour-running');
+    let index = 0, target = null, resolveTarget = null, frame = 0, ended = false;
+
+    function visibleRect(element) {
+      const original = element.getBoundingClientRect();
+      let left = Math.max(6, original.left - 6), top = Math.max(6, original.top - 6);
+      let right = Math.min(innerWidth - 6, original.right + 6), bottom = Math.min(innerHeight - 6, original.bottom + 6);
+      for (let parent = element.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+        const style = getComputedStyle(parent), rect = parent.getBoundingClientRect();
+        if (/(auto|scroll|hidden|clip)/.test(style.overflowY)) { top = Math.max(top, rect.top); bottom = Math.min(bottom, rect.bottom); }
+        if (/(auto|scroll|hidden|clip)/.test(style.overflowX)) { left = Math.max(left, rect.left); right = Math.min(right, rect.right); }
+      }
+      return {left, top, right, bottom, width:Math.max(0, right-left), height:Math.max(0, bottom-top)};
+    }
+    function dimensions() {
+      const rect = target.getBoundingClientRect();
+      return placement(rect, card.offsetWidth, card.offsetHeight, innerWidth, innerHeight);
+    }
+    function position() {
+      frame = 0;
+      target = resolveTarget?.();
+      if (ended || !target?.isConnected) return;
+      const pos = dimensions(), rect = visibleRect(target);
+      Object.assign(card.style, {left:pos.left+'px', top:pos.top+'px'});
+      if (pos.docked) rect.height = Math.max(0, Math.min(rect.bottom, pos.top - 12) - rect.top);
+      Object.assign(spotlight.style, {left:rect.left+'px', top:rect.top+'px', width:rect.width+'px', height:rect.height+'px'});
+    }
+    function schedule() { if (!ended && !frame) frame = requestAnimationFrame(position); }
+    function reveal() {
+      target = resolveTarget?.();
+      if (ended || !target) return;
+      document.body.style.setProperty('--tour-card-height', card.offsetHeight+'px');
+      target.scrollIntoView({block:'center', inline:'nearest', behavior:'instant'});
+      if (dimensions().docked) {
+        const bottom = innerHeight - card.offsetHeight - 30;
+        const rect = target.getBoundingClientRect();
+        const desired = Math.max(12, (bottom - Math.min(rect.height, bottom - 12)) / 2);
+        let remaining = rect.top - desired;
+        for (let parent = target.parentElement; parent && parent !== document.body && parent !== document.documentElement; parent = parent.parentElement) {
+          if (!/(auto|scroll)/.test(getComputedStyle(parent).overflowY)) continue;
+          const before = parent.scrollTop;
+          parent.scrollTop += remaining;
+          remaining -= parent.scrollTop - before;
+        }
+        window.scrollBy({top:remaining, behavior:'instant'});
+      }
+      position();
+    }
+    function show(next) {
+      if (ended || next < 0 || next >= steps.length) return;
+      index = next;
+      const step = steps[index];
+      try { resolveTarget = prepare(step); target = resolveTarget(); }
+      catch (error) { end(); throw error; }
+      find('.tour-counter').textContent = `TRIN ${index+1} AF ${steps.length} · ${step.section}`;
+      find('#tour-title').textContent = step.title;
+      find('#tour-description').innerHTML = step.body;
+      find('.tour-content').scrollTop = 0;
+      find('.tour-progress span').style.width = ((index+1)/steps.length*100)+'%';
+      find('[data-tour="previous"]').disabled = index === 0;
+      find('[data-tour="next"]').textContent = index === steps.length-1 ? 'Afslut introduktion' : 'Næste →';
+      if (!dialog.open) dialog.showModal();
+      // Focusing the heading announces each step and leaves Tab inside the modal.
+      find('#tour-title').focus({preventScroll:true});
+      reveal();
+    }
+    function end(readHelp = false) {
+      if (ended) return;
+      ended = true;
+      cancelAnimationFrame(frame);
+      document.removeEventListener('scroll', schedule, true);
+      window.removeEventListener('resize', reveal);
+      window.visualViewport?.removeEventListener('resize', reveal);
+      document.body.classList.remove('tour-running');
+      document.body.style.removeProperty('--tour-card-height');
+      dialog.close(); dialog.remove(); spacer.remove();
+      finish();
+      if (readHelp) help();
+    }
+    dialog.addEventListener('click', event => {
+      const button = event.target.closest('[data-tour]');
+      if (!button) return;
+      event.stopPropagation();
+      if (button.dataset.tour === 'close') end();
+      else if (button.dataset.tour === 'help') end(true);
+      else if (button.dataset.tour === 'previous') show(index-1);
+      else if (index === steps.length-1) end();
+      else show(index+1);
+    });
+    dialog.addEventListener('cancel', event => { event.preventDefault(); end(); });
+    dialog.addEventListener('close', () => end());
+    dialog.addEventListener('keydown', event => {
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.key === 'ArrowLeft') { event.preventDefault(); show(index-1); }
+      else if (event.key === 'ArrowRight') { event.preventDefault(); if(index < steps.length-1) show(index+1); }
+      else if ((event.key === 'Enter' || event.key === ' ') && event.target === find('#tour-title')) {
+        event.preventDefault(); if(index === steps.length-1) end(); else show(index+1);
+      }
+    });
+    document.addEventListener('scroll', schedule, true);
+    window.addEventListener('resize', reveal);
+    window.visualViewport?.addEventListener('resize', reveal);
+    try { show(0); } catch (error) { end(); throw error; }
+    return {close:() => end()};
+  }
+  return {start, placement};
+});
+
+</script>
+<script>
 /* app.js */
 (function () {
   'use strict';
@@ -6003,6 +6186,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   let model = E.example(), activeId = 'time', selected = { type:'formula', id:'time' };
   let view = 'builder', expanded = true, uid = 0, toastTimer, pending = null, dialogOrigin = null, notice = '', joinDraft = null;
   let geometryView='3d',preview3D=null,previewPose=null;
+  let tutorial = null;
   try {
     const saved = localStorage.getItem(STORAGE);
     if (saved) { model = E.validateModel(JSON.parse(saved)); activeId = model.formulas.at(-1)?.id || null; selected = activeId ? { type:'formula',id:activeId } : null; }
@@ -6045,6 +6229,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 4500);
   }
   function save() {
+    if (tutorial) return;
     try { localStorage.setItem(STORAGE,JSON.stringify(model)); $('#save-status').textContent = 'Gemt på denne computer'; }
     catch (_) { $('#save-status').textContent = 'Gem opsætningen som fil'; }
   }
@@ -6256,7 +6441,9 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   function openDialog(title,body,footer='') {
     dialogOrigin=document.activeElement;
     $('#dialog-content').innerHTML=`<div class="dialog-header"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-button" data-action="close-dialog" aria-label="Luk">${icon('close')}</button></div><div class="dialog-body">${body}</div>${footer?`<div class="dialog-footer">${footer}</div>`:''}`;
-    $('#app-dialog').showModal();
+    // The tour shows the real joining form as a read-only example underneath
+    // its own modal. Only normal use opens an interactive application dialog.
+    if (tutorial) $('#app-dialog').show(); else $('#app-dialog').showModal();
   }
   function closeDialog() { $('#app-dialog').close(); pending=null; joinDraft=null; if(dialogOrigin?.isConnected)dialogOrigin.focus({preventScroll:true}); }
   function freeFaces(s) { return Object.entries(E.SHAPES[s.type].faces).filter(([key,f])=>f.join&&!E.connectionAt(model,s.id,key)); }
@@ -6354,7 +6541,88 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       else openDialog('Kopiér formlen',`<p>Markér teksten og tryk Ctrl+C:</p><textarea class="copy-fallback" readonly aria-label="Formel til kopiering">${esc(text)}</textarea>`);
     }
   }
+  function showHelp() {
+    openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Brøkenheder har to dropdowns: vælg tæller og nævner hver for sig, fx <strong>t (ton) / m³</strong>, <strong>kg / h</strong> eller <strong>mg / min</strong>. Det gælder også resultatets enhed. Fx giver <strong>mm → m</strong> division med 1000 inde i formlen. Du skal derefter bruge tallet fra opgaven uden først at omregne det. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Samme symbol og størrelse har samme inputenhed i hele opsætningen. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+  }
+  const tutorialSteps = [
+    {section:'OVERBLIK', title:'Velkommen til kompendiet', target:'.help-button', scene:'parts', body:'<p>Her får du en rundtur fra figurer til den færdige formel. Tryk <strong>Næste</strong> for at fortsætte; du behøver ikke betjene felterne undervejs.</p><p>Vi viser et midlertidigt bassin-eksempel. Når du afslutter, kommer din egen opsætning tilbage. Du kan altid starte igen med <strong>?</strong>.</p>'},
+    {section:'FIGURER', title:'Indsæt de figurer, du skal bruge', target:'#shape-library', scene:'parts', body:'<p>Tryk på en figur i værktøjskassen for at indsætte den. Du kan fx bygge en tank af en <strong>cylinder</strong> og en <strong>kegle</strong>.</p><p>En <strong>halvkugle</strong> bruges som kuglespids. Et rør kan bruges til tværsnittet i en flowformel. Du kan også arbejde med formler helt uden figurer.</p>'},
+    {section:'FIGURER', title:'Vælg, tilpas eller fjern en figur', target:'#figure-tray', scene:'parts', focus:'cylinder', body:'<p>Tryk på figurens kort for at åbne dens indstillinger i panelet <strong>Tilpas figuren</strong>. Nummeret knytter dens symboler til figuren: D₁ og h₁ hører fx til figur 1.</p><p><strong>Fjern</strong> under kortet sletter figuren og løsner dens samlinger. Eventuelle direkte referencer til den skal derefter have en ny kilde.</p>'},
+    {section:'FIGURER', title:'Hvad skal tælles med i beholderen?', target:'.include-choice', scene:'parts', focus:'pipe', body:'<p><strong>Indgår i beholderens sum</strong> bestemmer, hvilke dele der bidrager til tankens samlede rumfang og pladeareal.</p><p>Her er indløbsrøret fravalgt. Vi bruger dets tværsnit til flow, men tæller det ikke med i bassinet. For sammenføjede dele gælder valget hele samlingen.</p>'},
+    {section:'FIGURER', title:'Vælg indvendig eller udvendig diameter', target:'.diameter-settings', scene:'parts', focus:'cylinder', body:'<p>Angiv, om opgavens diameter er <strong>indvendig</strong> eller <strong>udvendig</strong>. Ved et udvendigt mål vælger du også godstykkelsen, så den indvendige diameter kan udtrykkes korrekt.</p><p>Rumfang og flow bruger indvendige mål. Højde og længde skal fortsat være indvendige. Sammenføjede dele deler deres indvendige mål.</p>'},
+    {section:'FIGURER', title:'Åbn eller luk toppen', target:'.face-list', scene:'parts', focus:'cylinder', body:'<p>Hver fri flade har en menu med <strong>Åben</strong> og <strong>Lukket</strong>. Her er cylinderens top åben. Vælger du Lukket, lægges toppladens areal til.</p><p>Valget ændrer <strong>pladearealet</strong> og dermed fx materialemassen. Figurens geometriske rumfang er det samme. En sammenføjet flade styres af samlingen.</p>'},
+    {section:'SAMLINGER', title:'Forbind to figurer', target:'.join-button', scene:'parts', focus:'cylinder', body:'<p>Tryk <strong>Sammensæt</strong> for at sætte en figur på en anden. Du kan også vælge <strong>Sæt figur på denne ende</strong> ved en fri flade i figurens indstillinger.</p><p>På næste trin viser vi menuen med cylinderens bund og keglebunden valgt.</p>'},
+    {section:'SAMLINGER', title:'Vælg figur, ende og endestykke', target:'.join-fields', scene:'join', focus:'cylinder', body:'<p>Vælg først <strong>Cylinder</strong>, derefter <strong>Bund</strong> og til sidst <strong>Keglebund · Plan endeflade</strong>. Tryk normalt <strong>Sæt sammen</strong> for at forbinde dem.</p><p>Menuen tilbyder både eksisterende figurer og nye endestykker, fx <strong>Ny halvkugle</strong>. Kun passende, ledige samleflader kan vælges. Vi viser resultatet på næste trin.</p>'},
+    {section:'SAMLINGER', title:'Se den samlede figur i 3D', target:'.solid-viewer', body:'<p>Nu sidder keglen på cylinderens bund. Træk i <strong>3D-visningen</strong> for at dreje den; brug scroll eller +/− til zoom. <strong>Skitse</strong> viser et snit med fladernes navne.</p><p>Visningen følger samlinger og åbne/lukkede flader. Den er skematisk og uden målestok.</p>'},
+    {section:'SAMLINGER', title:'Fælles flader og samlede formler', target:'.assembly-totals', detail:'assembly-totals', body:'<p>Her finder du det samlede <strong>rumfang</strong> og <strong>pladeareal</strong>. Åbne flader og de to endeflader i en samling udelades automatisk fra pladearealet. <strong>Brug formel</strong> føjer summen til Mine formler.</p><p><strong>Skil ad</strong> under visningen løsner samlingen. Delene får deres egne mål og fladevalg tilbage. Sum af rumfang forudsætter, at delene ikke overlapper.</p>'},
+    {section:'FORMLER', title:'Vælg, hvad du vil finde', target:'.goal-row', body:'<p>Her vælger du hovedformlen. I eksemplet vil vi finde <strong>Fyldetid</strong>: t = V / Qᵥ.</p><p>Menuen viser både dine egne formler og muligheden for at tilføje en ny. Figurerne leverer fx rumfanget V, mens en anden formel kan levere volumenflowet Qᵥ.</p>'},
+    {section:'FORMLER', title:'Find formler fra formelsamlingen', target:'.formula-search', scene:'library', body:'<p>Fanen <strong>Formelsamling</strong> samler formlerne fra jeres materiale. Søg på et navn, symbol eller T-nummer, fx <strong>Pvirk</strong>, <strong>eta</strong> eller <strong>T9</strong>.</p><p>Kortene viser formlen, forudsætninger og henvisning til siden i jeres samling. Tryk <strong>Brug formel</strong> for at arbejde videre med den.</p>'},
+    {section:'FORMLER', title:'Gem delformler, der kan bruges igen', target:['#saved-formulas','.goal-row'], body:'<p><strong>Mine formler</strong> samler opsætningens delformler. Her har vi rumfang, volumenflow og fyldetid. På en smal skærm vælger du dem i <strong>Hvad vil du finde?</strong>.</p><p>Brug <strong>Tilføj formel</strong> til nye delformler, og giv dem et genkendeligt navn i tilpasningspanelet. De kan derefter vælges som referencer.</p>'},
+    {section:'REFERENCER', title:'Tilpas hver del af formlen', target:'#inspector .formula-args > .input-group:nth-child(2)', scene:'known', body:'<p>Menuen ved hver størrelse giver dig tre muligheder: <strong>Kendt størrelse</strong>, <strong>Indsæt en formel</strong> eller <strong>Brug en reference</strong>.</p><p>Her er Qᵥ en kendt størrelse: du har allerede flowet fra opgaven. Hvis du i stedet kender areal og hastighed, kan du vælge formlen Qᵥ = A · v. Menuen viser kilder med den rigtige størrelse.</p>'},
+    {section:'REFERENCER', title:'En reference følger sin kilde', target:'#inspector .formula-args > .input-group:nth-child(2)', body:'<p>Nu henter Qᵥ sin formel fra <strong>Volumenflow</strong> i Mine formler. Ændrer du kilden, følger fyldetiden automatisk med. <strong>Tilpas kilde</strong> åbner kildens indstillinger.</p><p>Volumenflowets A henviser videre til rørets tværsnit. På samme måde henter V bassindelenes samlede rumfang. Du kan altså bygge en kæde af referencer.</p>'},
+    {section:'REFERENCER', title:'Indsæt en formel direkte', target:'#inspector .formula-args > .input-group:nth-child(2)', scene:'inline', body:'<p>Ved en reference vælger du <strong>Indsæt formlen her</strong>, hvis du vil have en kopi, som kan tilpasses på stedet. Her er Qᵥ = A · v nu indsat direkte under fyldetiden.</p><p>Kopien følger ikke længere selve Volumenflow-formlen. Dens underreferencer, fx A fra røret, følger stadig deres egne kilder. Du kan også vælge en formel direkte i dropdownen.</p>'},
+    {section:'RESULTAT', title:'Se den færdige formel', target:'#formula-preview', body:'<p><strong>Kort</strong> viser referencer som symboler. <strong>Udfoldet</strong> sætter delformlerne ind i hinanden, som vist her. Parenteserne holder summer, brøker og potenser samlet.</p><p><strong>Kopiér formel</strong> tager den viste formel og de valgte enheder med. Kompendiet hjælper dig med udtrykket; du indsætter opgavens tal, når du selv regner videre.</p>'},
+    {section:'RESULTAT', title:'Følg formlen hele vejen tilbage', target:'.chain-details', detail:'chain-time', body:'<p>Åbn <strong>Se formelkæden</strong> for at følge delformlerne bag resultatet: fra rørets tværsnit til volumenflow og videre til fyldetid.</p><p><strong>Tilpas</strong> ved et led åbner dets indstillinger. Det gør det nemt at finde det sted, hvor en størrelse eller reference skal ændres.</p>'},
+    {section:'ENHEDER', title:'Vælg præcis de enheder, du har', target:'.unit-symbol-list > div:last-child', scene:'units', body:'<p>Under <strong>Størrelserne i formlen</strong> vælger du opgavens enhed for hvert symbol. Fx giver <strong>mm → m</strong> den nødvendige division med 1000 inde i formlen.</p><p>For brøkenheder vælger du <strong>tæller og nævner hver for sig</strong>, som L/min her. Det virker også for fx t/m³ og kg/h i de relevante formler. Omregningen skal ikke tilføjes igen.</p>'},
+    {section:'ENHEDER', title:'Vælg enheden for svaret', target:'.result-unit-row', scene:'units', body:'<p><strong>Resultatets enhed</strong> bestemmer, hvordan det samlede udtryk skal omregnes. Her er fyldetiden valgt i <strong>minutter</strong>. Andre formler tilbyder fx liter, ton og kW.</p><p>Inputenheder følger samme symbol i hele opsætningen. Hver formel har sin egen resultatenhed. Dine enhedsvalg kommer med, når du gemmer eller kopierer.</p>'},
+    {section:'GEM OG FORTSÆT', title:'Klar til din egen opgave', target:'.top-actions', body:'<p><strong>Gem opsætning</strong> henter en fil med dine figurer, formler og enhedsvalg. Brug <strong>Åbn opsætning</strong> til at hente den ind igen, også på en anden computer. Sol/måne-knappen skifter mellem lyst og mørkt tema.</p><p>Hele kompendiet og denne guide virker offline. Tryk <strong>Afslut introduktion</strong> for at vende tilbage til din egen opsætning. <strong>?</strong> starter guiden igen.</p>'}
+  ];
+  function prepareTutorialStep(step) {
+    if ($('#app-dialog').open) closeDialog();
+    model = E.example();
+    model.title = 'Introduktion · bassin med keglebund';
+    model.shapes.find(s=>s.id==='cylinder').faces.top = 'open';
+    if (['parts','join'].includes(step.scene)) model.connections = [];
+    if (['known','units'].includes(step.scene)) model.formulas.find(f=>f.id==='time').expression.args.Q = E.symbol('Q_v');
+    if (step.scene === 'inline') model.formulas.find(f=>f.id==='time').expression.args.Q = E.clone(model.formulas.find(f=>f.id==='flow').expression);
+    if (step.scene === 'units') {
+      model.inputUnits = {'D_1:length':'mm','Q_v:flow':'L_min'};
+      model.formulas.find(f=>f.id==='time').resultUnit = 'min';
+    }
+    activeId = 'time';
+    selected = step.focus ? {type:'shape',id:step.focus} : {type:'formula',id:'time'};
+    expanded = true; geometryView = '3d'; libraryQuery = step.scene === 'library' ? 'Pvirk' : '';
+    changeView(step.scene === 'library' ? 'library' : 'builder');
+    render();
+    for (const detail of document.querySelectorAll('details[data-detail-key]')) detail.open = detail.dataset.detailKey === step.detail;
+    $('#inspector').scrollTop = 0;
+    $('#save-status').textContent = 'Introduktion · midlertidigt eksempel';
+    if (step.scene === 'join') {
+      openJoin('cylinder','bottom');
+      joinDraft.target = 'existing:cone:base';
+      $('#app-dialog').querySelector('.dialog-body').innerHTML = joinFields();
+    }
+    const selectors = Array.isArray(step.target) ? step.target : [step.target];
+    return () => selectors.map(selector=>document.querySelector(selector)).find(element=>element?.getClientRects().length) || $('.help-button');
+  }
+  function finishTutorial() {
+    const previous = tutorial;
+    if (!previous) return;
+    if ($('#app-dialog').open) closeDialog();
+    if (preview3D) {preview3D.destroy(); preview3D=null;}
+    tutorial = null;
+    ({model,activeId,selected,expanded,geometryView,previewPose,libraryQuery} = previous);
+    changeView(previous.view); render();
+    for (const detail of document.querySelectorAll('details[data-detail-key]')) detail.open = previous.details.includes(detail.dataset.detailKey);
+    $('#save-status').textContent = previous.saveStatus;
+    $('#inspector').scrollTop = previous.inspectorTop;
+    $('#inspector').scrollLeft = previous.inspectorLeft;
+    window.scrollTo({left:previous.scrollX,top:previous.scrollY,behavior:'instant'});
+    (previous.origin?.isConnected ? previous.origin : $('.help-button')).focus({preventScroll:true});
+  }
+  function startTutorial() {
+    if (tutorial) return;
+    tutorial = {model,activeId,selected,view,expanded,geometryView,previewPose:preview3D?.getPose()||previewPose,libraryQuery,
+      origin:document.activeElement,scrollX:window.scrollX,scrollY:window.scrollY,
+      inspectorTop:$('#inspector').scrollTop,inspectorLeft:$('#inspector').scrollLeft,
+      saveStatus:$('#save-status').textContent,
+      details:[...document.querySelectorAll('details[open][data-detail-key]')].map(d=>d.dataset.detailKey)};
+    clearTimeout(toastTimer); $('#toast').hidden = true;
+    try { window.PPTour.start({steps:tutorialSteps,prepare:prepareTutorialStep,finish:finishTutorial,help:showHelp}); }
+    catch (_) { finishTutorial(); notify('Introduktionen kunne ikke åbnes. Din opsætning er bevaret.'); }
+  }
   document.addEventListener('click',event=>{
+    if (tutorial) return;
     const tab=event.target.closest('[data-view]');if(tab){changeView(tab.dataset.view);return;}
     const b=event.target.closest('[data-action]');if(!b)return;
     const a=b.dataset.action;
@@ -6391,11 +6659,13 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     else if(a==='copy-formula')void copyFormula();
     else if(a==='new')replaceSetup({version:5,inputUnits:{},title:'Ny opsætning',tank:E.defaultTank(),shapes:[],formulas:[],connections:[]},'Start en tom opsætning?');
     else if(a==='example')replaceSetup(E.example(),'Indlæs bassin-eksemplet?');
+    else if(a==='tutorial')startTutorial();
     else if(a==='close-dialog')closeDialog();
     else if(a==='confirm'){const action=pending;closeDialog();if(action)action();}
-    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Brøkenheder har to dropdowns: vælg tæller og nævner hver for sig, fx <strong>t (ton) / m³</strong>, <strong>kg / h</strong> eller <strong>mg / min</strong>. Det gælder også resultatets enhed. Fx giver <strong>mm → m</strong> division med 1000 inde i formlen. Du skal derefter bruge tallet fra opgaven uden først at omregne det. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Samme symbol og størrelse har samme inputenhed i hele opsætningen. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+    else if(a==='help')showHelp();
   });
   document.addEventListener('change',event=>{
+    if (tutorial) return;
     const el=event.target,a=el.dataset.action;
     if(a==='join-host'||a==='join-face'||a==='join-target'){
       if(!joinDraft)return;
@@ -6432,6 +6702,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     }
   });
   document.addEventListener('input',event=>{
+    if (tutorial) return;
     const el=event.target;
     if(el.dataset.action==='search-formulas'){libraryQuery=el.value;renderLibraryResults();return;}
     if(el.id==='project-title'){model.title=el.value.trim()||'Ny opsætning';save();}

@@ -8,6 +8,7 @@
   let model = E.example(), activeId = 'time', selected = { type:'formula', id:'time' };
   let view = 'builder', expanded = true, uid = 0, toastTimer, pending = null, dialogOrigin = null, notice = '', joinDraft = null;
   let geometryView='3d',preview3D=null,previewPose=null;
+  let tutorial = null;
   try {
     const saved = localStorage.getItem(STORAGE);
     if (saved) { model = E.validateModel(JSON.parse(saved)); activeId = model.formulas.at(-1)?.id || null; selected = activeId ? { type:'formula',id:activeId } : null; }
@@ -50,6 +51,7 @@
     toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 4500);
   }
   function save() {
+    if (tutorial) return;
     try { localStorage.setItem(STORAGE,JSON.stringify(model)); $('#save-status').textContent = 'Gemt på denne computer'; }
     catch (_) { $('#save-status').textContent = 'Gem opsætningen som fil'; }
   }
@@ -261,7 +263,9 @@
   function openDialog(title,body,footer='') {
     dialogOrigin=document.activeElement;
     $('#dialog-content').innerHTML=`<div class="dialog-header"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-button" data-action="close-dialog" aria-label="Luk">${icon('close')}</button></div><div class="dialog-body">${body}</div>${footer?`<div class="dialog-footer">${footer}</div>`:''}`;
-    $('#app-dialog').showModal();
+    // The tour shows the real joining form as a read-only example underneath
+    // its own modal. Only normal use opens an interactive application dialog.
+    if (tutorial) $('#app-dialog').show(); else $('#app-dialog').showModal();
   }
   function closeDialog() { $('#app-dialog').close(); pending=null; joinDraft=null; if(dialogOrigin?.isConnected)dialogOrigin.focus({preventScroll:true}); }
   function freeFaces(s) { return Object.entries(E.SHAPES[s.type].faces).filter(([key,f])=>f.join&&!E.connectionAt(model,s.id,key)); }
@@ -359,7 +363,88 @@
       else openDialog('Kopiér formlen',`<p>Markér teksten og tryk Ctrl+C:</p><textarea class="copy-fallback" readonly aria-label="Formel til kopiering">${esc(text)}</textarea>`);
     }
   }
+  function showHelp() {
+    openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Brøkenheder har to dropdowns: vælg tæller og nævner hver for sig, fx <strong>t (ton) / m³</strong>, <strong>kg / h</strong> eller <strong>mg / min</strong>. Det gælder også resultatets enhed. Fx giver <strong>mm → m</strong> division med 1000 inde i formlen. Du skal derefter bruge tallet fra opgaven uden først at omregne det. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Samme symbol og størrelse har samme inputenhed i hele opsætningen. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+  }
+  const tutorialSteps = [
+    {section:'OVERBLIK', title:'Velkommen til kompendiet', target:'.help-button', scene:'parts', body:'<p>Her får du en rundtur fra figurer til den færdige formel. Tryk <strong>Næste</strong> for at fortsætte; du behøver ikke betjene felterne undervejs.</p><p>Vi viser et midlertidigt bassin-eksempel. Når du afslutter, kommer din egen opsætning tilbage. Du kan altid starte igen med <strong>?</strong>.</p>'},
+    {section:'FIGURER', title:'Indsæt de figurer, du skal bruge', target:'#shape-library', scene:'parts', body:'<p>Tryk på en figur i værktøjskassen for at indsætte den. Du kan fx bygge en tank af en <strong>cylinder</strong> og en <strong>kegle</strong>.</p><p>En <strong>halvkugle</strong> bruges som kuglespids. Et rør kan bruges til tværsnittet i en flowformel. Du kan også arbejde med formler helt uden figurer.</p>'},
+    {section:'FIGURER', title:'Vælg, tilpas eller fjern en figur', target:'#figure-tray', scene:'parts', focus:'cylinder', body:'<p>Tryk på figurens kort for at åbne dens indstillinger i panelet <strong>Tilpas figuren</strong>. Nummeret knytter dens symboler til figuren: D₁ og h₁ hører fx til figur 1.</p><p><strong>Fjern</strong> under kortet sletter figuren og løsner dens samlinger. Eventuelle direkte referencer til den skal derefter have en ny kilde.</p>'},
+    {section:'FIGURER', title:'Hvad skal tælles med i beholderen?', target:'.include-choice', scene:'parts', focus:'pipe', body:'<p><strong>Indgår i beholderens sum</strong> bestemmer, hvilke dele der bidrager til tankens samlede rumfang og pladeareal.</p><p>Her er indløbsrøret fravalgt. Vi bruger dets tværsnit til flow, men tæller det ikke med i bassinet. For sammenføjede dele gælder valget hele samlingen.</p>'},
+    {section:'FIGURER', title:'Vælg indvendig eller udvendig diameter', target:'.diameter-settings', scene:'parts', focus:'cylinder', body:'<p>Angiv, om opgavens diameter er <strong>indvendig</strong> eller <strong>udvendig</strong>. Ved et udvendigt mål vælger du også godstykkelsen, så den indvendige diameter kan udtrykkes korrekt.</p><p>Rumfang og flow bruger indvendige mål. Højde og længde skal fortsat være indvendige. Sammenføjede dele deler deres indvendige mål.</p>'},
+    {section:'FIGURER', title:'Åbn eller luk toppen', target:'.face-list', scene:'parts', focus:'cylinder', body:'<p>Hver fri flade har en menu med <strong>Åben</strong> og <strong>Lukket</strong>. Her er cylinderens top åben. Vælger du Lukket, lægges toppladens areal til.</p><p>Valget ændrer <strong>pladearealet</strong> og dermed fx materialemassen. Figurens geometriske rumfang er det samme. En sammenføjet flade styres af samlingen.</p>'},
+    {section:'SAMLINGER', title:'Forbind to figurer', target:'.join-button', scene:'parts', focus:'cylinder', body:'<p>Tryk <strong>Sammensæt</strong> for at sætte en figur på en anden. Du kan også vælge <strong>Sæt figur på denne ende</strong> ved en fri flade i figurens indstillinger.</p><p>På næste trin viser vi menuen med cylinderens bund og keglebunden valgt.</p>'},
+    {section:'SAMLINGER', title:'Vælg figur, ende og endestykke', target:'.join-fields', scene:'join', focus:'cylinder', body:'<p>Vælg først <strong>Cylinder</strong>, derefter <strong>Bund</strong> og til sidst <strong>Keglebund · Plan endeflade</strong>. Tryk normalt <strong>Sæt sammen</strong> for at forbinde dem.</p><p>Menuen tilbyder både eksisterende figurer og nye endestykker, fx <strong>Ny halvkugle</strong>. Kun passende, ledige samleflader kan vælges. Vi viser resultatet på næste trin.</p>'},
+    {section:'SAMLINGER', title:'Se den samlede figur i 3D', target:'.solid-viewer', body:'<p>Nu sidder keglen på cylinderens bund. Træk i <strong>3D-visningen</strong> for at dreje den; brug scroll eller +/− til zoom. <strong>Skitse</strong> viser et snit med fladernes navne.</p><p>Visningen følger samlinger og åbne/lukkede flader. Den er skematisk og uden målestok.</p>'},
+    {section:'SAMLINGER', title:'Fælles flader og samlede formler', target:'.assembly-totals', detail:'assembly-totals', body:'<p>Her finder du det samlede <strong>rumfang</strong> og <strong>pladeareal</strong>. Åbne flader og de to endeflader i en samling udelades automatisk fra pladearealet. <strong>Brug formel</strong> føjer summen til Mine formler.</p><p><strong>Skil ad</strong> under visningen løsner samlingen. Delene får deres egne mål og fladevalg tilbage. Sum af rumfang forudsætter, at delene ikke overlapper.</p>'},
+    {section:'FORMLER', title:'Vælg, hvad du vil finde', target:'.goal-row', body:'<p>Her vælger du hovedformlen. I eksemplet vil vi finde <strong>Fyldetid</strong>: t = V / Qᵥ.</p><p>Menuen viser både dine egne formler og muligheden for at tilføje en ny. Figurerne leverer fx rumfanget V, mens en anden formel kan levere volumenflowet Qᵥ.</p>'},
+    {section:'FORMLER', title:'Find formler fra formelsamlingen', target:'.formula-search', scene:'library', body:'<p>Fanen <strong>Formelsamling</strong> samler formlerne fra jeres materiale. Søg på et navn, symbol eller T-nummer, fx <strong>Pvirk</strong>, <strong>eta</strong> eller <strong>T9</strong>.</p><p>Kortene viser formlen, forudsætninger og henvisning til siden i jeres samling. Tryk <strong>Brug formel</strong> for at arbejde videre med den.</p>'},
+    {section:'FORMLER', title:'Gem delformler, der kan bruges igen', target:['#saved-formulas','.goal-row'], body:'<p><strong>Mine formler</strong> samler opsætningens delformler. Her har vi rumfang, volumenflow og fyldetid. På en smal skærm vælger du dem i <strong>Hvad vil du finde?</strong>.</p><p>Brug <strong>Tilføj formel</strong> til nye delformler, og giv dem et genkendeligt navn i tilpasningspanelet. De kan derefter vælges som referencer.</p>'},
+    {section:'REFERENCER', title:'Tilpas hver del af formlen', target:'#inspector .formula-args > .input-group:nth-child(2)', scene:'known', body:'<p>Menuen ved hver størrelse giver dig tre muligheder: <strong>Kendt størrelse</strong>, <strong>Indsæt en formel</strong> eller <strong>Brug en reference</strong>.</p><p>Her er Qᵥ en kendt størrelse: du har allerede flowet fra opgaven. Hvis du i stedet kender areal og hastighed, kan du vælge formlen Qᵥ = A · v. Menuen viser kilder med den rigtige størrelse.</p>'},
+    {section:'REFERENCER', title:'En reference følger sin kilde', target:'#inspector .formula-args > .input-group:nth-child(2)', body:'<p>Nu henter Qᵥ sin formel fra <strong>Volumenflow</strong> i Mine formler. Ændrer du kilden, følger fyldetiden automatisk med. <strong>Tilpas kilde</strong> åbner kildens indstillinger.</p><p>Volumenflowets A henviser videre til rørets tværsnit. På samme måde henter V bassindelenes samlede rumfang. Du kan altså bygge en kæde af referencer.</p>'},
+    {section:'REFERENCER', title:'Indsæt en formel direkte', target:'#inspector .formula-args > .input-group:nth-child(2)', scene:'inline', body:'<p>Ved en reference vælger du <strong>Indsæt formlen her</strong>, hvis du vil have en kopi, som kan tilpasses på stedet. Her er Qᵥ = A · v nu indsat direkte under fyldetiden.</p><p>Kopien følger ikke længere selve Volumenflow-formlen. Dens underreferencer, fx A fra røret, følger stadig deres egne kilder. Du kan også vælge en formel direkte i dropdownen.</p>'},
+    {section:'RESULTAT', title:'Se den færdige formel', target:'#formula-preview', body:'<p><strong>Kort</strong> viser referencer som symboler. <strong>Udfoldet</strong> sætter delformlerne ind i hinanden, som vist her. Parenteserne holder summer, brøker og potenser samlet.</p><p><strong>Kopiér formel</strong> tager den viste formel og de valgte enheder med. Kompendiet hjælper dig med udtrykket; du indsætter opgavens tal, når du selv regner videre.</p>'},
+    {section:'RESULTAT', title:'Følg formlen hele vejen tilbage', target:'.chain-details', detail:'chain-time', body:'<p>Åbn <strong>Se formelkæden</strong> for at følge delformlerne bag resultatet: fra rørets tværsnit til volumenflow og videre til fyldetid.</p><p><strong>Tilpas</strong> ved et led åbner dets indstillinger. Det gør det nemt at finde det sted, hvor en størrelse eller reference skal ændres.</p>'},
+    {section:'ENHEDER', title:'Vælg præcis de enheder, du har', target:'.unit-symbol-list > div:last-child', scene:'units', body:'<p>Under <strong>Størrelserne i formlen</strong> vælger du opgavens enhed for hvert symbol. Fx giver <strong>mm → m</strong> den nødvendige division med 1000 inde i formlen.</p><p>For brøkenheder vælger du <strong>tæller og nævner hver for sig</strong>, som L/min her. Det virker også for fx t/m³ og kg/h i de relevante formler. Omregningen skal ikke tilføjes igen.</p>'},
+    {section:'ENHEDER', title:'Vælg enheden for svaret', target:'.result-unit-row', scene:'units', body:'<p><strong>Resultatets enhed</strong> bestemmer, hvordan det samlede udtryk skal omregnes. Her er fyldetiden valgt i <strong>minutter</strong>. Andre formler tilbyder fx liter, ton og kW.</p><p>Inputenheder følger samme symbol i hele opsætningen. Hver formel har sin egen resultatenhed. Dine enhedsvalg kommer med, når du gemmer eller kopierer.</p>'},
+    {section:'GEM OG FORTSÆT', title:'Klar til din egen opgave', target:'.top-actions', body:'<p><strong>Gem opsætning</strong> henter en fil med dine figurer, formler og enhedsvalg. Brug <strong>Åbn opsætning</strong> til at hente den ind igen, også på en anden computer. Sol/måne-knappen skifter mellem lyst og mørkt tema.</p><p>Hele kompendiet og denne guide virker offline. Tryk <strong>Afslut introduktion</strong> for at vende tilbage til din egen opsætning. <strong>?</strong> starter guiden igen.</p>'}
+  ];
+  function prepareTutorialStep(step) {
+    if ($('#app-dialog').open) closeDialog();
+    model = E.example();
+    model.title = 'Introduktion · bassin med keglebund';
+    model.shapes.find(s=>s.id==='cylinder').faces.top = 'open';
+    if (['parts','join'].includes(step.scene)) model.connections = [];
+    if (['known','units'].includes(step.scene)) model.formulas.find(f=>f.id==='time').expression.args.Q = E.symbol('Q_v');
+    if (step.scene === 'inline') model.formulas.find(f=>f.id==='time').expression.args.Q = E.clone(model.formulas.find(f=>f.id==='flow').expression);
+    if (step.scene === 'units') {
+      model.inputUnits = {'D_1:length':'mm','Q_v:flow':'L_min'};
+      model.formulas.find(f=>f.id==='time').resultUnit = 'min';
+    }
+    activeId = 'time';
+    selected = step.focus ? {type:'shape',id:step.focus} : {type:'formula',id:'time'};
+    expanded = true; geometryView = '3d'; libraryQuery = step.scene === 'library' ? 'Pvirk' : '';
+    changeView(step.scene === 'library' ? 'library' : 'builder');
+    render();
+    for (const detail of document.querySelectorAll('details[data-detail-key]')) detail.open = detail.dataset.detailKey === step.detail;
+    $('#inspector').scrollTop = 0;
+    $('#save-status').textContent = 'Introduktion · midlertidigt eksempel';
+    if (step.scene === 'join') {
+      openJoin('cylinder','bottom');
+      joinDraft.target = 'existing:cone:base';
+      $('#app-dialog').querySelector('.dialog-body').innerHTML = joinFields();
+    }
+    const selectors = Array.isArray(step.target) ? step.target : [step.target];
+    return () => selectors.map(selector=>document.querySelector(selector)).find(element=>element?.getClientRects().length) || $('.help-button');
+  }
+  function finishTutorial() {
+    const previous = tutorial;
+    if (!previous) return;
+    if ($('#app-dialog').open) closeDialog();
+    if (preview3D) {preview3D.destroy(); preview3D=null;}
+    tutorial = null;
+    ({model,activeId,selected,expanded,geometryView,previewPose,libraryQuery} = previous);
+    changeView(previous.view); render();
+    for (const detail of document.querySelectorAll('details[data-detail-key]')) detail.open = previous.details.includes(detail.dataset.detailKey);
+    $('#save-status').textContent = previous.saveStatus;
+    $('#inspector').scrollTop = previous.inspectorTop;
+    $('#inspector').scrollLeft = previous.inspectorLeft;
+    window.scrollTo({left:previous.scrollX,top:previous.scrollY,behavior:'instant'});
+    (previous.origin?.isConnected ? previous.origin : $('.help-button')).focus({preventScroll:true});
+  }
+  function startTutorial() {
+    if (tutorial) return;
+    tutorial = {model,activeId,selected,view,expanded,geometryView,previewPose:preview3D?.getPose()||previewPose,libraryQuery,
+      origin:document.activeElement,scrollX:window.scrollX,scrollY:window.scrollY,
+      inspectorTop:$('#inspector').scrollTop,inspectorLeft:$('#inspector').scrollLeft,
+      saveStatus:$('#save-status').textContent,
+      details:[...document.querySelectorAll('details[open][data-detail-key]')].map(d=>d.dataset.detailKey)};
+    clearTimeout(toastTimer); $('#toast').hidden = true;
+    try { window.PPTour.start({steps:tutorialSteps,prepare:prepareTutorialStep,finish:finishTutorial,help:showHelp}); }
+    catch (_) { finishTutorial(); notify('Introduktionen kunne ikke åbnes. Din opsætning er bevaret.'); }
+  }
   document.addEventListener('click',event=>{
+    if (tutorial) return;
     const tab=event.target.closest('[data-view]');if(tab){changeView(tab.dataset.view);return;}
     const b=event.target.closest('[data-action]');if(!b)return;
     const a=b.dataset.action;
@@ -396,11 +481,13 @@
     else if(a==='copy-formula')void copyFormula();
     else if(a==='new')replaceSetup({version:5,inputUnits:{},title:'Ny opsætning',tank:E.defaultTank(),shapes:[],formulas:[],connections:[]},'Start en tom opsætning?');
     else if(a==='example')replaceSetup(E.example(),'Indlæs bassin-eksemplet?');
+    else if(a==='tutorial')startTutorial();
     else if(a==='close-dialog')closeDialog();
     else if(a==='confirm'){const action=pending;closeDialog();if(action)action();}
-    else if(a==='help')openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Du beholder de størrelser, du kender, som symboler.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Brøkenheder har to dropdowns: vælg tæller og nævner hver for sig, fx <strong>t (ton) / m³</strong>, <strong>kg / h</strong> eller <strong>mg / min</strong>. Det gælder også resultatets enhed. Fx giver <strong>mm → m</strong> division med 1000 inde i formlen. Du skal derefter bruge tallet fra opgaven uden først at omregne det. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Samme symbol og størrelse har samme inputenhed i hele opsætningen. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Der er ingen talindtastning eller udregning af resultater.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+    else if(a==='help')showHelp();
   });
   document.addEventListener('change',event=>{
+    if (tutorial) return;
     const el=event.target,a=el.dataset.action;
     if(a==='join-host'||a==='join-face'||a==='join-target'){
       if(!joinDraft)return;
@@ -437,6 +524,7 @@
     }
   });
   document.addEventListener('input',event=>{
+    if (tutorial) return;
     const el=event.target;
     if(el.dataset.action==='search-formulas'){libraryQuery=el.value;renderLibraryResults();return;}
     if(el.id==='project-title'){model.title=el.value.trim()||'Ny opsætning';save();}
