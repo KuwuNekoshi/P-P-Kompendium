@@ -103,10 +103,11 @@
     const f = active();
     if (!f) {
       $('#formula-preview').innerHTML = '<div class="empty-preview"><span class="large-function">ƒ</span><h2>Find din næste formel</h2><p>Vælg, hvad du vil finde. Tilpas derefter formlens dele til det, du kender fra opgaven.</p><button class="button primary" data-action="add-formula">Vælg en formel</button></div>';
-      $('#formula-chain').innerHTML = ''; $('#symbol-guide').innerHTML = ''; return;
+      $('#formula-chain').innerHTML = ''; $('#symbol-guide').innerHTML = ''; $('#calculator-guide').hidden=true; $('#calculator-guide').innerHTML=''; return;
     }
     const r = ctx.safe(`formula:${f.id}`,expanded ? 'expanded' : 'compact',true);
     const full = ctx.safe(`formula:${f.id}`);
+    renderCalculatorGuide(ctx,f);
     const definition=f.expression.kind==='formula'?E.FORMULAS[f.expression.formula]:null;
     const source=schoolRef(definition);
     let note=definition?.note||'';
@@ -117,6 +118,17 @@
     $('#formula-chain').innerHTML = steps.length ? `<details class="chain-details" data-detail-key="chain-${esc(f.id)}"><summary><span>Se formelkæden</span><span class="chain-count">${steps.length} ${steps.length === 1 ? 'formel' : 'formler'}</span></summary><ol class="chain-list">${steps.map(d => `<li><div class="chain-step-heading"><span>${esc(d.name)}</span><button class="text-button" data-action="inspect-reference" data-target="${esc(d.target)}">Tilpas</button></div><div class="chain-math">${formulaSummary(d.expression,d.dimension,ctx,d.symbol)}</div></li>`).join('')}</ol></details>` : '';
     if (!full.ok) { $('#symbol-guide').innerHTML = ''; return; }
     renderUnitGuide(full.ast,f);
+  }
+  function renderCalculatorGuide(ctx,f){
+    const host=$('#calculator-guide'),G=window.PPCalculatorGuide;
+    const guide=G.create(ctx,'formula:'+f.id,expanded?'expanded':'compact');
+    host.hidden=!guide;
+    if(!guide){host.innerHTML='';return;}
+    const size=guide.estimate,plan=guide.plan,range=s=>s.min===s.max?String(s.min):s.min+'–'+s.max;
+    host.classList.toggle('calculator-caution',size.recommend);
+    const heading=size.tooLong?'Formlen kan blive for lang til TI-30XS':size.deep?'Del de indlejrede udtryk op':size.recommend?'Overvej at dele formlen op':'TI-30XS · vejledende længdeskøn';
+    const rows=plan?.steps.map((step,i)=>`<li><div class="calculator-step-heading"><strong>${i+1}. ${esc(step.name)}</strong><span>Ca. ${range(step.estimate)} tegn</span></div><div class="calculator-math">${E.math(step.ast,step.symbol,step.unit)}</div>${step.estimate.tooLong||step.estimate.deep?'<p class="calculator-step-note">Dette trin kan stadig kræve flere delberegninger.</p>':''}${!step.unit?'<p class="calculator-step-note">Brug dette mellemresultat direkte, hvor symbolet står i næste trin.</p>':''}</li>`).join('')||'';
+    host.innerHTML=`<div class="calculator-heading"><h3>${heading}</h3><span>Ca. ${range(size)} tegn</span></div><p class="calculator-intro">${expanded?'Den udfoldede formel':'Kortvisningen'} · skøn med 4–8 tegn pr. indsat tal. TI-30XS MultiView har plads til op til 80 tegn i en indtastning.</p>${size.deep?'<p class="calculator-intro">Brøker, rødder og potenser ligger op til '+size.nesting+' niveauer inde i hinanden. MathPrint understøtter op til 4; delberegninger kan hjælpe.</p>':''}${rows?`<details class="calculator-plan" data-detail-key="calculator-plan-${esc(f.id)}"><summary>Forslag: ${plan.steps.length} ${plan.steps.length===1?'mellemresultat':'mellemresultater'} og en kort slutformel</summary><p>Beregn delene i rækkefølgen nedenfor. Brug enhederne ved hvert mellemresultat, og afrund først det endelige svar.</p><ol>${rows}<li class="calculator-final"><div class="calculator-step-heading"><strong>${plan.steps.length+1}. Saml resultatet</strong><span>Ca. ${range(plan.estimate)} tegn</span></div><div class="calculator-math">${E.math(plan.final,f.symbol,E.resultUnit(f).label)}</div></li></ol>${plan.incomplete?'<p class="calculator-step-note">Forslaget forkorter formlen, men enkelte trin kan stadig være for lange med dine tal.</p>':''}<p>Gem gerne mellemresultaterne i ledige hukommelsesvariable, fx x og y. Brug de gemte variable i næste indtastning. Symbolerne her, fx V₁ og V₂, betegner dine mellemresultater.</p></details>`:''}<details class="calculator-method" data-detail-key="calculator-method"><summary>Sådan vurderes længden</summary><p>Skønnet tæller hver forekomst af et tal samt operatorer og parenteser ved lineær indtastning med ÷. Symbolnavne og enhedslabels tæller ikke med. Decimaler, minustegn, lange tal, brøkskabeloner og din tastemetode kan ændre pladsbehovet; skønnet er ingen garanti for, at indtastningen passer.</p><p>I Kort skal de viste referencer allerede være beregnet. Forslaget ændrer ikke dine gemte formler. Hver del beholder sine omregninger, og slutformlen giver resultatet i din valgte enhed. Andre TI-30-modeller kan have andre grænser.</p><p>TI-30XS har 7 hukommelsesvariable: x, y, z, t, a, b og c. Gem først nye værdier i en variabel, når dens tidligere værdi er færdigbrugt.</p><p class="calculator-sources">Kilder hos Texas Instruments (kræver internet): <a href="${G.SOURCES.length}" target="_blank" rel="noopener noreferrer">Indtastningsgrænse</a> · <a href="${G.SOURCES.nesting}" target="_blank" rel="noopener noreferrer">MathPrint</a> · <a href="${G.SOURCES.memory}" target="_blank" rel="noopener noreferrer">Hukommelse</a>.</p></details>`;
   }
   function unitOptions(dimension,selected) {
     return E.Units.choices(dimension).map(u=>`<option value="${esc(u.id)}" ${u.id===selected?'selected':''}>${esc(u.label)}</option>`).join('');

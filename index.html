@@ -12,6 +12,20 @@
   <style>
 :root{font-family:Inter,"Segoe UI",Arial,sans-serif;color-scheme:light;--bg:#f5f6f8;--surface:#fff;--soft:#f0f2f5;--text:#202329;--muted:#68717c;--border:#e0e4e9;--blue:#2565d7;--blue-soft:#eaf1fd;--blue-ink:#2355a4;--diagram:#64788e;--error:#b12d39;--error-bg:#fff0f1;--shadow:0 18px 55px #1520391a;font-size:16px;letter-spacing:-.015em;background:var(--bg);color:var(--text)}
 :root[data-theme=dark]{color-scheme:dark;--bg:#141619;--surface:#1c1f24;--soft:#282d35;--text:#f0f1f3;--muted:#afb6c0;--border:#373d47;--blue:#79a9ff;--blue-soft:#253751;--blue-ink:#abcaff;--diagram:#a8bfd7;--error:#ff9ca4;--error-bg:#3c252b;--shadow:0 18px 55px #0006}
+.calculator-guide{margin-top:16px;padding:18px 20px;border:1px solid var(--border);border-radius:9px;background:var(--surface);font-size:.875rem;line-height:1.7;min-width:0}
+.calculator-caution{border-left:4px solid var(--blue);background:var(--blue-soft)}
+.calculator-heading,.calculator-step-heading{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.calculator-heading h3{font-size:1rem}.calculator-heading>span,.calculator-step-heading>span{font-size:.875rem;color:var(--muted)}
+.calculator-intro{margin-top:8px;color:var(--muted)}
+.calculator-plan,.calculator-method{border-top:1px solid var(--border);margin-top:14px;padding-top:12px}
+.calculator-guide summary{cursor:pointer;font-weight:550;line-height:1.65;padding:3px 0}
+.calculator-guide details p{margin-top:12px}.calculator-plan ol{list-style:none;margin:16px 0;padding:0}
+.calculator-plan li{border-top:1px solid var(--border);padding:16px 0;min-width:0}
+.calculator-math{overflow-x:auto;padding:14px 0 4px}.calculator-math math{font-size:1.1rem;min-width:min-content}
+.calculator-final{font-weight:500}.calculator-step-note,.calculator-sources{color:var(--muted)}
+.calculator-method p{color:var(--muted)}.calculator-sources a{color:var(--blue-ink);text-underline-offset:3px}
+@media(max-width:640px){.calculator-guide{padding:16px}.calculator-step-heading{align-items:flex-start;flex-direction:column;gap:3px}}
+@media print{.calculator-guide{break-inside:auto}.calculator-plan li{break-inside:avoid}}
 *{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit;letter-spacing:inherit;color:inherit}button{cursor:pointer;border:0;background:none}button:disabled{opacity:.5;cursor:not-allowed}button,a,input,select,summary{touch-action:manipulation}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--blue);outline-offset:3px}input,select{min-width:0}button svg{display:block;width:21px;height:21px}h1,h2,h3,h4,p{margin:0}h2,h3,h4{font-weight:550}h2{font-size:1rem}[hidden]{display:none!important}a{color:inherit}math{font-family:"STIX Two Math","Cambria Math","Latin Modern Math",math;margin:0;line-height:1.4;letter-spacing:normal}math[display=block]{margin:0;text-align:center}math mtext{font-family:inherit}.skip-link{position:fixed;left:20px;top:-100px;z-index:100;padding:14px;background:var(--surface)}.skip-link:focus{top:10px}
 .topbar{min-height:76px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:30px}.brand{display:flex;align-items:center;gap:16px;text-decoration:none}.brand-mark{font-size:1.8rem;letter-spacing:-.08em;font-weight:650;white-space:nowrap}.brand-mark span{font-weight:400;font-size:1.25rem;padding:0 3px}.brand-name{font-size:.75rem;letter-spacing:.19em;font-weight:600}.local-badge{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:.8rem;padding-left:24px;border-left:1px solid var(--border)}.local-badge svg{width:16px;height:18px}.top-actions{margin-left:auto;display:flex;align-items:center;gap:9px}.button{display:inline-flex;justify-content:center;align-items:center;gap:9px;min-height:40px;padding:10px 16px;border-radius:6px;font-size:.875rem;font-weight:550;line-height:1.4;transition:background .15s}.button:hover{background:var(--soft)}.button.primary{background:var(--text);color:var(--surface)}.button.primary:hover{opacity:.88}.button.subtle{background:var(--soft)}.button.subtle:hover{background:var(--border)}.button.outline{border:1px solid var(--border)}.button.danger{background:var(--error-bg);color:var(--error)}.top-divider{height:24px;width:1px;background:var(--border);margin:0 10px}.icon-button{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:6px;flex-shrink:0}.icon-button:hover{background:var(--soft)}.help-button{border:1px solid var(--border);border-radius:50%;width:25px;height:25px;font-size:.8rem;margin-left:4px}
 .app-shell{display:grid;grid-template-columns:224px minmax(340px,1fr) 360px;min-height:calc(100vh - 76px);max-width:1920px;margin:0 auto}.catalog{background:var(--surface);border-right:1px solid var(--border);padding:29px 20px;display:flex;flex-direction:column;min-width:0}.eyebrow{display:block;font-size:.75rem;letter-spacing:.11em;color:var(--muted);font-weight:600;line-height:1.5}.catalog-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:27px;color:var(--muted)}.catalog h2{font-size:.875rem;margin-bottom:16px}.shape-library{display:grid;grid-template-columns:1fr 1fr;gap:9px}.shape-tool{display:flex;flex-direction:column;align-items:center;gap:9px;padding:15px 3px 12px;border:1px solid var(--border);border-radius:8px;min-width:0;transition:all .15s}.shape-tool:hover{border-color:var(--blue);background:var(--blue-soft)}.shape-tool svg{width:43px;height:40px;color:var(--diagram)}.shape-tool span{font-size:.875rem;line-height:1.3}.catalog-separator{height:1px;background:var(--border);margin:29px 0 26px}.section-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}.section-label h2{margin:0}.count{font-size:.75rem;color:var(--muted);padding:3px 7px;background:var(--soft);border-radius:4px}.saved-formulas{display:flex;flex-direction:column;gap:5px}.saved-formula{display:flex;align-items:center;text-align:left;gap:10px;padding:12px 10px;border-radius:6px;font-size:.875rem;line-height:1.45;min-width:0}.saved-formula:hover{background:var(--soft)}.saved-formula.active{background:var(--blue-soft);color:var(--blue-ink)}.saved-formula>span:nth-child(2){overflow-wrap:anywhere}.saved-symbol{min-width:27px;max-width:46px;flex-shrink:0;font-size:1.1rem}.saved-symbol math{font-size:1.1rem}.item-chevron{margin-left:auto;color:var(--muted)}.add-formula{border:1px dashed var(--border);width:100%;margin-top:14px;font-size:.875rem;padding:10px 4px}.catalog-footer{display:flex;flex-direction:column;align-items:flex-start;gap:15px;margin-top:auto;padding-top:48px}.text-button{padding:0;color:var(--blue-ink);font-size:.8rem;line-height:1.5;text-align:left;text-decoration:underline;text-underline-offset:3px}.text-button:hover{opacity:.78}.muted{color:var(--muted)}
@@ -111,6 +125,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   
   
   
+  
 </head>
 <body>
   <a class="skip-link" href="#workspace">Gå til formelbyggeren</a>
@@ -146,6 +161,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         <div class="goal-row"><label for="goal-select"><span class="step-number">01</span> Hvad vil du finde?</label><select id="goal-select" aria-label="Vælg den formel, du vil arbejde med"></select></div>
         <section class="construction" aria-labelledby="construction-heading"><div class="construction-heading"><h2 id="construction-heading"><span class="step-number">02</span> Vælg dine figurer</h2><div class="construction-actions"><span id="shape-count"></span><button class="button outline join-button" data-action="join">Sammensæt</button></div></div><div id="figure-tray" class="figure-tray"></div><p class="construction-note" id="construction-note"></p><div id="assembly-overview"></div></section>
         <section id="formula-preview" class="formula-preview" aria-label="Din samlede formel"></section>
+        <section id="calculator-guide" class="calculator-guide" aria-label="Indtastning på TI-30XS" hidden></section>
         <div id="formula-chain" class="formula-chain"></div>
         <div id="symbol-guide" class="symbol-guide"></div>
       </section>
@@ -6977,6 +6993,138 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 
 </script>
 <script>
+/* calculator-guide.js */
+/* Advisory entry-length estimates and symbolic intermediate results; no evaluation. */
+(function(root,factory){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./engine.js'));
+  else root.PPCalculatorGuide=factory(root.PP);
+})(typeof globalThis!=='undefined'?globalThis:this,function(E){
+  'use strict';
+  const LIMIT=80,RECOMMEND_AT=72,TARGET=64,MAX_STEPS=48;
+  const SOURCES={
+    length:'https://education.ti.com/en/customer-support/knowledge-base/scientific-elem-calculators/general-information/15401',
+    nesting:'https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_Home.HTML',
+    memory:'https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_MemVar.HTML'
+  };
+  const unwrap=ast=>ast.type==='group'?unwrap(ast.children[0]):ast;
+  function estimate(ast){
+    function count(node,digits){
+      if(node.type==='symbol')return digits; // Count each occurrence, not its printed name.
+      if(node.type==='constant')return Array.from(node.value).length;
+      if(node.type==='group')return count(node.children[0],digits);
+      const children=node.children.map(c=>count(c,digits));
+      if(node.type==='sqrt')return children[0]+3;
+      return children.reduce((a,b)=>a+b,0)+children.length-1+2;
+    }
+    function depth(node){
+      if(!node.children)return 0;
+      return Math.max(...node.children.map(depth))+(['div','pow','sqrt'].includes(node.type)?1:0);
+    }
+    const min=count(ast,4),max=count(ast,8),nesting=depth(ast);
+    return {min,max,nesting,limit:LIMIT,recommend:max>=RECOMMEND_AT||nesting>4,tooLong:max>LIMIT,deep:nesting>4};
+  }
+  // Length-prefixed child keys avoid both ambiguous joins and exponential escaping.
+  function keyFactory(){
+    const cache=new WeakMap();
+    return function key(ast){
+      ast=unwrap(ast);
+      if(cache.has(ast))return cache.get(ast);
+      let value;
+      if(ast.type==='symbol')value=JSON.stringify(['symbol',ast.symbol,ast.dimension||'',ast.reference||'',ast.unit||'']);
+      else if(ast.type==='constant')value=JSON.stringify(['constant',ast.value]);
+      else value=ast.type+'['+ast.children.map(c=>{const s=key(c);return s.length+':'+s;}).join('')+']';
+      cache.set(ast,value);return value;
+    };
+  }
+  function split(ast,candidates=[],resultSymbol='R'){
+    const key=keyFactory(),known=new Map(),steps=[],stored=new Map();
+    const used=new Set([...E.variables(ast).map(v=>v.symbol),resultSymbol]);
+    for(const candidate of candidates)if(!known.has(key(candidate.ast)))known.set(key(candidate.ast),candidate);
+    let serial=0;
+    function alias(preferred){
+      if(preferred&&!used.has(preferred)){used.add(preferred);return preferred;}
+      let name;do{name='M_'+(++serial);}while(used.has(name));used.add(name);return name;
+    }
+    function replace(node,match,replacement){
+      if(key(node)===match)return replacement;
+      return node.children?{...node,children:node.children.map(c=>replace(c,match,replacement))}:node;
+    }
+    function toStep(node){
+      const identity=key(node);
+      if(stored.has(identity))return stored.get(identity);
+      if(steps.length>=MAX_STEPS)return node;
+      const description=known.get(identity),body=shorten(node);
+      if(steps.length>=MAX_STEPS)return body;
+      const symbol=alias(description?.symbol);
+      const variable={type:'symbol',symbol,intermediate:true};
+      if(description?.dimension)variable.dimension=description.dimension;
+      steps.push({symbol,ast:body,name:description?.name||'Mellemresultat',unit:description?.unit||'',estimate:estimate(body)});
+      stored.set(identity,variable);return variable;
+    }
+    function choose(node){
+      const whole=key(node);let best=null;
+      function visit(current){
+        const simple=unwrap(current),identity=key(simple),size=estimate(simple);
+        if(simple.children&&identity!==whole&&size.max>14){
+          const fits=size.max<=TARGET&&!size.deep;
+          const score=(known.has(identity)?1000:0)+(fits?500:0)+Math.min(size.max,TARGET);
+          if(!best||score>best.score)best={node:current,identity,score};
+        }
+        if(simple.children)simple.children.forEach(visit);
+      }
+      visit(node);return best;
+    }
+    function shorten(node){
+      for(let attempt=0;attempt<MAX_STEPS&&steps.length<MAX_STEPS;attempt++){
+        const size=estimate(node);
+        if(size.max<=TARGET&&!size.deep)break;
+        const candidate=choose(node);
+        if(candidate){
+          const replacement=toStep(candidate.node);
+          if(key(replacement)===candidate.identity)break;
+          node=replace(node,candidate.identity,replacement);
+        }else{
+          const simple=unwrap(node);
+          // A wide sum/product can consist entirely of short individual terms.
+          // Split a whole prefix; never cut across subtraction or division.
+          if(!['add','mul'].includes(simple.type)||simple.children.length<3)break;
+          const midpoint=Math.ceil(simple.children.length/2);
+          const part={type:simple.type,children:simple.children.slice(0,midpoint)};
+          const replacement=toStep(part);
+          if(key(replacement)===key(part))break;
+          node={...simple,children:[replacement,...simple.children.slice(midpoint)]};
+        }
+      }
+      return node;
+    }
+    function separateShapes(node){
+      if(node.assemblyParts){
+        return {...node,children:node.children.map(c=>unwrap(c).children?toStep(c):c)};
+      }
+      return node.children?{...node,children:node.children.map(separateShapes)}:node;
+    }
+    const final=shorten(separateShapes(ast));
+    return {steps,final,estimate:estimate(final),incomplete:steps.some(s=>s.estimate.tooLong||s.estimate.deep)||estimate(final).tooLong||estimate(final).deep};
+  }
+  function create(ctx,target,mode='expanded'){
+    const result=ctx.safe(target,mode,true);
+    if(!result.ok||(mode==='compact'&&!ctx.safe(target).ok))return null;
+    const descriptor=ctx.map.get(target),size=estimate(result.ast);
+    if(!size.recommend)return {estimate:size,plan:null,mode};
+    const candidates=[];
+    let dependencies;try{dependencies=ctx.steps(target);}catch(_){return null;}
+    for(const d of dependencies){
+      if(d.target===target)continue;
+      const part=ctx.safe(d.target,mode);
+      if(part.ok&&unwrap(part.ast).children)candidates.push({ast:part.ast,symbol:d.symbol,name:d.name,dimension:d.dimension,unit:E.Units.base(d.dimension).label});
+    }
+    return {estimate:size,plan:split(result.ast,candidates,descriptor.symbol),mode};
+  }
+  return {estimate,split,create,LIMIT,SOURCES};
+});
+
+</script>
+<script>
 /* geometry.js */
 /* Schematic cross-sections for joined parts. No physical simulation or numeric input. */
 (function(root,factory){
@@ -7466,10 +7614,11 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const f = active();
     if (!f) {
       $('#formula-preview').innerHTML = '<div class="empty-preview"><span class="large-function">ƒ</span><h2>Find din næste formel</h2><p>Vælg, hvad du vil finde. Tilpas derefter formlens dele til det, du kender fra opgaven.</p><button class="button primary" data-action="add-formula">Vælg en formel</button></div>';
-      $('#formula-chain').innerHTML = ''; $('#symbol-guide').innerHTML = ''; return;
+      $('#formula-chain').innerHTML = ''; $('#symbol-guide').innerHTML = ''; $('#calculator-guide').hidden=true; $('#calculator-guide').innerHTML=''; return;
     }
     const r = ctx.safe(`formula:${f.id}`,expanded ? 'expanded' : 'compact',true);
     const full = ctx.safe(`formula:${f.id}`);
+    renderCalculatorGuide(ctx,f);
     const definition=f.expression.kind==='formula'?E.FORMULAS[f.expression.formula]:null;
     const source=schoolRef(definition);
     let note=definition?.note||'';
@@ -7480,6 +7629,17 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     $('#formula-chain').innerHTML = steps.length ? `<details class="chain-details" data-detail-key="chain-${esc(f.id)}"><summary><span>Se formelkæden</span><span class="chain-count">${steps.length} ${steps.length === 1 ? 'formel' : 'formler'}</span></summary><ol class="chain-list">${steps.map(d => `<li><div class="chain-step-heading"><span>${esc(d.name)}</span><button class="text-button" data-action="inspect-reference" data-target="${esc(d.target)}">Tilpas</button></div><div class="chain-math">${formulaSummary(d.expression,d.dimension,ctx,d.symbol)}</div></li>`).join('')}</ol></details>` : '';
     if (!full.ok) { $('#symbol-guide').innerHTML = ''; return; }
     renderUnitGuide(full.ast,f);
+  }
+  function renderCalculatorGuide(ctx,f){
+    const host=$('#calculator-guide'),G=window.PPCalculatorGuide;
+    const guide=G.create(ctx,'formula:'+f.id,expanded?'expanded':'compact');
+    host.hidden=!guide;
+    if(!guide){host.innerHTML='';return;}
+    const size=guide.estimate,plan=guide.plan,range=s=>s.min===s.max?String(s.min):s.min+'–'+s.max;
+    host.classList.toggle('calculator-caution',size.recommend);
+    const heading=size.tooLong?'Formlen kan blive for lang til TI-30XS':size.deep?'Del de indlejrede udtryk op':size.recommend?'Overvej at dele formlen op':'TI-30XS · vejledende længdeskøn';
+    const rows=plan?.steps.map((step,i)=>`<li><div class="calculator-step-heading"><strong>${i+1}. ${esc(step.name)}</strong><span>Ca. ${range(step.estimate)} tegn</span></div><div class="calculator-math">${E.math(step.ast,step.symbol,step.unit)}</div>${step.estimate.tooLong||step.estimate.deep?'<p class="calculator-step-note">Dette trin kan stadig kræve flere delberegninger.</p>':''}${!step.unit?'<p class="calculator-step-note">Brug dette mellemresultat direkte, hvor symbolet står i næste trin.</p>':''}</li>`).join('')||'';
+    host.innerHTML=`<div class="calculator-heading"><h3>${heading}</h3><span>Ca. ${range(size)} tegn</span></div><p class="calculator-intro">${expanded?'Den udfoldede formel':'Kortvisningen'} · skøn med 4–8 tegn pr. indsat tal. TI-30XS MultiView har plads til op til 80 tegn i en indtastning.</p>${size.deep?'<p class="calculator-intro">Brøker, rødder og potenser ligger op til '+size.nesting+' niveauer inde i hinanden. MathPrint understøtter op til 4; delberegninger kan hjælpe.</p>':''}${rows?`<details class="calculator-plan" data-detail-key="calculator-plan-${esc(f.id)}"><summary>Forslag: ${plan.steps.length} ${plan.steps.length===1?'mellemresultat':'mellemresultater'} og en kort slutformel</summary><p>Beregn delene i rækkefølgen nedenfor. Brug enhederne ved hvert mellemresultat, og afrund først det endelige svar.</p><ol>${rows}<li class="calculator-final"><div class="calculator-step-heading"><strong>${plan.steps.length+1}. Saml resultatet</strong><span>Ca. ${range(plan.estimate)} tegn</span></div><div class="calculator-math">${E.math(plan.final,f.symbol,E.resultUnit(f).label)}</div></li></ol>${plan.incomplete?'<p class="calculator-step-note">Forslaget forkorter formlen, men enkelte trin kan stadig være for lange med dine tal.</p>':''}<p>Gem gerne mellemresultaterne i ledige hukommelsesvariable, fx x og y. Brug de gemte variable i næste indtastning. Symbolerne her, fx V₁ og V₂, betegner dine mellemresultater.</p></details>`:''}<details class="calculator-method" data-detail-key="calculator-method"><summary>Sådan vurderes længden</summary><p>Skønnet tæller hver forekomst af et tal samt operatorer og parenteser ved lineær indtastning med ÷. Symbolnavne og enhedslabels tæller ikke med. Decimaler, minustegn, lange tal, brøkskabeloner og din tastemetode kan ændre pladsbehovet; skønnet er ingen garanti for, at indtastningen passer.</p><p>I Kort skal de viste referencer allerede være beregnet. Forslaget ændrer ikke dine gemte formler. Hver del beholder sine omregninger, og slutformlen giver resultatet i din valgte enhed. Andre TI-30-modeller kan have andre grænser.</p><p>TI-30XS har 7 hukommelsesvariable: x, y, z, t, a, b og c. Gem først nye værdier i en variabel, når dens tidligere værdi er færdigbrugt.</p><p class="calculator-sources">Kilder hos Texas Instruments (kræver internet): <a href="${G.SOURCES.length}" target="_blank" rel="noopener noreferrer">Indtastningsgrænse</a> · <a href="${G.SOURCES.nesting}" target="_blank" rel="noopener noreferrer">MathPrint</a> · <a href="${G.SOURCES.memory}" target="_blank" rel="noopener noreferrer">Hukommelse</a>.</p></details>`;
   }
   function unitOptions(dimension,selected) {
     return E.Units.choices(dimension).map(u=>`<option value="${esc(u.id)}" ${u.id===selected?'selected':''}>${esc(u.label)}</option>`).join('');

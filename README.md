@@ -44,6 +44,18 @@ Forenklingen genkender ens produkter, selv når faktorerne står i forskellig r�
 
 Enhedsomregninger bliver stående ved de størrelser, de hører til. Figursummer bevarer opdelingen mellem figurerne, og forskellige referencer holdes adskilt, selv hvis deres visningssymbol er ens. Gemte opsætninger beholder de oprindelige formler og referencer; forenklingen følger automatisk ændringer i kilderne.
 
+### Lange formler på TI-30XS
+
+Under den aktive formel vises et **vejledende længdeskøn** for indtastning på TI-30XS MultiView. TI angiver op til **80 tegn** i indtastningslinjen ([TI, løsning 15401](https://education.ti.com/en/customer-support/knowledge-base/scientific-elem-calculators/general-information/15401)). Andre TI-30-modeller kan have andre grænser.
+
+Skønnet regner med **4–8 tegn pr. indsat tal**, for hver forekomst. Operatorer, parenteser og enhedsomregninger indgår; symbolnavne og enhedslabels gør ikke. Det tager udgangspunkt i lineær indtastning med division. Decimaler, minustegn, lange tal, skabeloner og tastemetode påvirker pladsen, så det er ingen garanti for, at formlen passer. Fra et øvre skøn på 72 tegn anbefales delberegninger, så der er lidt plads op til grænsen. Det er kompendiets vejledende tærskel, ikke en ekstra TI-grænse.
+
+**Forslag: mellemresultater og en kort slutformel** viser de konkrete trin i rækkefølge. Fx beregnes `V_1` og `V_2` hver for sig, og bagefter bruges `(V_1 + V_2)`. Hvis slutresultatet ønskes i liter, bliver sluttrinnet `((V_1 + V_2) · 1000)`, når delvolumenerne er i m³. Store delformler deles videre efter behov. Et rent mellemudtryk får et ledigt navn som `M_1`; dets værdi bruges direkte i det efterfølgende trin. Forslaget ændrer ikke opsætningen.
+
+Vurderingen følger **Kort/Udfoldet**, valgte enheder, referencer, figurer og åbne/lukkede flader. I Kort forudsættes referencernes værdier allerede beregnet. Deltrinene bevarer parenteser, omregninger og rækkefølgen i subtraktion og division. Hvis et trin stadig er langt, står det ved forslaget. Afrund først til sidst.
+
+Der gives også besked ved mere end fire indlejrede brøker, rødder eller potenser, som kan ramme [MathPrint-grænsen på fire niveauer](https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_Home.HTML). TI-30XS har [syv hukommelsesvariable](https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_MemVar.HTML): x, y, z, t, a, b og c. De kan bruges til mellemresultater; genbrug først en variabel, når dens tidligere værdi er færdigbrugt. Hele vejledningen fungerer offline; kun kildehenvisningerne kræver internet.
+
 ### Input- og resultatenheder
 
 Hver kendt størrelse har et enhedsvalg, fx **mm → m**, **L/min → m³/s** eller **% → tal**. Brug derefter tallet fra opgaven direkte som det viste symbol. Omregningsfaktorerne er allerede med i formlen; der er fortsat ingen talindtastning eller numerisk resultatberegning i kompendiet.
@@ -183,6 +195,7 @@ npm run check
 - `dist/catalog.js`: formeldefinitioner, symbolske skabeloner, figurer og forklaringer.
 - `dist/units.js`: enheder, eksakte omregningsfaktorer og symbolske temperaturforskydninger.
 - `dist/engine.js`: referencegraf, substitution, MathML, tekstformat, LaTeX og validering.
+- `dist/calculator-guide.js`: vejledende TI-30XS-længdeskøn og symbolske delberegninger.
 - `dist/geometry.js`: placering af sammenføjede figurer og klikbare snitskitser.
 - `dist/solid-preview.js`: 3D-geometri, perspektiv, lys samt rotation og zoom på canvas.
 - `dist/tour.js`: guidet introduktion med fremhævning, placering, scroll og tastaturnavigation.
