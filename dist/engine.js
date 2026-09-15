@@ -242,10 +242,117 @@
     if (typeof template === 'string') return own(args, template) ? args[template] : { type: 'constant', value: template };
     return { type: template[0], children: template.slice(1).map(t => instantiate(t, args)) };
   }
+  // Local symbolic reductions, shared by the screen and every export format.
+  // Unit conversions remain explicit, and assembly sums retain their parts.
+  const constant = value => ({type:'constant',value:String(value)});
+  const operation = (type,children) => children.length===1?children[0]:{type,children};
+  const unwrap = ast => ast.type==='group'&&!ast.unitConversion?unwrap(ast.children[0]):ast;
+  const group = ast => ['symbol','constant','group'].includes(ast.type)?ast:{type:'group',children:[ast]};
+  const integer = ast => ast.type==='constant'&&/^\d+$/.test(ast.value)?BigInt(ast.value):null;
+  function fraction(n,d=1n) {
+    let a=n<0n?-n:n,b=d;
+    while(b){const next=a%b;a=b;b=next;}
+    return {n:n/a,d:d/a};
+  }
+  function expressionKey(ast) {
+    ast=unwrap(ast);
+    if(ast.type==='symbol')return JSON.stringify(['symbol',ast.symbol,ast.dimension||'',ast.reference||'',ast.unit||'']);
+    if(ast.type==='constant')return JSON.stringify(['constant',ast.value]);
+    const keys=ast.children.map(expressionKey);
+    if(['add','mul'].includes(ast.type))keys.sort();
+    return ast.type+':'+!!ast.unitConversion+':'+!!ast.assemblyParts+'['+keys.map(key=>key.length+':'+key).join('')+']';
+  }
+  function symbolicTerm(ast) {
+    let coefficient=fraction(1n);const factors=[];
+    function collect(node) {
+      const n=integer(node);
+      if(n!==null){coefficient=fraction(coefficient.n*n,coefficient.d);return;}
+      if(node.type==='mul'){node.children.forEach(collect);return;}
+      const denominator=node.type==='div'?integer(node.children[1]):null;
+      if(denominator!==null&&denominator>0n){
+        coefficient=fraction(coefficient.n,coefficient.d*denominator);collect(node.children[0]);return;
+      }
+      // In particular, do not extract a factor from an input's unit conversion.
+      factors.push(node);
+    }
+    collect(unwrap(ast));
+    return {coefficient,factors,key:JSON.stringify(factors.map(expressionKey).sort())};
+  }
+  function multipliedTerm(coefficient,factors) {
+    const {n,d}=coefficient;
+    if(n===0n)return constant(0);
+    const items=[...factors];
+    // Keep familiar geometry coefficients: two semicircles give (π/4)·D².
+    if(d!==1n&&items[0]?.type==='constant'&&items[0].value==='π'){
+      const numerator=n===1n?items[0]:operation('mul',[constant(n),items[0]]);
+      items[0]={type:'div',children:[numerator,constant(d)]};
+      return operation('mul',items);
+    }
+    if(n!==1n||!items.length)items.unshift(constant(n));
+    const numerator=operation('mul',items);
+    return d===1n?numerator:{type:'div',children:[group(numerator),constant(d)]};
+  }
+  function simplifySum(ast) {
+    const terms=[];
+    function collect(node) {
+      const unwrapped=unwrap(node);
+      if(unwrapped.type==='add'&&!unwrapped.assemblyParts)unwrapped.children.forEach(collect);
+      else terms.push(simplify(node));
+    }
+    collect(ast);
+    const same=new Map();
+    for(const original of terms){
+      const term=symbolicTerm(original),previous=same.get(term.key);
+      if(previous){
+        const a=previous.coefficient,b=term.coefficient;
+        previous.coefficient=fraction(a.n*b.d+b.n*a.d,a.d*b.d);previous.count++;
+      }else same.set(term.key,{...term,original,count:1});
+    }
+    const entries=[...same.values()].filter(term=>term.coefficient.n!==0n),multiples=new Map();
+    for(const term of entries){
+      const {n,d}=term.coefficient;
+      // Common whole-number counts shorten repeated plates without pulling
+      // physical dimensions out of otherwise recognizable geometry formulas.
+      if(d===1n&&n>1n){const key=String(n);if(!multiples.has(key))multiples.set(key,[]);multiples.get(key).push(term);}
+    }
+    const emitted=new Set(),children=[];
+    for(const term of entries){
+      const key=String(term.coefficient.n),batch=term.coefficient.d===1n?multiples.get(key):null;
+      if(batch?.length>1){
+        if(emitted.has(key))continue;
+        emitted.add(key);
+        const sum=operation('add',batch.map(t=>group(multipliedTerm(fraction(1n),t.factors))));
+        children.push(group(operation('mul',[constant(key),group(sum)])));
+      }else children.push(term.count===1?term.original:group(multipliedTerm(term.coefficient,term.factors)));
+    }
+    return children.length?operation('add',children):constant(0);
+  }
+  function simplify(ast) {
+    if(!ast.children||ast.unitConversion)return ast;
+    if(ast.type==='add'&&!ast.assemblyParts)return simplifySum(ast);
+    const children=ast.children.map(simplify);
+    if(ast.type==='group')return group(children[0]);
+    if(ast.type==='div'){
+      const n=integer(children[0]),d=integer(children[1]);
+      if(n!==null&&d!==null&&d>0n){const reduced=fraction(n,d);return multipliedTerm(reduced,[]);}
+    }
+    if(ast.type==='mul'){
+      const factors=new Map();
+      for(const child of children){
+        const unwrapped=unwrap(child),power=unwrapped.type==='pow'?integer(unwrapped.children[1]):null;
+        const base=power!==null&&power>0n?unwrapped.children[0]:child;
+        const key=expressionKey(base),previous=factors.get(key);
+        if(previous){previous.power+=power!==null&&power>0n?power:1n;previous.count++;}
+        else factors.set(key,{base,power:power!==null&&power>0n?power:1n,original:child,count:1});
+      }
+      return operation('mul',[...factors.values()].map(f=>f.count===1?f.original:{type:'pow',children:[group(f.base),constant(f.power)]}));
+    }
+    return {...ast,children};
+  }
   function context(model) {
     const list = descriptors(model), map = new Map(list.map(d => [d.target, d]));
     const grouped=(ast,depth)=>depth>0&&!['symbol','constant','group'].includes(ast.type)?{type:'group',children:[ast]}:ast;
-    function expand(expr, dimension, mode = 'expanded', stack = [], budget = { nodes: 0 }, depth = 0, label = '') {
+    function expandRaw(expr, dimension, mode = 'expanded', stack = [], budget = { nodes: 0 }, depth = 0, label = '') {
       if (++budget.nodes > 1200 || depth > 48 || stack.length > 80) throw new Error('Formelkæden er for stor. Behold nogle dele som symboler.');
       if (expr.kind === 'symbol') {
         const variable=leaf(expr.symbol,dimension,label);
@@ -260,25 +367,26 @@
         if (mode === 'compact') {
           // Known inputs retain their declared unit. Calculated references use the
           // source formula's displayed result unit and convert back to base once.
-          if(d.expression.kind==='symbol')return expand(d.expression,dimension,mode,[...stack,d.target],budget,depth+1,d.name);
+          if(d.expression.kind==='symbol')return expandRaw(d.expression,dimension,mode,[...stack,d.target],budget,depth+1,d.name);
           const unit=resultUnit(d),variable={...leaf(d.symbol,dimension,d.name),reference:d.target};
           if(unit.id!==Units.base(dimension).id)variable.unit=unit.label;
           return Units.convert(variable,unit);
         }
-        return expand(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);
+        return expandRaw(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);
       }
       if (expr.kind === 'assembly') {
         if (!['volume', 'area'].includes(dimension) || expr.dimension !== dimension) throw new Error('Figursummen passer ikke til størrelsen.');
         const selected = model.shapes.filter(s => s.include);
         if (!selected.length) throw new Error('Vælg mindst én figur, der indgår i beholderen.');
-        const children = selected.map(s => expand(ref(`shape:${s.id}:${dimension === 'volume' ? 'volume' : 'area'}`), dimension, mode, stack, budget, depth + 1));
-        return grouped(children.length === 1 ? children[0] : { type: 'add', children },depth);
+        const children = selected.map(s => expandRaw(ref(`shape:${s.id}:${dimension === 'volume' ? 'volume' : 'area'}`), dimension, mode, stack, budget, depth + 1));
+        return grouped(children.length === 1 ? children[0] : { type: 'add', children, assemblyParts:true },depth);
       }
       const f = own(FORMULAS, expr.formula) && FORMULAS[expr.formula];
       if (expr.kind !== 'formula' || !f || f.dimension !== dimension) throw new Error('Formlen passer ikke til størrelsen.');
-      const args = Object.fromEntries(Object.entries(f.args).map(([k, a]) => [k, expand(expr.args[k], a.dimension, mode, stack, budget, depth + 1, a.label)]));
+      const args = Object.fromEntries(Object.entries(f.args).map(([k, a]) => [k, expandRaw(expr.args[k], a.dimension, mode, stack, budget, depth + 1, a.label)]));
       return grouped(instantiate(f.template, args),depth);
     }
+    function expand(...args) { return simplify(expandRaw(...args)); }
     function target(id, mode = 'expanded') {
       const d = map.get(id);
       if (!d) throw new Error('Formlen findes ikke.');

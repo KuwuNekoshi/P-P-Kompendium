@@ -96,7 +96,7 @@
     if(numerator!==1)out={type:'mul',children:[out,constant(numerator)]};
     if(denominator!==1)out={type:'div',children:[out,constant(denominator)]};
     if(!inverse&&unit.offset!=='0')out={type:'add',children:[out,constant(unit.offset)]};
-    return group(out);
+    return {...group(out),unitConversion:true};
   }
   function hint(unit,direction='toBase'){
     const inverse=direction==='fromBase',parts=[];

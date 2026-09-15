@@ -36,6 +36,14 @@ En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af ki
 
 Indsatte delformler og figursummer får **tydelige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx ganges hele summen af tankens pladearealer med pladetykkelse og massefylde. Nævnere, subtraherede summer og udtryk under potenser grupperes også.
 
+### Automatisk forenkling
+
+Ens led samles automatisk, også i indsatte formler og referencer. Kassens fire sideflader vises som **2 · ((L · h) + (B · h))**. Halvcylinderens krumme flade med to lukkede ender vises som **((π/2) · D · L) + ((π/4) · D²)**. Med kun én lukket ende er endens faktor fortsat π/8.
+
+Forenklingen genkender ens produkter, selv når faktorerne står i forskellig rækkefølge. Den samler deres talfaktorer med eksakte brøker, trækker fælles hele antal ud foran en sum og skriver gentagne faktorer som potenser. Reglerne bruges i både Kort, Udfoldet, kopieret tekst og LaTeX. Åbne flader og fælles samleflader fjernes, før arealleddene samles.
+
+Enhedsomregninger bliver stående ved de størrelser, de hører til. Figursummer bevarer opdelingen mellem figurerne, og forskellige referencer holdes adskilt, selv hvis deres visningssymbol er ens. Gemte opsætninger beholder de oprindelige formler og referencer; forenklingen følger automatisk ændringer i kilderne.
+
 ### Input- og resultatenheder
 
 Hver kendt størrelse har et enhedsvalg, fx **mm → m**, **L/min → m³/s** eller **% → tal**. Brug derefter tallet fra opgaven direkte som det viste symbol. Omregningsfaktorerne er allerede med i formlen; der er fortsat ingen talindtastning eller numerisk resultatberegning i kompendiet.
@@ -159,7 +167,7 @@ Der er 127 valgbare formler og 10 figurer. Hver formel har relevante symbolforkl
 - Summer af rumfang forudsætter, at beholderdelene ikke overlapper.
 - Overfladearealer omfatter krumme kapper og de valgte lukkede flader. Fælles endeflader i en samling fjernes automatisk. Det åbne bassin-eksempel bruger cylinderkappe og keglekappe.
 - Rumfang og pladeareal bruger indvendige mål; en oplyst udvendig diameter omregnes med godstykkelsen. T9 er fortsat skolens tilnærmelse med tynde plader og indvendigt areal, ikke et eksakt rumfang af alle tankvægge og samlinger. Et åbent/lukket valg ændrer arealet, men ikke det geometriske rumfang. Visningen er skematisk og viser ingen målestok, vægtykkelse eller væskeniveau.
-- Kompendiet omskriver ved substitution. Det isolerer ikke automatisk en vilkårlig ubekendt og foretager ikke algebraisk reduktion. Vælg den ønskede formel fra samlingen.
+- Kompendiet indsætter delformler og samler ens led, talfaktorer og gentagne faktorer automatisk. Det isolerer ikke automatisk en vilkårlig ubekendt. Vælg den ønskede grundformel fra samlingen.
 - Referencer af forkert størrelse afvises. Cirkler og manglende kilder vises som fejl. Ens dimension garanterer ikke, at et valg passer til opgavens fysiske forudsætninger.
 
 ## Udvikling
