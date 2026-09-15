@@ -4,6 +4,10 @@ Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser
 
 ## Brug det offline
 
+Hent **index.html** direkte fra [seneste GitHub Release](https://github.com/KuwuNekoshi/P-P-Kompendium/releases/latest) under **Assets**, og åbn filen i din browser.
+
+Du kan også hente hele projektet:
+
 1. Vælg **Code → Download ZIP** her i GitHub, og pak mappen ud.
 2. Dobbeltklik på **index.html** i mappens rod.
 3. Vælg, hvad du vil finde, indsæt figurer, og tilpas formlens dele.
@@ -19,7 +23,7 @@ Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser
 Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, indsatte formler, formelkæden, enheder og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
 
 - Vælg, hvad du vil finde, fx fyldetid, volumenflow eller rumfang.
-- Indsæt cylinder, kegle, **halvkugle**, keglestub, kasse, kugle eller rør.
+- Indsæt cylinder, kegle, halvkugle, keglestub, kasse, kugle, rør, **halvcylinder**, **V-bund** eller **pyramide**.
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
 - Vælg en figur, angiv **Indvendig diameter** eller **Udvendig diameter**, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra pladearealet.
 - Vælg ved hver størrelse: **kendt størrelse**, **indsæt en formel** eller **brug en reference**.
@@ -55,7 +59,7 @@ V [L] = ((π / 4) · (D / 1000)² · (h / 100)) · 1000
 
 ### Indvendig eller udvendig diameter
 
-Vælg figuren og brug **Den oplyste diameter er**. Valget gælder cylinder, rør, kugle, halvkugle, kegle og keglestub; på keglestubben gælder det både den store og den lille diameter.
+Vælg figuren og brug **Den oplyste diameter er**. Valget gælder cylinder, rør, kugle, halvkugle, halvcylinder, kegle og keglestub; på keglestubben gælder det både den store og den lille diameter.
 
 ```text
 D_indre = (D_ydre − (2 · t_radial))
@@ -100,7 +104,21 @@ Kataloget er afstemt mod **EUC-Nordvestsjælland, Processkolen i Kalundborg: For
 
 Den indsendte PDF er brugt som reference; selve PDF-filen distribueres ikke i projektet.
 
-### Visuelle samlinger i 3D
+### Rundbund, V-bund og pyramide under en kasse
+
+Vælg **Sammensæt → Kasse → Bund → Ny halvcylinder / Ny v-bund / Ny pyramide → Sæt sammen**. Du kan også forbinde en bundfigur, som allerede er indsat. Samlefladen er rektangulær. Begge dimensioner deles: L følger kassens længde, og B følger kassens bredde. På halvcylinderen er D = kassens indvendige bredde. Det virker i begge forbindelsesretninger, også når halvcylinderen bruger en udvendig diameter med godstykkelse.
+
+| Bundfigur | Udformning | Rumfang | Pladeareal uden den rektangulære snitflade |
+| --- | --- | --- | --- |
+| Halvcylinder | Cylinder skåret på langs; to flade halvcirkelender. Dybde D/2. | (π/8) · D² · L | ((π/2) · D · L) + ((π/4) · D²) |
+| V-bund | Symmetrisk trekantet prisme; to trekantsender og to skrå plader. | (L · B · h)/2 | (2 · L · √(h² + (B/2)²)) + (B · h) |
+| Pyramide | Fire trekantede sider mødes i én spids lodret under centrum. | (L · B · h)/3 | (L · √(h² + (B/2)²)) + (B · √(h² + (L/2)²)) |
+
+Her er L længde og B bredde, mens **h er bundfigurens lodrette dybde under kassen**, ikke den skrå sidelængde. Tabellen forudsætter lukkede ender og sideflader. I figurens indstillinger kan hver plan flade åbnes eller lukkes separat. Halvcylinderens ene endeflade har arealet (π/8) · D²; V-bundens ene trekantsende har arealet (B · h)/2. En fri, lukket snitflade tilføjer L · D eller L · B.
+
+Når bundfiguren er sat på kassen, fjernes både kassens bundplade og bundfigurens snitflade fra pladearealet. Rumfangene lægges sammen, og T9 kan bruge det samlede pladeareal til tankens egenvægt. Åbne flader ændrer ikke det geometriske rumfang. Løsnes samlingen, gendannes figurernes egne mål og fladevalg.
+
+### Betjen 3D-visningen
 
 **3D** viser figurerne samlet ende mod ende. Træk med musen eller en finger for at dreje; brug musehjulet eller knapperne **+ / −** til zoom. Piletasterne drejer også visningen, når den har fokus, og **R** nulstiller vinklen. Åbne flader vises uden låg. **Skitse** viser et klikbart snit med navne og fladernes status.
 
@@ -133,7 +151,7 @@ t = [(π/4) · D₁² · h₁ + (1/3) · (π/4) · D₁² · h₂]
 
 Keglebunden deler diameter med cylinderen. Røret leverer tværsnitsarealet til flowformlen og indgår ikke i beholderens rumfang. Kendes flowet allerede, vælger du **Kendt størrelse · Qv** ved flowet; så forsvinder rørdiameter og hastighed fra den udfoldede formel.
 
-Der er 114 valgbare formler. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
+Der er 127 valgbare formler og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
 
 ## Forudsætninger
 
@@ -170,3 +188,7 @@ Formlernes skabeloner består af faste matematiske operationer. Der bruges hverk
 Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
+
+### Udgivelser
+
+GitHub-workflowen **Udgiv offline-kompendium** kører ved ændringer i `package.json` på `main` og kan også startes manuelt. Den kører testene, bygger offlinefilen og kontrollerer, at den matcher den indcheckede `index.html`. Versionsnummeret i `package.json` og den tilsvarende tekst i `releases/vX.Y.Z.md` bruges til en GitHub Release med `index.html` som asset. Udgivelsen peger på det præcise commit; allerede udgivne versioner ændres ikke.

@@ -190,23 +190,29 @@
       for (const [key, a] of Object.entries(type.inputs)) {
         const target=`shape:${s.id}:input:${key}`,source=shared.get(target);
         if(dKeys.includes(key)){
-          const root=inputInfo.get(source),rootInner=innerTarget(root.shape,root.key),ownInner=innerTarget(s,key),wall=ref(`shape:${s.id}:diameterThickness`);
+          // A diameter may share the inside width of a rectangular face (for
+          // example a half-cylinder below a box), not only another diameter.
+          const root=inputInfo.get(source),rootInner=geometricInput(root.shape,root.key),ownInner=innerTarget(s,key),wall=ref(`shape:${s.id}:diameterThickness`);
           const nominal=source===target?s.inputs[key]:diameter.basis==='inner'?ref(rootInner):form('outerDiameter',{D:ref(rootInner),t:wall});
           const inner=source!==target?ref(rootInner):diameter.basis==='inner'?ref(target):form('innerDiameter',{D:ref(target),t:wall});
           const outer=diameter.basis==='outer'?ref(target):form('outerDiameter',{D:ref(ownInner),t:wall});
           list.push({target,name:`${s.name} · ${a.label} (${diameter.basis==='inner'?'indvendig':'udvendig'})`,symbol:symbolByTarget.get(target),dimension:'length',expression:nominal,sharedTarget:source!==target?source:null,ownerType:'shape',ownerId:s.id,input:key});
           list.push({target:ownInner,name:`${s.name} · ${key==='d'?'Lille indvendig':'Indvendig'} diameter`,symbol:a.symbol+'_indre'+s.ordinal,dimension:'length',expression:inner,ownerType:'shape',ownerId:s.id,output:'innerDiameter'});
           list.push({target:`shape:${s.id}:outer:${key}`,name:`${s.name} · ${key==='d'?'Lille udvendig':'Udvendig'} diameter`,symbol:a.symbol+'_ydre'+s.ordinal,dimension:'length',expression:outer,ownerType:'shape',ownerId:s.id,output:'outerDiameter'});
-        }else list.push({ target, name:`${s.name} · ${a.label}`,symbol:symbolByTarget.get(source),dimension:a.dimension,expression:source===target?s.inputs[key]:ref(source),sharedTarget:source!==target?source:null,ownerType:'shape',ownerId:s.id,input:key });
+        }else {
+          const root=inputInfo.get(source),sourceIsDiameter=diameterKeys(root.shape).includes(root.key);
+          const sharedSymbol=sourceIsDiameter?SHAPES[root.shape.type].inputs[root.key].symbol+'_indre'+root.shape.ordinal:symbolByTarget.get(source);
+          list.push({ target, name:`${s.name} · ${a.label}`,symbol:sharedSymbol,dimension:a.dimension,expression:source===target?s.inputs[key]:ref(geometricInput(root.shape,root.key)),sharedTarget:source!==target?source:null,ownerType:'shape',ownerId:s.id,input:key });
+        }
       }
-      const addOutput = (key, label, fId, sym) => {
+      const addOutput = (key, label, fId, sym, mapping) => {
         const f = FORMULAS[fId];
         list.push({ target: `shape:${s.id}:${key}`, name: `${s.name} · ${label}`, symbol: key === 'crossSection' ? 'A_t' + s.ordinal : sym + '_' + s.ordinal, dimension: f.dimension,
-          expression: shapeFormula(s,fId), ownerType: 'shape', ownerId: s.id, output: key });
+          expression: shapeFormula(s,fId,mapping), ownerType: 'shape', ownerId: s.id, output: key });
       };
       addOutput('volume', 'Rumfang', type.volume, 'V');
       list.push({ target:`shape:${s.id}:area`,name:`${s.name} · Pladeareal ved indvendige mål`,symbol:'A_'+s.ordinal,dimension:'area',expression:surfaceExpression(model,s),ownerId:s.id,ownerType:'shape',output:'area' });
-      if (type.crossSection) addOutput('crossSection', 'Tværsnitsareal', type.crossSection, 'A_t' + s.ordinal);
+      if (type.crossSection) addOutput('crossSection', 'Tværsnitsareal', type.crossSection, 'A_t' + s.ordinal, type.crossSectionArgs);
     }
     for (const f of model.formulas) list.push({ target: `formula:${f.id}`, name: f.name, symbol: f.symbol, dimension: f.dimension, resultUnit:f.resultUnit, expression: f.expression, ownerType: 'formula', ownerId: f.id });
     return list;

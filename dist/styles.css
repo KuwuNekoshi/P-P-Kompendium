@@ -52,6 +52,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     scrollbar-gutter:stable;
   }
 }
+.shape-tool span{min-width:0;max-width:100%;overflow-wrap:anywhere;hyphens:auto}
 /* Guided introduction. The transparent modal keeps the real interface visible
    while the spotlight shades everything except the current teaching target. */
 .help-button{width:36px;height:36px;font-size:1rem;font-weight:550}

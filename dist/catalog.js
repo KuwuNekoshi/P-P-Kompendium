@@ -1413,6 +1413,742 @@
       ],
       "note": "Den krumme flade og den plane cirkelflade."
     },
+    "semicircleArea": {
+      "name": "Halvcirklens areal",
+      "group": "Geometri",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (π / 8) · D²",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          "π",
+          "8"
+        ],
+        [
+          "pow",
+          "D",
+          "2"
+        ]
+      ],
+      "note": "Én halvcirkelformet endeflade på en cylinder, der er skåret på langs gennem sin akse.",
+      "aliases": [
+        "halvcylinder",
+        "halv cylinder",
+        "halv cirkel",
+        "D-form",
+        "rundbund"
+      ]
+    },
+    "halfCylinderVolume": {
+      "name": "Halvcylinderens rumfang",
+      "group": "Geometri",
+      "symbol": "V",
+      "dimension": "volume",
+      "equation": "V = (π / 8) · D² · L",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        },
+        "L": {
+          "symbol": "L",
+          "label": "Længde langs halvcylinderen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "mul",
+          [
+            "div",
+            "π",
+            "8"
+          ],
+          [
+            "pow",
+            "D",
+            "2"
+          ]
+        ],
+        "L"
+      ],
+      "note": "En cylinder halveret på langs gennem sin akse. L er længden, D er diameteren, og dybden er D / 2. Åbne flader ændrer ikke det geometriske rumfang.",
+      "aliases": [
+        "halvcylinder",
+        "halv cylinder",
+        "halv cirkel",
+        "D-form",
+        "rundbund"
+      ]
+    },
+    "halfCylinderMantle": {
+      "name": "Halvcylinderens krumme flade",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (π / 2) · D · L",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        },
+        "L": {
+          "symbol": "L",
+          "label": "Længde langs halvcylinderen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          "π",
+          "2"
+        ],
+        "D",
+        "L"
+      ],
+      "note": "Kun den krumme kappe. De to halvcirkelformede ender og den rektangulære snitflade er udeladt.",
+      "aliases": [
+        "halvcylinder",
+        "halv cylinder",
+        "halv cirkel",
+        "D-form",
+        "rundbund"
+      ]
+    },
+    "halfCylinderOpen": {
+      "name": "Halvcylinder med åben snitflade",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = ((π / 2) · D · L) + ((π / 4) · D²)",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        },
+        "L": {
+          "symbol": "L",
+          "label": "Længde langs halvcylinderen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "add",
+        [
+          "mul",
+          [
+            "div",
+            "π",
+            "2"
+          ],
+          "D",
+          "L"
+        ],
+        [
+          "mul",
+          [
+            "div",
+            "π",
+            "4"
+          ],
+          [
+            "pow",
+            "D",
+            "2"
+          ]
+        ]
+      ],
+      "note": "Krum kappe og to lukkede halvcirkelformede ender. Den rektangulære snitflade på D · L er åben eller sammenføjet med fx en kasses bund.",
+      "aliases": [
+        "halvcylinder",
+        "halv cylinder",
+        "halv cirkel",
+        "D-form",
+        "rundbund"
+      ]
+    },
+    "halfCylinderClosed": {
+      "name": "Halvcylinder med alle flader lukket",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = ((π / 2) · D · L) + (D · L) + ((π / 4) · D²)",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        },
+        "L": {
+          "symbol": "L",
+          "label": "Længde langs halvcylinderen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "add",
+        [
+          "mul",
+          [
+            "div",
+            "π",
+            "2"
+          ],
+          "D",
+          "L"
+        ],
+        [
+          "mul",
+          "D",
+          "L"
+        ],
+        [
+          "mul",
+          [
+            "div",
+            "π",
+            "4"
+          ],
+          [
+            "pow",
+            "D",
+            "2"
+          ]
+        ]
+      ],
+      "note": "Krum kappe, rektangulær snitflade og to halvcirkelformede ender. Brug figurens pladeareal, hvis enkelte flader er åbne eller sammenføjede.",
+      "aliases": [
+        "halvcylinder",
+        "halv cylinder",
+        "halv cirkel",
+        "D-form",
+        "rundbund"
+      ]
+    },
+    "triangularPrismVolume": {
+      "name": "V-bundens rumfang · trekantet prisme",
+      "group": "Geometri",
+      "symbol": "V",
+      "dimension": "volume",
+      "equation": "V = (L · B · h) / 2",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "div",
+        [
+          "mul",
+          "L",
+          "B",
+          "h"
+        ],
+        "2"
+      ],
+      "note": "Et trekantet prisme med konstant, ligebenet tværsnit langs hele længden L. h er den lodrette dybde, ikke den skrå sidelængde.",
+      "aliases": [
+        "V-bund",
+        "V bund",
+        "trekantet prisme",
+        "trekantbund",
+        "kilebund"
+      ]
+    },
+    "triangularPrismSide": {
+      "name": "V-bundens ene skrå plade",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = L · √(h² + (B / 2)²)",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        "L",
+        [
+          "sqrt",
+          [
+            "add",
+            [
+              "pow",
+              "h",
+              "2"
+            ],
+            [
+              "pow",
+              [
+                "div",
+                "B",
+                "2"
+              ],
+              "2"
+            ]
+          ]
+        ]
+      ],
+      "note": "Én af de to skrå, rektangulære plader i en symmetrisk V-bund. De trekantede ender og den øverste snitflade er ikke med.",
+      "aliases": [
+        "V-bund",
+        "V bund",
+        "trekantet prisme",
+        "trekantbund",
+        "kilebund"
+      ]
+    },
+    "triangularPrismOpen": {
+      "name": "V-bund med åben snitflade",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (2 · L · √(h² + (B / 2)²)) + (B · h)",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "add",
+        [
+          "mul",
+          "2",
+          "L",
+          [
+            "sqrt",
+            [
+              "add",
+              [
+                "pow",
+                "h",
+                "2"
+              ],
+              [
+                "pow",
+                [
+                  "div",
+                  "B",
+                  "2"
+                ],
+                "2"
+              ]
+            ]
+          ]
+        ],
+        [
+          "mul",
+          "B",
+          "h"
+        ]
+      ],
+      "note": "To skrå plader og to lukkede, ligebenede trekantsender. Den rektangulære snitflade er åben eller sammenføjet med kassens bund.",
+      "aliases": [
+        "V-bund",
+        "V bund",
+        "trekantet prisme",
+        "trekantbund",
+        "kilebund"
+      ]
+    },
+    "triangularPrismClosed": {
+      "name": "V-bund med alle flader lukket",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (2 · L · √(h² + (B / 2)²)) + (B · h) + (L · B)",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "add",
+        [
+          "mul",
+          "2",
+          "L",
+          [
+            "sqrt",
+            [
+              "add",
+              [
+                "pow",
+                "h",
+                "2"
+              ],
+              [
+                "pow",
+                [
+                  "div",
+                  "B",
+                  "2"
+                ],
+                "2"
+              ]
+            ]
+          ]
+        ],
+        [
+          "mul",
+          "B",
+          "h"
+        ],
+        [
+          "mul",
+          "L",
+          "B"
+        ]
+      ],
+      "note": "Alle fem flader på et symmetrisk trekantet prisme. Brug figurens pladeareal, hvis enkelte flader er åbne eller sammenføjede.",
+      "aliases": [
+        "V-bund",
+        "V bund",
+        "trekantet prisme",
+        "trekantbund",
+        "kilebund"
+      ]
+    },
+    "rectangularPyramidVolume": {
+      "name": "Pyramidebundens rumfang · rektangulær",
+      "group": "Geometri",
+      "symbol": "V",
+      "dimension": "volume",
+      "equation": "V = (L · B · h) / 3",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "div",
+        [
+          "mul",
+          "L",
+          "B",
+          "h"
+        ],
+        "3"
+      ],
+      "note": "Pyramide med rektangulær snitflade L · B og spids lodret under snitfladens centrum. h er den lodrette dybde.",
+      "aliases": [
+        "pyramide",
+        "pyramidebund",
+        "tragtbund",
+        "rektangulær pyramide",
+        "kvadratisk pyramide"
+      ]
+    },
+    "rectangularPyramidSide": {
+      "name": "Pyramidebundens ene trekantede side",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (L / 2) · √(h² + (B / 2)²)",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Sidefladens grundlinje",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Snitfladens mål vinkelret på grundlinjen",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          "L",
+          "2"
+        ],
+        [
+          "sqrt",
+          [
+            "add",
+            [
+              "pow",
+              "h",
+              "2"
+            ],
+            [
+              "pow",
+              [
+                "div",
+                "B",
+                "2"
+              ],
+              "2"
+            ]
+          ]
+        ]
+      ],
+      "note": "Én trekantet side på en ret, rektangulær pyramide. For sider med grundlinjen B byttes L og B. Spidsen ligger under centrum.",
+      "aliases": [
+        "pyramide",
+        "pyramidebund",
+        "tragtbund",
+        "rektangulær pyramide",
+        "kvadratisk pyramide"
+      ]
+    },
+    "rectangularPyramidOpen": {
+      "name": "Pyramidebund med åben snitflade",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (L · √(h² + (B / 2)²)) + (B · √(h² + (L / 2)²))",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "add",
+        [
+          "mul",
+          "L",
+          [
+            "sqrt",
+            [
+              "add",
+              [
+                "pow",
+                "h",
+                "2"
+              ],
+              [
+                "pow",
+                [
+                  "div",
+                  "B",
+                  "2"
+                ],
+                "2"
+              ]
+            ]
+          ]
+        ],
+        [
+          "mul",
+          "B",
+          [
+            "sqrt",
+            [
+              "add",
+              [
+                "pow",
+                "h",
+                "2"
+              ],
+              [
+                "pow",
+                [
+                  "div",
+                  "L",
+                  "2"
+                ],
+                "2"
+              ]
+            ]
+          ]
+        ]
+      ],
+      "note": "De fire trekantede sider mødes i én spids under centrum. Den rektangulære snitflade er udeladt. Formlen gælder også en kvadratisk pyramide, når L = B.",
+      "aliases": [
+        "pyramide",
+        "pyramidebund",
+        "tragtbund",
+        "rektangulær pyramide",
+        "kvadratisk pyramide"
+      ]
+    },
+    "rectangularPyramidClosed": {
+      "name": "Pyramidebund med alle flader lukket",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (L · √(h² + (B / 2)²)) + (B · √(h² + (L / 2)²)) + (L · B)",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "add",
+        [
+          "add",
+          [
+            "mul",
+            "L",
+            [
+              "sqrt",
+              [
+                "add",
+                [
+                  "pow",
+                  "h",
+                  "2"
+                ],
+                [
+                  "pow",
+                  [
+                    "div",
+                    "B",
+                    "2"
+                  ],
+                  "2"
+                ]
+              ]
+            ]
+          ],
+          [
+            "mul",
+            "B",
+            [
+              "sqrt",
+              [
+                "add",
+                [
+                  "pow",
+                  "h",
+                  "2"
+                ],
+                [
+                  "pow",
+                  [
+                    "div",
+                    "L",
+                    "2"
+                  ],
+                  "2"
+                ]
+              ]
+            ]
+          ]
+        ],
+        [
+          "mul",
+          "L",
+          "B"
+        ]
+      ],
+      "note": "Fire trekantede sideflader samt den rektangulære snitflade. Spidsen er lodret under centrum. Brug figurens pladeareal ved åbne flader eller samlinger.",
+      "aliases": [
+        "pyramide",
+        "pyramidebund",
+        "tragtbund",
+        "rektangulær pyramide",
+        "kvadratisk pyramide"
+      ]
+    },
     "tankMass": {
       "name": "Tankens egenvægt",
       "group": "Masse og tankvægt",
@@ -3098,7 +3834,15 @@
     },
     "inputPower": {
       "name": "Virkelig effekt (Pvirk)",
-      "aliases": ["tilført effekt", "Pind", "P_ind", "Pnyttig", "P_nyttig", "virkeevne", "eta"],
+      "aliases": [
+        "tilført effekt",
+        "Pind",
+        "P_ind",
+        "Pnyttig",
+        "P_nyttig",
+        "virkeevne",
+        "eta"
+      ],
       "group": "Pumper og tryk",
       "symbol": "P_virk",
       "dimension": "power",
@@ -4898,6 +5642,290 @@
           "formula": "circleArea",
           "args": {
             "D": "D"
+          }
+        }
+      }
+    },
+    "halfCylinder": {
+      "name": "Halvcylinder",
+      "hint": "Rundbund under kasse · dybde D / 2",
+      "inputs": {
+        "D": {
+          "symbol": "D",
+          "label": "Diameter",
+          "dimension": "length"
+        },
+        "L": {
+          "symbol": "L",
+          "label": "Længde langs halvcylinderen",
+          "dimension": "length"
+        }
+      },
+      "volume": "halfCylinderVolume",
+      "crossSection": "semicircleArea",
+      "surfaces": {
+        "mantle": [
+          "Kun krum flade",
+          "halfCylinderMantle"
+        ],
+        "open": [
+          "Åben snitflade + to ender",
+          "halfCylinderOpen"
+        ],
+        "closed": [
+          "Alle flader lukket",
+          "halfCylinderClosed"
+        ]
+      },
+      "surfaceDefault": "open",
+      "body": "halfCylinderMantle",
+      "faces": {
+        "top": {
+          "label": "Rektangulær snitflade",
+          "kind": "rectangle",
+          "dimensions": [
+            "L",
+            "D"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "L",
+            "B": "D"
+          }
+        },
+        "front": {
+          "label": "Halvcirkelformet ende 1",
+          "kind": "semicircle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": 0,
+          "join": false,
+          "formula": "semicircleArea",
+          "args": {
+            "D": "D"
+          }
+        },
+        "back": {
+          "label": "Halvcirkelformet ende 2",
+          "kind": "semicircle",
+          "dimensions": [
+            "D"
+          ],
+          "direction": 0,
+          "join": false,
+          "formula": "semicircleArea",
+          "args": {
+            "D": "D"
+          }
+        }
+      }
+    },
+    "triangularPrism": {
+      "name": "V-bund",
+      "hint": "Trekantet prisme · to flade trekantsender",
+      "inputs": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "volume": "triangularPrismVolume",
+      "crossSection": "triangleArea",
+      "crossSectionArgs": {
+        "g": "B",
+        "h": "h"
+      },
+      "surfaces": {
+        "open": [
+          "Uden snitflade",
+          "triangularPrismOpen"
+        ],
+        "closed": [
+          "Alle flader lukket",
+          "triangularPrismClosed"
+        ]
+      },
+      "surfaceDefault": "open",
+      "faces": {
+        "top": {
+          "label": "Rektangulær snitflade",
+          "kind": "rectangle",
+          "dimensions": [
+            "L",
+            "B"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "L",
+            "B": "B"
+          }
+        },
+        "front": {
+          "label": "Trekantet ende 1",
+          "kind": "triangle",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "triangleArea",
+          "args": {
+            "g": "B",
+            "h": "h"
+          }
+        },
+        "back": {
+          "label": "Trekantet ende 2",
+          "kind": "triangle",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "triangleArea",
+          "args": {
+            "g": "B",
+            "h": "h"
+          }
+        },
+        "left": {
+          "label": "Skrå langside 1",
+          "kind": "rectangle",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "triangularPrismSide",
+          "args": {
+            "L": "L",
+            "B": "B",
+            "h": "h"
+          }
+        },
+        "right": {
+          "label": "Skrå langside 2",
+          "kind": "rectangle",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "triangularPrismSide",
+          "args": {
+            "L": "L",
+            "B": "B",
+            "h": "h"
+          }
+        }
+      }
+    },
+    "pyramid": {
+      "name": "Pyramide",
+      "hint": "Pyramidebund · fire sider til én spids",
+      "inputs": {
+        "L": {
+          "symbol": "L",
+          "label": "Længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret dybde fra snitfladen",
+          "dimension": "length"
+        }
+      },
+      "volume": "rectangularPyramidVolume",
+      "surfaces": {
+        "open": [
+          "Uden snitflade",
+          "rectangularPyramidOpen"
+        ],
+        "closed": [
+          "Alle flader lukket",
+          "rectangularPyramidClosed"
+        ]
+      },
+      "surfaceDefault": "open",
+      "faces": {
+        "top": {
+          "label": "Rektangulær snitflade",
+          "kind": "rectangle",
+          "dimensions": [
+            "L",
+            "B"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "L",
+            "B": "B"
+          }
+        },
+        "front": {
+          "label": "Trekantside med grundlinje B · 1",
+          "kind": "triangle",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangularPyramidSide",
+          "args": {
+            "L": "B",
+            "B": "L",
+            "h": "h"
+          }
+        },
+        "back": {
+          "label": "Trekantside med grundlinje B · 2",
+          "kind": "triangle",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangularPyramidSide",
+          "args": {
+            "L": "B",
+            "B": "L",
+            "h": "h"
+          }
+        },
+        "left": {
+          "label": "Trekantside med grundlinje L · 1",
+          "kind": "triangle",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangularPyramidSide",
+          "args": {
+            "L": "L",
+            "B": "B",
+            "h": "h"
+          }
+        },
+        "right": {
+          "label": "Trekantside med grundlinje L · 2",
+          "kind": "triangle",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangularPyramidSide",
+          "args": {
+            "L": "L",
+            "B": "B",
+            "h": "h"
           }
         }
       }

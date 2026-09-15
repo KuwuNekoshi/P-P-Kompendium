@@ -1,0 +1,49 @@
+name: Udgiv offline-kompendium
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - .github/workflows/release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Hent den præcise version
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Kontrollér og byg offlinefilen
+        run: |
+          node --test tests/*.test.cjs
+          node tools/build.cjs
+          node tools/check.cjs
+          git diff --exit-code -- index.html
+      - name: Udgiv HTML som release-asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          release_tag="v$(node -p "require('./package.json').version")"
+          if gh release view "$release_tag" --json tagName >/dev/null 2>&1; then
+            echo "Denne version er allerede udgivet. Eksisterende releases ændres ikke."
+            exit 0
+          fi
+          test -f "releases/$release_tag.md"
+          gh release create "$release_tag" "index.html#P&P Kompendium – offline HTML" \
+            --target "$GITHUB_SHA" \
+            --title "P&P Kompendium $release_tag" \
+            --notes-file "releases/$release_tag.md"

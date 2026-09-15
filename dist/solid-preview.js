@@ -22,14 +22,41 @@
         const quad=(a,b,c,d,face)=>{triangle(a,b,c,face);triangle(a,c,d,face);};
         const edge=(a,b,state)=>edges.push({vertices:[a,b],state,shape:s.id});
         const ring=(r,y)=>Array.from({length:SEGMENTS},(_,i)=>point(r*Math.cos(i*2*Math.PI/SEGMENTS),y,r*Math.sin(i*2*Math.PI/SEGMENTS)));
+        const flatFace=(key,vertices)=>{
+          const joint=E.connectionAt(model,s.id,key),state=joint?'joined':s.faces[key];
+          if(state==='closed')for(let i=1;i<vertices.length-1;i++)triangle(vertices[0],vertices[i],vertices[i+1],key);
+          if(!joint||joint.a.shape===s.id)for(let i=0;i<vertices.length;i++)edge(vertices[i],vertices[(i+1)%vertices.length],state);
+        };
         if(s.type==='box'){
-          const r=p.r,z=r*.72,h=p.h;
+          const r=p.r,z=p.depth,h=p.h;
           const v=[point(-r,0,-z),point(r,0,-z),point(r,0,z),point(-r,0,z),point(-r,h,-z),point(r,h,-z),point(r,h,z),point(-r,h,z)];
-          const faceIndices={top:[0,1,2,3],bottom:[4,7,6,5],front:[3,2,6,7],back:[1,0,4,5],left:[0,3,7,4],right:[2,1,5,6]};
+          const faceIndices={top:[0,1,2,3],bottom:[4,7,6,5],front:[2,1,5,6],back:[0,3,7,4],left:[1,0,4,5],right:[3,2,6,7]};
           for(const [key,indices]of Object.entries(faceIndices)){
             const joint=E.connectionAt(model,s.id,key),state=joint?'joined':s.faces[key];
             if(state==='closed')quad(...indices.map(i=>v[i]),key);
             if(!joint||joint.a.shape===s.id)for(let i=0;i<4;i++)edge(v[indices[i]],v[indices[(i+1)%4]],state);
+          }
+          continue;
+        }
+        if(['halfCylinder','triangularPrism','pyramid'].includes(s.type)){
+          const r=p.r,z=p.depth,h=p.h;
+          const top=[point(-r,0,-z),point(r,0,-z),point(r,0,z),point(-r,0,z)];
+          flatFace('top',top);
+          if(s.type==='halfCylinder'){
+            const arc=depth=>Array.from({length:SEGMENTS+1},(_,i)=>point(r*Math.cos(i*Math.PI/SEGMENTS),r*Math.sin(i*Math.PI/SEGMENTS),depth));
+            const front=arc(z),back=arc(-z);
+            for(let i=0;i<SEGMENTS;i++)quad(back[i],back[i+1],front[i+1],front[i],'body');
+            flatFace('front',front);flatFace('back',back.slice().reverse());
+          }else if(s.type==='triangularPrism'){
+            const ridgeBack=point(0,h,-z),ridgeFront=point(0,h,z);
+            flatFace('front',[top[3],top[2],ridgeFront]);
+            flatFace('back',[top[1],top[0],ridgeBack]);
+            flatFace('left',[top[0],top[3],ridgeFront,ridgeBack]);
+            flatFace('right',[top[2],top[1],ridgeBack,ridgeFront]);
+          }else{
+            const tip=point(0,h,0);
+            flatFace('front',[top[3],top[2],tip]);flatFace('back',[top[1],top[0],tip]);
+            flatFace('left',[top[0],top[3],tip]);flatFace('right',[top[2],top[1],tip]);
           }
           continue;
         }
