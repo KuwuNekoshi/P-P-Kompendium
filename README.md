@@ -42,7 +42,13 @@ Ens led samles automatisk, også i indsatte formler og referencer. Kassens fire 
 
 Forenklingen genkender ens produkter, selv når faktorerne står i forskellig rækkefølge. Den samler deres talfaktorer med eksakte brøker, trækker fælles hele antal ud foran en sum og skriver gentagne faktorer som potenser. Reglerne bruges i både Kort, Udfoldet, kopieret tekst og LaTeX. Åbne flader og fælles samleflader fjernes, før arealleddene samles.
 
-Enhedsomregninger bliver stående ved de størrelser, de hører til. Figursummer bevarer opdelingen mellem figurerne, og forskellige referencer holdes adskilt, selv hvis deres visningssymbol er ens. Gemte opsætninger beholder de oprindelige formler og referencer; forenklingen følger automatisk ændringer i kilderne.
+Nødvendige enhedsomregninger bevares, mens modgående faktorer forkortes automatisk. Figursummer bevarer opdelingen mellem figurerne, og forskellige referencer holdes adskilt, selv hvis deres visningssymbol er ens. Gemte opsætninger beholder de oprindelige formler og referencer; forenklingen følger automatisk ændringer i kilderne.
+
+Med motorens omdrejningstal i **omdr./min**, tromlediameteren i **m** og båndhastigheden i **m/min** bliver formlen direkte **v = π · D · n**. Division med 60 og efterfølgende multiplikation med 60 forkortes væk. Vælges diameteren i **mm**, bevares den nødvendige længdefaktor: **v = (π · D · n) / 1000**. Vælges resultatet i **m/s**, skal tidsfaktoren fortsat med.
+
+Forkortningen bruger eksakte enhedsfaktorer i produkter, brøker og faste potenser. Den kan også følge fælles faktorer gennem en hel sum eller forskel og eksakte kvadratrødder. Forskellige faktorer i separate sumled forkortes ikke imod hinanden. Temperaturforskydninger som **+273,15** holdes adskilt fra multiplikationsfaktorer. Fx giver liter divideret med liter/min direkte minutter, uden en omvej gennem m³ og sekunder i den viste slutformel.
+
+Brug tallene direkte i de valgte inputenheder. Omregningerne under enhedsvalgene er mærket **SI-reference**; de skal ikke udføres oven i den viste formel. Nødvendige restfaktorer kan stå samlet ét sted. TI-30XS-skønnet og kopierede formler bruger det forkortede udtryk. Forslag til delberegninger bevarer de enkelte mellemresultaters enheder og forkorter hvert trin for sig.
 
 ### Lange formler på TI-30XS
 
@@ -67,10 +73,10 @@ Hastighed, acceleration, volumenflow, masseflow, densitet, omdrejningstal, antal
 **Resultatets enhed** omregner hele det færdige udtryk, fx fra m³ til liter, sekunder til minutter, kg til ton eller W til kW. Den valgte enhed står ved formelresultatet. Eksempel med diameter i mm, indvendig højde i cm og rumfang i liter:
 
 ```text
-V [L] = ((π / 4) · (D / 1000)² · (h / 100)) · 1000
+V [L] = ((π / 4) · D² · h) / 100000
 ```
 
-- En længde i mm divideres med 1000, et areal i mm² med 1.000.000 og et rumfang i mm³ med 1.000.000.000. En diameter omregnes før kvadrering.
+- En længde i mm divideres med 1000, et areal i mm² med 1.000.000 og et rumfang i mm³ med 1.000.000.000. Diameterens omregningsfaktor kvadreres sammen med diameteren; efter forkortning kan faktoren stå samlet uden for potensen.
 - Flow og sammensatte enheder får både volumen-/massefaktoren og tidsfaktoren. Fx omregnes L/min til m³/s med division med 60.000.
 - Absolutte temperaturer i °C får tillæg af 273,15 til K. Resultater i °C får det modsatte fradrag. **Temperaturforskelle** i °C og K har samme tal og får intet tillæg.
 - Samme symbol og dimension har samme inputenhed i hele opsætningen. Hver gemt formel har sin egen resultatenhed. Ændringer åbner automatisk den udfoldede visning.
@@ -106,7 +112,7 @@ m_tank = (A_cylinder + A_endestykke + …) · t_plade · ρ_mat
 
 Pladearealet følger de valgte beholderdele. Åbne flader og fælles samleflader bidrager ikke med materiale. Lukker du en fri ende, kommer dens pladeareal automatisk med. Indløbsrør, der er fravalgt som beholderdele, tælles ikke med.
 
-Vælg **pladetykkelse** og **materialets massefylde** som kendte symboler, formler eller referencer. `t_plade` er en længde, ikke tid. Grundformlen bruger areal i m², tykkelse i m og massefylde i kg/m³ og giver kg. Vælg fx **mm** for tykkelsen, **ton/m³** for massefylden og **ton** som resultatenhed; alle tre omregninger indsættes automatisk.
+Vælg **pladetykkelse** og **materialets massefylde** som kendte symboler, formler eller referencer. `t_plade` er en længde, ikke tid. Grundformlen bruger areal i m², tykkelse i m og massefylde i kg/m³ og giver kg. Vælg fx **mm** for tykkelsen, **ton/m³** for massefylden og **ton** som resultatenhed; nødvendige omregninger indsættes, og modgående faktorer forkortes automatisk.
 
 T9 er skolens plademodel `m = A · t · ρ` (side 3 og 10). Den bruger ens materiale og tykkelse. For krumme flader med indvendige mål er materialerumfanget en tilnærmelse for tynd plade. Ben, studs, svejsninger og andet ekstraudstyr er ikke med. Ved forskelligt materiale eller forskellig tykkelse kan du vælge hver figurs areal i sin egen T9-formel og bruge **Sum af masser**.
 

@@ -243,7 +243,7 @@
     return { type: template[0], children: template.slice(1).map(t => instantiate(t, args)) };
   }
   // Local symbolic reductions, shared by the screen and every export format.
-  // Unit conversions remain explicit, and assembly sums retain their parts.
+  // Necessary unit conversions remain explicit, and assembly sums retain their parts.
   const constant = value => ({type:'constant',value:String(value)});
   const operation = (type,children) => children.length===1?children[0]:{type,children};
   const unwrap = ast => ast.type==='group'&&!ast.unitConversion?unwrap(ast.children[0]):ast;
@@ -386,15 +386,16 @@
       const args = Object.fromEntries(Object.entries(f.args).map(([k, a]) => [k, expandRaw(expr.args[k], a.dimension, mode, stack, budget, depth + 1, a.label)]));
       return grouped(instantiate(f.template, args),depth);
     }
-    function expand(...args) { return simplify(expandRaw(...args)); }
-    function target(id, mode = 'expanded') {
+    function expand(...args) { return Units.reduce(simplify(expandRaw(...args))); }
+    function target(id, mode = 'expanded', cancelUnits = true) {
       const d = map.get(id);
       if (!d) throw new Error('Formlen findes ikke.');
-      return expand(d.expression, d.dimension, mode, [id]);
+      const ast=simplify(expandRaw(d.expression, d.dimension, mode, [id]));
+      return cancelUnits?Units.reduce(ast):ast;
     }
-    function result(id,mode='expanded') {
-      const ast=target(id,mode);
-      return Units.convert(ast,resultUnit(map.get(id)),'fromBase');
+    function result(id,mode='expanded',cancelUnits=true) {
+      const ast=Units.convert(target(id,mode,false),resultUnit(map.get(id)),'fromBase');
+      return cancelUnits?Units.reduce(ast):ast;
     }
     function safe(id, mode = 'expanded', asResult = false) { try { return { ok: true, ast: asResult?result(id,mode):target(id,mode) }; } catch (e) { return { ok: false, error: e.message }; } }
     function steps(id) {

@@ -85,6 +85,7 @@
   }
   const key=variable=>variable.symbol+':'+variable.dimension;
   const constant=value=>({type:'constant',value:String(value)});
+  const unitFactor=value=>({...constant(value),unitFactor:true});
   const group=ast=>ast.type==='group'?ast:{type:'group',children:[ast]};
   function convert(ast,unit,direction='toBase'){
     if(!['toBase','fromBase'].includes(direction))throw new Error('Ukendt omregningsretning.');
@@ -93,10 +94,64 @@
     if(numerator===1&&denominator===1&&unit.offset==='0')return ast;
     let out=['symbol','constant','group'].includes(ast.type)?ast:group(ast);
     if(inverse&&unit.offset!=='0')out={type:'sub',children:[out,constant(unit.offset)]};
-    if(numerator!==1)out={type:'mul',children:[out,constant(numerator)]};
-    if(denominator!==1)out={type:'div',children:[out,constant(denominator)]};
+    if(numerator!==1)out={type:'mul',children:[out,unitFactor(numerator)]};
+    if(denominator!==1)out={type:'div',children:[out,unitFactor(denominator)]};
     if(!inverse&&unit.offset!=='0')out={type:'add',children:[out,constant(unit.offset)]};
-    return {...group(out),unitConversion:true};
+    return {...group(out),unitConversion:true,...(unit.offset!=='0'?{unitOffset:true}:{})};
+  }
+  // Cancel only exact, positive unit scales. Formula constants and variable
+  // denominators stay in place; affine temperatures are explicit boundaries.
+  const bigGcd=(a,b)=>b?bigGcd(b,a%b):a;
+  const one=ast=>ast.type==='constant'&&ast.value==='1';
+  const product=children=>{const parts=children.filter(c=>!one(c));return parts.length===0?constant(1):parts.length===1?parts[0]:{type:'mul',children:parts};};
+  const quotient=(a,b)=>one(b)?a:{type:'div',children:[a,b]};
+  const boundary=ast=>({body:ast,n:1n,d:1n});
+  function squareRoot(n){
+    if(n<2n)return n;
+    let x=1n<<BigInt(Math.ceil(n.toString(2).length/2));
+    while(true){const y=(x+n/x)/2n;if(y>=x)return x;x=y;}
+  }
+  function scales(ast){
+    if(ast.unitOffset)return boundary(ast);
+    if(ast.type==='constant'&&ast.unitFactor)return {body:constant(1),n:BigInt(ast.value),d:1n};
+    if(!ast.children)return boundary(ast);
+    const parts=ast.children.map(scales);
+    if(ast.type==='group'){
+      const part=parts[0];
+      // The extracted body no longer contains this wrapper's conversion.
+      const {unitConversion,unitOffset,...rest}=ast;
+      return {...part,body:['symbol','constant','group'].includes(part.body.type)?part.body:{...rest,children:[part.body]}};
+    }
+    if(ast.type==='mul')return {body:product(parts.map(p=>p.body)),n:parts.reduce((a,p)=>a*p.n,1n),d:parts.reduce((a,p)=>a*p.d,1n)};
+    if(ast.type==='div')return {body:quotient(parts[0].body,parts[1].body),n:parts[0].n*parts[1].d,d:parts[0].d*parts[1].n};
+    if(ast.type==='pow'&&ast.children[1].type==='constant'&&/^[1-9]\d*$/.test(ast.children[1].value)){
+      const exponent=BigInt(ast.children[1].value),part=parts[0];
+      if(exponent>12n||BigInt(Math.max(part.n.toString(2).length,part.d.toString(2).length))*exponent>4096n)return boundary(ast);
+      return {body:{...ast,children:[part.body,ast.children[1]]},n:part.n**exponent,d:part.d**exponent};
+    }
+    if(ast.type==='sqrt'){
+      const part=parts[0],n=squareRoot(part.n),d=squareRoot(part.d);
+      if(n*n===part.n&&d*d===part.d)return {body:{...ast,children:[part.body]},n,d};
+      return boundary(ast);
+    }
+    if(['add','sub'].includes(ast.type)){
+      const first=parts[0],divisor=bigGcd(first.n,first.d),n=first.n/divisor,d=first.d/divisor;
+      // Pull a scale through a sum only if it multiplies EVERY term.
+      if(parts.every(p=>p.n*d===n*p.d))return {body:{...ast,children:parts.map(p=>p.body)},n,d};
+    }
+    return boundary(ast);
+  }
+  function reduce(ast){
+    if(!ast.children)return ast;
+    let node={...ast,children:ast.children.map(reduce)};
+    if(node.type==='group'&&!node.unitOffset&&node.children[0].type==='group')node=node.children[0];
+    const part=scales(node),divisor=bigGcd(part.n,part.d);
+    if(divisor===1n)return node;
+    const n=part.n/divisor,d=part.d/divisor;
+    let body=part.body;
+    if(n!==1n)body=product([group(body),unitFactor(n)]);
+    if(d!==1n)body=quotient(group(body),unitFactor(d));
+    return n===1n&&d===1n?body:{...group(body),unitConversion:true};
   }
   function hint(unit,direction='toBase'){
     const inverse=direction==='fromBase',parts=[];
@@ -108,5 +163,5 @@
     if(!inverse&&unit.offset!=='0')parts.push('+ '+format(unit.offset));
     return parts.join(' · derefter ')||'Samme tal';
   }
-  return {choices,base,get,ratio,combine,withPart,key,convert,hint};
+  return {choices,base,get,ratio,combine,withPart,key,convert,reduce,hint};
 });

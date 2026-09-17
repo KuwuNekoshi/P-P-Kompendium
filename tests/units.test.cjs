@@ -44,14 +44,15 @@ test('unit factors distinguish powers, compound rates, pressure, heat and absolu
   }
 });
 
-test('diameter conversion happens inside the square, before conversion of the complete area',()=>{
+test('squared diameter and area scales cancel with the correct power',()=>{
   const m=model('circleArea');m.inputUnits['D:length']='mm';m.formulas[0].resultUnit='cm2';
   const c=E.context(m),ast=c.result('formula:circleArea');
   near(value(c.target('formula:circleArea'),{D:200}),Math.PI*.01);
   near(value(ast,{D:200}),Math.PI*100);
-  assert.match(E.tex(ast),/\\left\(\\frac\{D\}\{1000\}\\right\)/);
-  assert.match(E.math(ast),/<msup><mrow><mo>\(<\/mo>/);
-  assert(E.plain(ast).includes('1000')&&E.plain(ast).includes('10000'));
+  assert.match(E.tex(c.target('formula:circleArea')),/\\left\(\\frac\{D\}\{1000\}\\right\)/);
+  assert(E.math(ast).includes('<msup>'));
+  assert(E.plain(ast).includes('100'));
+  assert(!E.plain(ast).includes('1000'));
   assert.deepEqual(E.variables(ast).map(U.key),['D:length']);
 });
 
@@ -197,4 +198,92 @@ test('references accept a result unit composed from independently selected parts
   const compact=c.result('formula:massFlow','compact');
   near(value(compact,{'ρ':1000,Q_v:60000}),1000);
   assert(E.plain(compact).includes('[mL/h]'));
+});
+
+test('rpm to metres per minute cancels the round trip through seconds in every output format',()=>{
+  const m=model('beltSpeed');m.inputUnits['n:rotationRate']='rpm';m.formulas[0].resultUnit='m_min';
+  const saved=JSON.stringify(m),c=E.context(m);
+  for(const mode of ['expanded','compact']){
+    const ast=c.result('formula:beltSpeed',mode);
+    assert.equal(E.plain(ast),'(π · D · n)');
+    assert(!E.tex(ast).includes('60'));assert(!E.math(ast).includes('<mn>60</mn>'));
+    near(value(ast,{D:.5,n:120}),60*Math.PI);
+  }
+  near(value(c.target('formula:beltSpeed'),{D:.5,n:120}),Math.PI);
+  assert.equal(JSON.stringify(m),saved);
+});
+
+test('matching diameter units and rpm cancel across a ratio but mixed lengths keep their residual factor',()=>{
+  const m=model('beltDrivenSpeed');
+  m.inputUnits={'D_1:length':'mm','D_2:length':'mm','n_1:rotationRate':'rpm'};m.formulas[0].resultUnit='rpm';
+  let ast=E.context(m).result('formula:beltDrivenSpeed');
+  assert(!/60|1000/.test(E.plain(ast)));near(value(ast,{D_1:100,D_2:200,n_1:1200}),600);
+  m.inputUnits['D_2:length']='cm';ast=E.context(m).result('formula:beltDrivenSpeed');
+  assert(!E.plain(ast).includes('60'));assert(E.plain(ast).includes('10'));
+  near(value(ast,{D_1:100,D_2:20,n_1:1200}),600);
+  m.inputUnits['n_1:rotationRate']='rev_s';ast=E.context(m).result('formula:beltDrivenSpeed');
+  near(value(ast,{D_1:100,D_2:20,n_1:20}),600);
+});
+
+test('distance uses metres per minute directly with minutes while seconds still require conversion',()=>{
+  const m=model('distance');m.inputUnits={'v:velocity':'m_min','t:time':'min'};
+  let ast=E.context(m).result('formula:distance');
+  assert.equal(E.plain(ast),'(v · t)');near(value(ast,{v:30,t:2}),60);
+  m.inputUnits['t:time']='s';ast=E.context(m).result('formula:distance');
+  assert(E.plain(ast).includes('60'));near(value(ast,{v:30,t:120}),60);
+});
+
+test('litres divided by litres per minute gives minutes without unnecessary 60 or 1000 factors',()=>{
+  const m=model('fillTime');m.inputUnits={'V:volume':'L','Q_v:flow':'L_min'};m.formulas[0].resultUnit='min';
+  let ast=E.context(m).result('formula:fillTime');
+  assert.equal(E.plain(ast),'((V) / (Q_v))');near(value(ast,{V:600,Q_v:20}),30);
+  m.formulas[0].resultUnit='s';ast=E.context(m).result('formula:fillTime');
+  assert(E.plain(ast).includes('60'));near(value(ast,{V:600,Q_v:20}),1800);
+});
+
+test('scales pass through a complete sum or difference and never cancel only one unlike term',()=>{
+  const m=model('volumeSum','volumeDifference');
+  m.inputUnits={'V_1:volume':'L','V_2:volume':'L'};m.formulas[0].resultUnit='L';
+  const f=m.formulas[1];f.expression.args.end=E.symbol('V_1');f.expression.args.start=E.symbol('V_2');f.resultUnit='L';
+  let c=E.context(m);
+  assert(!E.plain(c.result('formula:volumeSum')).includes('1000'));
+  assert(!E.plain(c.result('formula:volumeDifference')).includes('1000'));
+  near(value(c.result('formula:volumeSum'),{V_1:20,V_2:5}),25);
+  near(value(c.result('formula:volumeDifference'),{V_1:20,V_2:5}),15);
+  m.inputUnits['V_2:volume']='m3';c=E.context(m);
+  near(value(c.result('formula:volumeSum'),{V_1:20,V_2:.005}),25);
+  near(value(c.result('formula:volumeDifference'),{V_1:20,V_2:.005}),15);
+});
+
+test('square roots cancel only exact scale roots and variable exponents remain intact',()=>{
+  const a={type:'symbol',symbol:'A',dimension:'area'};
+  const root={type:'sqrt',children:[U.convert(a,U.get('area','mm2'))]};
+  const reduced=U.reduce(U.convert(root,U.get('length','mm'),'fromBase'));
+  assert.equal(E.plain(reduced),'(√(A))');near(value(reduced,{A:400}),20);
+  const x={type:'symbol',symbol:'x',dimension:'length'},p={type:'symbol',symbol:'p',dimension:'scalar'};
+  const power={type:'pow',children:[U.convert(x,U.get('length','cm')),p]};
+  const variablePower=U.reduce(U.convert(power,U.get('area','cm2'),'fromBase'));
+  near(value(variablePower,{x:200,p:3}),80000);
+  assert(E.plain(variablePower).includes('10000'));
+});
+
+test('temperature offsets cannot be treated as multiplicative factors',()=>{
+  const t={type:'symbol',symbol:'T',dimension:'temperature'},celsius=U.get('temperature','C');
+  const ast=U.reduce(U.convert(U.convert(t,celsius),celsius,'fromBase'));
+  near(value(ast,{T:-20}),-20);
+  assert.equal((E.plain(ast).match(/273,15/g)||[]).length,2);
+});
+
+test('unit cancellation propagates through live references and the TI estimate sees the shorter expression',()=>{
+  const G=require('../dist/calculator-guide.js'),m=model('gearedSpeed','beltSpeed');
+  m.inputUnits={'n_ind:rotationRate':'rpm'};m.formulas[0].resultUnit='rpm';
+  m.formulas[1].expression.args.n=E.ref('formula:gearedSpeed');m.formulas[1].resultUnit='m_min';
+  const c=E.context(m),full=c.result('formula:beltSpeed'),compact=c.result('formula:beltSpeed','compact');
+  near(value(full,{n_ind:1200,f:10,D:.5}),60*Math.PI);
+  near(value(compact,{n_ud:120,D:.5}),60*Math.PI);
+  assert(!E.plain(full).includes('60'));assert(!E.plain(compact).includes('60'));
+  assert(E.plain(compact).includes('[omdr./min]'));
+  assert(G.estimate(full).max<G.estimate(c.result('formula:beltSpeed','expanded',false)).max);
+  assert.deepEqual(G.create(c,'formula:beltSpeed').estimate,G.estimate(full));
+  assert.equal(E.plain(E.context(E.validateModel(JSON.parse(JSON.stringify(m)))).result('formula:beltSpeed')),E.plain(full));
 });

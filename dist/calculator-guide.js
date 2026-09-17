@@ -79,6 +79,7 @@
       visit(node);return best;
     }
     function shorten(node){
+      node=E.Units.reduce(node);
       for(let attempt=0;attempt<MAX_STEPS&&steps.length<MAX_STEPS;attempt++){
         const size=estimate(node);
         if(size.max<=TARGET&&!size.deep)break;
@@ -107,7 +108,7 @@
       }
       return node.children?{...node,children:node.children.map(separateShapes)}:node;
     }
-    const final=shorten(separateShapes(ast));
+    const final=E.Units.reduce(shorten(separateShapes(ast)));
     return {steps,final,estimate:estimate(final),incomplete:steps.some(s=>s.estimate.tooLong||s.estimate.deep)||estimate(final).tooLong||estimate(final).deep};
   }
   function create(ctx,target,mode='expanded'){
@@ -119,10 +120,12 @@
     let dependencies;try{dependencies=ctx.steps(target);}catch(_){return null;}
     for(const d of dependencies){
       if(d.target===target)continue;
-      const part=ctx.safe(d.target,mode);
-      if(part.ok&&unwrap(part.ast).children)candidates.push({ast:part.ast,symbol:d.symbol,name:d.name,dimension:d.dimension,unit:E.Units.base(d.dimension).label});
+      const ast=ctx.target(d.target,mode,false);
+      if(unwrap(ast).children)candidates.push({ast,symbol:d.symbol,name:d.name,dimension:d.dimension,unit:E.Units.base(d.dimension).label});
     }
-    return {estimate:size,plan:split(result.ast,candidates,descriptor.symbol),mode};
+    // Identify physical intermediate quantities before cancelling scales across
+    // them. Each emitted step and the final expression are reduced separately.
+    return {estimate:size,plan:split(ctx.result(target,mode,false),candidates,descriptor.symbol),mode};
   }
   return {estimate,split,create,LIMIT,SOURCES};
 });

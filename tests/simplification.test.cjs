@@ -98,7 +98,9 @@ test('copied formulas stay live and preserve each conversion and the complete T9
   near(value(c.result('formula:mass'),vars),area*0.002*7850/1000);
   assert.match(E.plain(c.target('formula:mass')),/D_2\) \/ \(1000\)/);
   assert.match(E.plain(c.target('formula:mass')),/t_plade\) \/ \(1000\)/);
-  assert.match(E.tex(c.target('formula:mass')),/\\right\) \\cdot \\left\(\\frac\{t_\{plade\}\}\{1000\}/);
+  // Thickness in mm and density in ton/m³ cancel their opposite 1000 factors;
+  // the entire plate-area sum must still be grouped before multiplication.
+  assert.match(E.tex(c.target('formula:mass')),/\\right\) \\cdot t_\{plade\} \\cdot \\rho_\{mat\}$/);
   assert.equal(E.plain(c.target('formula:copy')),E.plain(c.target('shape:part0:area')));
   assert.equal(JSON.stringify(m),saved);
   assert.equal(E.plain(E.context(E.validateModel(JSON.parse(saved))).result('formula:mass')),E.plain(c.result('formula:mass')));
