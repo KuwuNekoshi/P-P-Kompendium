@@ -113,12 +113,16 @@ test('all catalogue templates use declared arguments and dimensionally consisten
   function dimension(t,args){
     if(typeof t==='string'){
       if(Object.hasOwn(args,t))return dims[args[t].dimension];
-      assert(/^(?:π|\d+)$/.test(t),'Unknown template token: '+t);return [0,0,0,0];
+      assert(/^(?:π|-?\d+)$/.test(t),'Unknown template token: '+t);return [0,0,0,0];
     }
     const [op,...children]=t,values=children.map(c=>dimension(c,args));
     if(op==='group')return values[0];
     if(op==='sqrt')return values[0].map(v=>v/2);
-    if(op==='pow')return values[0].map(v=>v*Number(children[1]));
+    if(op==='pow'){
+      const exponent=Array.isArray(children[1])&&children[1][0]==='div'?Number(children[1][1])/Number(children[1][2]):Number(children[1]);
+      assert(Number.isFinite(exponent),'Fixed exponent required');
+      return values[0].map(v=>v*exponent);
+    }
     if(op==='add'||op==='sub'){for(const d of values)assert.deepEqual(d,values[0]);return values[0];}
     if(op==='mul')return values.reduce((a,b)=>a.map((v,i)=>v+b[i]),[0,0,0,0]);
     if(op==='div')return values[0].map((v,i)=>v-values[1][i]);

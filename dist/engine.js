@@ -1,10 +1,12 @@
 /* Symbolic composition only. This module does not evaluate numbers. */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'));
-  else root.PP = factory(root.PPCatalog,root.PPUnits);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'));
+  else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units, Rearrange) {
   'use strict';
-  const { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE } = catalog;
+  const { SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE } = catalog;
+  const BASE_FORMULAS=catalog.FORMULAS;
+  const {formulas:FORMULAS,options:REARRANGEMENTS}=Rearrange.build(BASE_FORMULAS);
   const clone = value => JSON.parse(JSON.stringify(value));
   const symbol = name => ({ kind: 'symbol', symbol: name });
   const ref = target => ({ kind: 'ref', target });
@@ -39,6 +41,39 @@
     const f = FORMULAS[formulaId];
     if (!f) throw new Error('Ukendt formel.');
     return { id, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: newExpression(formulaId) };
+  }
+  function rearrangements(formulaId) {
+    const f=FORMULAS[formulaId];
+    return f?REARRANGEMENTS[f.rearranged?.base||formulaId]:[];
+  }
+  function rearrangeFormula(model,sourceId,formulaId,id) {
+    const source=model.formulas.find(f=>f.id===sourceId);
+    if(!source||source.expression.kind!=='formula')throw new Error('Vælg en grundformel at omskrive.');
+    if(model.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
+    const original=FORMULAS[source.expression.formula],target=FORMULAS[formulaId];
+    if(!target||!rearrangements(source.expression.formula).some(o=>o.available&&o.id===formulaId))throw new Error('Denne omskrivning findes ikke.');
+    const fromKey=original.rearranged?.key||'given',toKey=target.rearranged?.key||'given';
+    const values={...clone(source.expression.args),[fromKey]:symbol(source.symbol)};
+    const next=clone(model),f=newFormula(id,formulaId),known=values[toKey];
+    if(known?.kind==='symbol')f.symbol=known.symbol;
+    let unit=Units.base(f.dimension);
+    if(known?.kind==='symbol')unit=inputUnit(model,{symbol:known.symbol,dimension:f.dimension});
+    else if(known?.kind==='ref'){
+      const d=context(model).map.get(known.target);
+      if(d)unit=d.expression.kind==='symbol'?inputUnit(model,{symbol:d.expression.symbol,dimension:d.dimension}):resultUnit(d);
+    }
+    f.resultUnit=unit.id;
+    if(model.formulas.some(other=>other.symbol===f.symbol)){
+      const stem=f.symbol.replace(/_/g,'').slice(0,19);let n=2;
+      while(model.formulas.some(other=>other.symbol===stem+'_'+n))n++;
+      f.symbol=stem+'_'+n;
+    }
+    for(const key of Object.keys(target.args))f.expression.args[key]=clone(values[key]);
+    next.inputUnits||={};
+    const key=Units.key({symbol:source.symbol,dimension:source.dimension});
+    if(!own(next.inputUnits,key))next.inputUnits[key]=resultUnit(source).id;
+    next.formulas.push(f);
+    return validateModel(next);
   }
   function newTankMass(model,id) {
     const f=newFormula(id,'tankMass');
@@ -595,5 +630,12 @@
     // Missing references and cycles remain visible as actionable errors, never guessed away.
     return model;
   }
-  return { FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  for(const [id,f]of Object.entries(FORMULAS))if(f.rearranged){
+    f.equation=f.symbol+' = '+plain(formulaAst(id));
+    if(f.constraints.length){
+      const args=Object.fromEntries(Object.entries(f.args).map(([k,a])=>[k,leaf(a.symbol,a.dimension,a.label)]));
+      f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
+    }
+  }
+  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });

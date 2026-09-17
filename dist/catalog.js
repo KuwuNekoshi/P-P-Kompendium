@@ -5237,6 +5237,51 @@
         "h"
       ],
       "note": "Parallelle, rette vægsider. s og h beskriver samme væghældning. Den radiale afstand er målt ved samme tværsnitsplan. Brug ikke en ukendt indvendig diameter til at definere sin egen omregning."
+    },
+    "frustumMantleSlant": {
+      "name": "Keglestubskappe med skrå højde",
+      "group": "Geometri",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = (π / 2) · (D + d) · s",
+      "args": {
+        "D": {
+          "symbol": "D",
+          "label": "Stor diameter",
+          "dimension": "length"
+        },
+        "d": {
+          "symbol": "d",
+          "label": "Lille diameter",
+          "dimension": "length"
+        },
+        "s": {
+          "symbol": "s",
+          "label": "Skrå højde",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          "π",
+          "2"
+        ],
+        [
+          "add",
+          "D",
+          "d"
+        ],
+        "s"
+      ],
+      "note": "Kun kappen, uden endeflader. s er den skrå højde, ikke den lodrette højde h. Brug denne formel til at finde en diameter, når s er kendt. D ≥ d ≥ 0 og s ≥ (D − d) / 2.",
+      "source": {
+        "pages": [
+          3
+        ],
+        "triangles": []
+      }
     }
   },
   "SHAPES": {

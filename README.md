@@ -20,7 +20,7 @@ Du kan også hente hele projektet:
 
 **? øverst til højre** starter en guidet introduktion med 21 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
 
-Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, indsatte formler, formelkæden, enheder og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
+Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, indsatte formler, formelkæden, omskrivning af formler, enheder og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
 
 - Vælg, hvad du vil finde, fx fyldetid, volumenflow eller rumfang.
 - Indsæt cylinder, kegle, halvkugle, keglestub, kasse, kugle, rør, **halvcylinder**, **V-bund** eller **pyramide**.
@@ -37,6 +37,21 @@ En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af ki
 Formlerne viser **kun nødvendige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx bliver `((L · h) + (B · h))` til `L · h + B · h`, og `(D)^2` bliver til `D^2`. Skal hele summen ganges med 2, vises den som `2 · (L · h + B · h)`.
 
 Regnerækkefølgen bestemmer, hvor parenteserne bevares: `a − (b + c)`, `a / (b · c)` og `(D − 2 · t)^2` beholder dem. En brøkstreg eller rodstreg afgrænser allerede sit indhold på skærmen og i LaTeX, så der vises ingen ekstra parenteser omkring hele tælleren, nævneren eller rodudtrykket. Den kopierede tekst bruger de parenteser, der er nødvendige ved lineær indtastning. Figursummer og enhedsomregninger beholder deres betydning, og gemte opsætninger ændres ikke.
+
+### Isolér en anden størrelse
+
+Vælg en grundformel, og brug **Isolér en størrelse** over formelvisningen. Fx kan **v = π · D · n** omskrives til både **n = v / (π · D)** og **D = v / (π · n)**. v er båndhastighed; V bruges normalt til rumfang.
+
+Valget opretter en **ny formel**. Dine øvrige kendte størrelser, indsatte formler og referencer følger med. Den hidtidige venstreside bliver et kendt input, så du fx kan angive v fra opgaven. Dens resultatenhed genbruges som inputenhed, medmindre samme symbol allerede har et inputenhedsvalg. Den nye ukendtes enhed følger dens tidligere input, når det er muligt. Kontrollér enhederne under formlen. Originalen og dens eksisterende referencer bevares.
+
+Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning, parentesregler og TI-30XS-vejledning gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
+
+**Alle 128 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **323 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
+
+- Geometriske mål bruger den ikke-negative løsning. For hastighed fra kinetisk energi eller dynamisk trykhøjde kan begge fortegn vælges.
+- Tid fra `s = v_start · t + (1/2) · a · t²` har to rodvalg. Vælg den tid, der passer til forløbet. Ved `a = 0` bruges `t = s / v_start`. Hvis også `v_start = 0`, kan tiden ikke bestemmes fra strækningen alene.
+- Nævnere skal være forskellige fra 0; radikander skal give reelle rødder. Krav før kvadrering og særlige geometriske eller fysiske forudsætninger står ved omskrivningen. En kvadreret ligning kan ellers give en uvedkommende løsning.
+- **Keglestubbens kappe med lodret højde:** isolering af D eller d giver en fjerdegradsligning. De to valg er markeret med en forklaring. Den nye **Keglestubskappe med skrå højde**, `A = (π / 2) · (D + d) · s`, kan isolere begge diametre, når s er kendt. Uden s må den oprindelige ligning løses; kompendiet udfører ikke numerisk ligningsløsning.
 
 ### Automatisk forenkling
 
@@ -179,7 +194,7 @@ t = [(π/4) · D₁² · h₁ + (1/3) · (π/4) · D₁² · h₂]
 
 Keglebunden deler diameter med cylinderen. Røret leverer tværsnitsarealet til flowformlen og indgår ikke i beholderens rumfang. Kendes flowet allerede, vælger du **Kendt størrelse · Qv** ved flowet; så forsvinder rørdiameter og hastighed fra den udfoldede formel.
 
-Der er 127 valgbare formler og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
+Der er 128 grundformler, 323 omskrivninger og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
 
 ## Forudsætninger
 
@@ -187,7 +202,7 @@ Der er 127 valgbare formler og 10 figurer. Hver formel har relevante symbolforkl
 - Summer af rumfang forudsætter, at beholderdelene ikke overlapper.
 - Overfladearealer omfatter krumme kapper og de valgte lukkede flader. Fælles endeflader i en samling fjernes automatisk. Det åbne bassin-eksempel bruger cylinderkappe og keglekappe.
 - Rumfang og pladeareal bruger indvendige mål; en oplyst udvendig diameter omregnes med godstykkelsen. T9 er fortsat skolens tilnærmelse med tynde plader og indvendigt areal, ikke et eksakt rumfang af alle tankvægge og samlinger. Et åbent/lukket valg ændrer arealet, men ikke det geometriske rumfang. Visningen er skematisk og viser ingen målestok, vægtykkelse eller væskeniveau.
-- Kompendiet indsætter delformler og samler ens led, talfaktorer og gentagne faktorer automatisk. Det isolerer ikke automatisk en vilkårlig ubekendt. Vælg den ønskede grundformel fra samlingen.
+- Kompendiet indsætter delformler og samler ens led, talfaktorer og gentagne faktorer automatisk. Isolér en størrelse omskriver en valgt grundformel og bevarer de øvrige input. Det er ikke en numerisk ligningsløser for vilkårlige figursummer eller hele kæder på én gang. Eventuelle rodvalg, nulnævnere og ekstra forudsætninger skal respekteres.
 - Referencer af forkert størrelse afvises. Cirkler og manglende kilder vises som fejl. Ens dimension garanterer ikke, at et valg passer til opgavens fysiske forudsætninger.
 
 ## Udvikling
@@ -202,7 +217,8 @@ npm run check
 
 - `dist/catalog.js`: formeldefinitioner, symbolske skabeloner, figurer og forklaringer.
 - `dist/units.js`: enheder, eksakte omregningsfaktorer og symbolske temperaturforskydninger.
-- `dist/engine.js`: referencegraf, substitution, MathML, tekstformat, LaTeX og validering.
+- `dist/rearrange.js`: symbolske omskrivninger, rodvalg, geometriske specialtilfælde og fuld dækningsoversigt over grundformlernes størrelser.
+- `dist/engine.js`: referencegraf, substitution, omskrivning med bevarede enheder og input, MathML, tekstformat, LaTeX og validering.
 - `dist/calculator-guide.js`: vejledende TI-30XS-længdeskøn og symbolske delberegninger.
 - `dist/geometry.js`: placering af sammenføjede figurer og klikbare snitskitser.
 - `dist/solid-preview.js`: 3D-geometri, perspektiv, lys samt rotation og zoom på canvas.
@@ -215,6 +231,8 @@ npm run check
 Formlernes skabeloner består af faste matematiske operationer. Der bruges hverken `eval`, dynamisk kodegenerering eller en tjeneste til at behandle opsætninger. MathML vises af browseren.
 
 Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
+
+Alle 323 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
 
