@@ -421,50 +421,61 @@
     const mi = `<mi>${esc(base)}</mi>`;
     return sub ? `<msub>${mi}${/^\d+$/.test(sub) ? `<mn>${esc(sub)}</mn>` : `<mtext>${esc(sub)}</mtext>`}</msub>` : mi;
   }
-  function mathBody(ast) {
-    if (ast.type === 'symbol') return ast.unit?`<mrow>${mathSymbol(ast.symbol)}<mspace width="0.2em"/><mtext>[${esc(ast.unit)}]</mtext></mrow>`:mathSymbol(ast.symbol);
-    if (ast.type === 'constant') return /^\d+(?:\.\d+)?$/.test(ast.value) ? `<mn>${esc(ast.value.replace('.',','))}</mn>` : `<mi>${esc(ast.value)}</mi>`;
-    const c = ast.children;
-    if (ast.type === 'div') return `<mfrac>${mathBody(c[0])}${mathBody(c[1])}</mfrac>`;
-    if (ast.type === 'pow') return `<msup>${['add','sub','mul'].includes(c[0].type) ? '<mrow><mo>(</mo>' + mathBody(c[0]) + '<mo>)</mo></mrow>' : mathBody(c[0])}${mathBody(c[1])}</msup>`;
-    if (ast.type === 'sqrt') return `<msqrt>${mathBody(c[0])}</msqrt>`;
-    if (ast.type === 'group') return `<mrow><mo>(</mo>${mathBody(c[0])}<mo>)</mo></mrow>`;
-    const operator = { mul: '·', add: '+', sub: '−' }[ast.type];
-    if (!operator) throw new Error('Ukendt formeloperator.');
-    return '<mrow>' + c.map((child, i) => {
-      const group = (ast.type === 'mul' && ['add','sub'].includes(child.type)) || (ast.type === 'sub' && i > 0 && ['add','sub'].includes(child.type));
-      return (group ? '<mrow><mo>(</mo>' : '') + mathBody(child) + (group ? '<mo>)</mo></mrow>' : '');
-    }).join(`<mo>${operator}</mo>`) + '</mrow>';
-  }
-  function plain(ast) {
-    if (ast.type === 'symbol') return ast.symbol+(ast.unit?' ['+ast.unit+']':'');
-    if (ast.type === 'constant') return ast.value.replace('.',',');
-    const c = ast.children.map(plain);
-    const bracket=i=>['add','sub','mul','group'].includes(ast.children[i].type)?c[i]:`(${c[i]})`;
-    if (ast.type === 'div') return `${bracket(0)} / ${bracket(1)}`;
-    if (ast.type === 'pow') return `${bracket(0)}^${['symbol','constant'].includes(ast.children[1].type)?c[1]:bracket(1)}`;
-    if (ast.type === 'sqrt') return `√(${c[0]})`;
-    if (ast.type === 'group') return bracket(0);
-    return '(' + c.join({ mul:' · ', add:' + ', sub:' − ' }[ast.type]) + ')';
-  }
-  function tex(ast) {
-    if (ast.type === 'symbol') {
-      const [b,...s] = ast.symbol.split('_');
-      const greek = { 'ρ':'\\rho', 'η':'\\eta', 'ΔV':'\\Delta V', 'Δp':'\\Delta p', 'Δv':'\\Delta v', 'ΔT':'\\Delta T', 'μ':'\\mu' };
-      const base = greek[b] || (/^[A-Za-z]+$/.test(b) ? b : '\\mathrm{' + b + '}');
-      return (s.length ? base + '_{' + s.join('_').replace(/[^\p{L}\p{N}]/gu, '') + '}' : base)+(ast.unit?'\\,[\\text{'+ast.unit.replace(/%/g,'\\%')+'}]':'');
+  // Group nodes carry substitution/unit metadata. Keep them in the AST, but
+  // decide visible parentheses from the operation and its position instead.
+  function needsParentheses(node,parent,index,linear) {
+    if(!parent)return false;
+    const negative=node.type==='constant'&&node.value.startsWith('-');
+    const atomic=['symbol','constant','sqrt'].includes(node.type);
+    if(parent.type==='pow')return (index===0||linear)&&(!atomic||negative);
+    // Fraction bars, superscripts and radicals already delimit their contents.
+    if(parent.type==='sqrt'||(!linear&&parent.type==='div'))return false;
+    if(parent.type==='div'){
+      if(index===0)return ['add','sub'].includes(node.type);
+      return (!atomic&&node.type!=='pow')||negative;
     }
-    if (ast.type === 'constant') return ast.value === 'π' ? '\\pi' : ast.value.replace('.','{,}');
-    const c = ast.children.map(tex);
-    if (ast.type === 'div') return '\\frac{' + c[0] + '}{' + c[1] + '}';
-    if (ast.type === 'pow') return '{' + (['add','sub','mul'].includes(ast.children[0].type) ? '\\left(' + c[0] + '\\right)' : c[0]) + '}^{' + c[1] + '}';
-    if (ast.type === 'sqrt') return '\\sqrt{' + c[0] + '}';
-    if (ast.type === 'group') return '\\left(' + c[0] + '\\right)';
-    return ast.children.map((child,i) => {
-      const group = (ast.type === 'mul' && ['add','sub'].includes(child.type)) || (ast.type === 'sub' && i > 0 && ['add','sub'].includes(child.type));
-      return group ? '\\left(' + c[i] + '\\right)' : c[i];
-    }).join({ mul:' \\cdot ', add:' + ', sub:' - ' }[ast.type]);
+    if(parent.type==='mul'&&['add','sub'].includes(node.type))return true;
+    if(parent.type==='sub'&&index>0&&['add','sub'].includes(node.type))return true;
+    return negative&&index>0;
   }
+  function texSymbol(ast) {
+    const [b,...s]=ast.symbol.split('_');
+    const greek={'ρ':'\\rho','η':'\\eta','ΔV':'\\Delta V','Δp':'\\Delta p','Δv':'\\Delta v','ΔT':'\\Delta T','μ':'\\mu'};
+    const base=greek[b]||(/^[A-Za-z]+$/.test(b)?b:'\\mathrm{'+b+'}');
+    return (s.length?base+'_{'+s.join('_').replace(/[^\p{L}\p{N}]/gu,'')+'}':base)+(ast.unit?'\\,[\\text{'+ast.unit.replace(/%/g,'\\%')+'}]':'');
+  }
+  function renderExpression(ast,format,symbolText) {
+    const linear=format==='plain',markup=format==='math';
+    function render(node,parent=null,index=0) {
+      while(node.type==='group')node=node.children[0];
+      let body;
+      if(node.type==='symbol'){
+        if(linear)body=symbolText?symbolText(node):node.symbol+(node.unit?' ['+node.unit+']':'');
+        else if(markup)body=node.unit?`<mrow>${mathSymbol(node.symbol)}<mspace width="0.2em"/><mtext>[${esc(node.unit)}]</mtext></mrow>`:mathSymbol(node.symbol);
+        else body=texSymbol(node);
+      }else if(node.type==='constant'){
+        if(linear)body=node.value.replace('.',',');
+        else if(markup)body=/^-?\d+(?:\.\d+)?$/.test(node.value)?`<mn>${esc(node.value.replace('.',','))}</mn>`:`<mi>${esc(node.value)}</mi>`;
+        else body=node.value==='π'?'\\pi':node.value.replace('.','{,}');
+      }else{
+        const c=node.children.map((child,i)=>render(child,node,i));
+        if(node.type==='div')body=linear?c[0]+' / '+c[1]:markup?`<mfrac>${c[0]}${c[1]}</mfrac>`:'\\frac{'+c[0]+'}{'+c[1]+'}';
+        else if(node.type==='pow')body=linear?c[0]+'^'+c[1]:markup?`<msup>${c[0]}${c[1]}</msup>`:'{'+c[0]+'}^{'+c[1]+'}';
+        else if(node.type==='sqrt')body=linear?'√('+c[0]+')':markup?`<msqrt>${c[0]}</msqrt>`:'\\sqrt{'+c[0]+'}';
+        else{
+          const operator={mul:'·',add:'+',sub:'−'}[node.type];
+          if(!operator)throw new Error('Ukendt formeloperator.');
+          body=linear?c.join(' '+operator+' '):markup?'<mrow>'+c.join(`<mo>${operator}</mo>`)+'</mrow>':c.join({mul:' \\cdot ',add:' + ',sub:' - '}[node.type]);
+        }
+      }
+      if(needsParentheses(node,parent,index,linear))body=linear?'('+body+')':markup?'<mrow><mo>(</mo>'+body+'<mo>)</mo></mrow>':'\\left('+body+'\\right)';
+      return body;
+    }
+    return render(ast);
+  }
+  function mathBody(ast) { return renderExpression(ast,'math'); }
+  function plain(ast,symbolText) { return renderExpression(ast,'plain',symbolText); }
+  function tex(ast) { return renderExpression(ast,'tex'); }
   function math(ast, lhs, unit) {
     const label = (lhs ? lhs + (unit?' ['+unit+']':'') + ' = ' : '') + plain(ast);
     return `<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="${esc(label)}"><mrow>${lhs ? mathSymbol(lhs)+(unit?`<mspace width="0.2em"/><mtext>[${esc(unit)}]</mtext>`:'') + '<mo>=</mo>' : ''}${mathBody(ast)}</mrow></math>`;

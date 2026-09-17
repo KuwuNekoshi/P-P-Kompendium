@@ -205,7 +205,7 @@ test('rpm to metres per minute cancels the round trip through seconds in every o
   const saved=JSON.stringify(m),c=E.context(m);
   for(const mode of ['expanded','compact']){
     const ast=c.result('formula:beltSpeed',mode);
-    assert.equal(E.plain(ast),'(π · D · n)');
+    assert.equal(E.plain(ast),'π · D · n');
     assert(!E.tex(ast).includes('60'));assert(!E.math(ast).includes('<mn>60</mn>'));
     near(value(ast,{D:.5,n:120}),60*Math.PI);
   }
@@ -228,7 +228,7 @@ test('matching diameter units and rpm cancel across a ratio but mixed lengths ke
 test('distance uses metres per minute directly with minutes while seconds still require conversion',()=>{
   const m=model('distance');m.inputUnits={'v:velocity':'m_min','t:time':'min'};
   let ast=E.context(m).result('formula:distance');
-  assert.equal(E.plain(ast),'(v · t)');near(value(ast,{v:30,t:2}),60);
+  assert.equal(E.plain(ast),'v · t');near(value(ast,{v:30,t:2}),60);
   m.inputUnits['t:time']='s';ast=E.context(m).result('formula:distance');
   assert(E.plain(ast).includes('60'));near(value(ast,{v:30,t:120}),60);
 });
@@ -236,7 +236,7 @@ test('distance uses metres per minute directly with minutes while seconds still 
 test('litres divided by litres per minute gives minutes without unnecessary 60 or 1000 factors',()=>{
   const m=model('fillTime');m.inputUnits={'V:volume':'L','Q_v:flow':'L_min'};m.formulas[0].resultUnit='min';
   let ast=E.context(m).result('formula:fillTime');
-  assert.equal(E.plain(ast),'((V) / (Q_v))');near(value(ast,{V:600,Q_v:20}),30);
+  assert.equal(E.plain(ast),'V / Q_v');near(value(ast,{V:600,Q_v:20}),30);
   m.formulas[0].resultUnit='s';ast=E.context(m).result('formula:fillTime');
   assert(E.plain(ast).includes('60'));near(value(ast,{V:600,Q_v:20}),1800);
 });
@@ -259,7 +259,7 @@ test('square roots cancel only exact scale roots and variable exponents remain i
   const a={type:'symbol',symbol:'A',dimension:'area'};
   const root={type:'sqrt',children:[U.convert(a,U.get('area','mm2'))]};
   const reduced=U.reduce(U.convert(root,U.get('length','mm'),'fromBase'));
-  assert.equal(E.plain(reduced),'(√(A))');near(value(reduced,{A:400}),20);
+  assert.equal(E.plain(reduced),'√(A)');near(value(reduced,{A:400}),20);
   const x={type:'symbol',symbol:'x',dimension:'length'},p={type:'symbol',symbol:'p',dimension:'scalar'};
   const power={type:'pow',children:[U.convert(x,U.get('length','cm')),p]};
   const variablePower=U.reduce(U.convert(power,U.get('area','cm2'),'fromBase'));

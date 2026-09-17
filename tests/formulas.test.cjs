@@ -21,18 +21,18 @@ test('keeping a known flow symbol removes the unneeded pipe variables', () => {
   m.formulas[2].expression.args.Q = E.symbol('Q_v');
   const c = E.context(m), vars = E.variables(c.target('formula:time')).map(v=>v.symbol);
   assert.deepEqual(vars, ['D_1','h_1','h_2','Q_v']);
-  assert.equal(E.plain(c.target('formula:time','compact')), '(V_fyld) / (Q_v)');
+  assert.equal(E.plain(c.target('formula:time','compact')), 'V_fyld / Q_v');
 });
 
 test('symbolic substitution retains the correct precedence in all export formats', () => {
   const m = { version:2,title:'Flow',shapes:[],formulas:[E.newFormula('flow','flow')] };
   m.formulas[0].expression.args.A = E.form('areaSum',{A1:E.symbol('A_1'),A2:E.symbol('A_2')});
   const ast = E.context(m).target('formula:flow');
-  assert.equal(E.plain(ast),'((A_1 + A_2) · v)');
+  assert.equal(E.plain(ast),'(A_1 + A_2) · v');
   assert.match(E.math(ast,'Q_v'), /<mo>\(<\/mo>/);
   assert.equal(E.tex(ast),'\\left(A_{1} + A_{2}\\right) \\cdot v');
   const difference = {type:'sub',children:[{type:'symbol',symbol:'a'}, {type:'add',children:[{type:'symbol',symbol:'b'},{type:'symbol',symbol:'c'}]}]};
-  assert.equal(E.plain(difference),'(a − (b + c))');
+  assert.equal(E.plain(difference),'a − (b + c)');
   assert.match(E.tex(difference), /- \\left\(b \+ c\\right\)/);
 });
 
@@ -154,7 +154,7 @@ test('nested formulas and assembly sums have explicit boundaries in all three fo
   const html=E.math(ast),latex=E.tex(ast),plain=E.plain(ast);
   assert.match(html,/<mo>\(<\/mo><mrow>/);
   assert(latex.startsWith('\\left(')&&latex.includes('\\right) \\cdot t_{plade}'));
-  assert(plain.startsWith('(((')&&plain.endsWith(' · t_plade · ρ_mat)'));
+  assert(plain.startsWith('(')&&plain.endsWith(') · t_plade · ρ_mat'));
   const time=E.context(m).target('formula:time');
   assert.equal(time.children[0].type,'group');assert.equal(time.children[1].type,'group');
 });
@@ -163,14 +163,14 @@ test('inline fractions, subtraction and exponent substitutions remain unambiguou
   const m={version:3,title:'Parenteser',shapes:[],connections:[],formulas:[E.newFormula('rho','density')]};
   m.formulas[0].expression.args.V=E.form('volumeDifference',{end:E.symbol('V_total'),start:E.form('volumeSum',{V1:E.symbol('V_1'),V2:E.symbol('V_2')})});
   const ast=E.context(m).target('formula:rho');
-  assert.equal(E.plain(ast),'(m) / (V_total − (V_1 + V_2))');
-  assert.equal(E.tex(ast),'\\frac{m}{\\left(V_{total} - \\left(V_{1} + V_{2}\\right)\\right)}');
+  assert.equal(E.plain(ast),'m / (V_total − (V_1 + V_2))');
+  assert.equal(E.tex(ast),'\\frac{m}{V_{total} - \\left(V_{1} + V_{2}\\right)}');
   const circle=E.newFormula('circle','circleArea');circle.expression.args.D=E.form('diameter',{r:E.symbol('r')});m.formulas.push(circle);
   const result=E.context(m).target('formula:circle');
   assert(E.plain(result).includes('(2 · r)^2'));
   assert(E.math(result).includes('<msup><mrow><mo>(</mo>'));
   const x={type:'symbol',symbol:'x'},y={type:'symbol',symbol:'y'};
-  assert.equal(E.plain({type:'pow',children:[x,{type:'div',children:[x,y]}]}),'(x)^((x) / (y))');
+  assert.equal(E.plain({type:'pow',children:[x,{type:'div',children:[x,y]}]}),'x^(x / y)');
 });
 
 test('school catalogue covers T1 to T39 and every page reference is within the supplied PDF',()=>{

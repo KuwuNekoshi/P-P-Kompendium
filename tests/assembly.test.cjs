@@ -239,7 +239,7 @@ test('outside diameter converts once to inside diameter for cylinders, pipes and
     near(value(c.target('shape:part0:inner:D'),vars),2);
     near(value(c.target('shape:part0:outer:D'),vars),2.2);
     near(value(c.target('shape:part0:volume'),vars),expected);
-    assert.match(E.plain(c.target('shape:part0:volume')),/D_1 − \(2 · t_plade\)/);
+    assert.match(E.plain(c.target('shape:part0:volume')),/D_1 − 2 · t_plade/);
     if(type==='pipe')near(value(c.target('shape:part0:crossSection'),vars),Math.PI);
   }
 });

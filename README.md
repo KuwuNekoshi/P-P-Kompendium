@@ -27,18 +27,20 @@ Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjer
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
 - Vælg en figur, angiv **Indvendig diameter** eller **Udvendig diameter**, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra pladearealet.
 - Vælg ved hver størrelse: **kendt størrelse**, **indsæt en formel** eller **brug en reference**.
-- Vælg opgavens enheder under **Størrelserne i formlen**, og vælg **Resultatets enhed** nederst. Omregningerne sættes ind i formlen med parenteser.
+- Vælg opgavens enheder under **Størrelserne i formlen**, og vælg **Resultatets enhed** nederst. Omregningerne sættes ind med de nødvendige parenteser.
 - Skift mellem **Kort** og **Udfoldet**. Se hele sammenhængen under **Se formelkæden**, eller kopiér formlen som tekst.
 
 En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af kildens aktuelle formel; eventuelle underreferencer i kopien bliver ved med at følge deres egne kilder.
 
 **Virkelig effekt (Pvirk)** findes under **Pumper og tryk** og som **T30**. Formlen er `Pvirk = Pteo / η`, hvor `η` hedder eta og er virkningsgraden. Søg fx på `Pvirk`, `P_virk`, `eta`, `virkeevne` eller det tidligere navn **Tilført effekt**. Vælg **%** som inputenhed, hvis virkningsgraden er oplyst i procent.
 
-Indsatte delformler og figursummer får **tydelige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx ganges hele summen af tankens pladearealer med pladetykkelse og massefylde. Nævnere, subtraherede summer og udtryk under potenser grupperes også.
+Formlerne viser **kun nødvendige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx bliver `((L · h) + (B · h))` til `L · h + B · h`, og `(D)^2` bliver til `D^2`. Skal hele summen ganges med 2, vises den som `2 · (L · h + B · h)`.
+
+Regnerækkefølgen bestemmer, hvor parenteserne bevares: `a − (b + c)`, `a / (b · c)` og `(D − 2 · t)^2` beholder dem. En brøkstreg eller rodstreg afgrænser allerede sit indhold på skærmen og i LaTeX, så der vises ingen ekstra parenteser omkring hele tælleren, nævneren eller rodudtrykket. Den kopierede tekst bruger de parenteser, der er nødvendige ved lineær indtastning. Figursummer og enhedsomregninger beholder deres betydning, og gemte opsætninger ændres ikke.
 
 ### Automatisk forenkling
 
-Ens led samles automatisk, også i indsatte formler og referencer. Kassens fire sideflader vises som **2 · ((L · h) + (B · h))**. Halvcylinderens krumme flade med to lukkede ender vises som **((π/2) · D · L) + ((π/4) · D²)**. Med kun én lukket ende er endens faktor fortsat π/8.
+Ens led samles automatisk, også i indsatte formler og referencer. Kassens fire sideflader vises som **2 · (L · h + B · h)**. Halvcylinderens krumme flade med to lukkede ender vises som **π/2 · D · L + π/4 · D²**. Med kun én lukket ende er endens faktor fortsat π/8.
 
 Forenklingen genkender ens produkter, selv når faktorerne står i forskellig rækkefølge. Den samler deres talfaktorer med eksakte brøker, trækker fælles hele antal ud foran en sum og skriver gentagne faktorer som potenser. Reglerne bruges i både Kort, Udfoldet, kopieret tekst og LaTeX. Åbne flader og fælles samleflader fjernes, før arealleddene samles.
 
@@ -54,11 +56,11 @@ Brug tallene direkte i de valgte inputenheder. Omregningerne under enhedsvalgene
 
 Under den aktive formel vises et **vejledende længdeskøn** for indtastning på TI-30XS MultiView. TI angiver op til **80 tegn** i indtastningslinjen ([TI, løsning 15401](https://education.ti.com/en/customer-support/knowledge-base/scientific-elem-calculators/general-information/15401)). Andre TI-30-modeller kan have andre grænser.
 
-Skønnet regner med **4–8 tegn pr. indsat tal**, for hver forekomst. Operatorer, parenteser og enhedsomregninger indgår; symbolnavne og enhedslabels gør ikke. Det tager udgangspunkt i lineær indtastning med division. Decimaler, minustegn, lange tal, skabeloner og tastemetode påvirker pladsen, så det er ingen garanti for, at formlen passer. Fra et øvre skøn på 72 tegn anbefales delberegninger, så der er lidt plads op til grænsen. Det er kompendiets vejledende tærskel, ikke en ekstra TI-grænse.
+Skønnet regner med **4–8 tegn pr. indsat tal**, for hver forekomst. Operatorer, nødvendige parenteser og enhedsomregninger indgår; symbolnavne og enhedslabels gør ikke. Skønnet bruger samme parentesregler som den kopierede tekst. Det tager udgangspunkt i lineær indtastning med division. Decimaler, minustegn, lange tal, skabeloner og tastemetode påvirker pladsen, så det er ingen garanti for, at formlen passer. Fra et øvre skøn på 72 tegn anbefales delberegninger, så der er lidt plads op til grænsen. Det er kompendiets vejledende tærskel, ikke en ekstra TI-grænse.
 
-**Forslag: mellemresultater og en kort slutformel** viser de konkrete trin i rækkefølge. Fx beregnes `V_1` og `V_2` hver for sig, og bagefter bruges `(V_1 + V_2)`. Hvis slutresultatet ønskes i liter, bliver sluttrinnet `((V_1 + V_2) · 1000)`, når delvolumenerne er i m³. Store delformler deles videre efter behov. Et rent mellemudtryk får et ledigt navn som `M_1`; dets værdi bruges direkte i det efterfølgende trin. Forslaget ændrer ikke opsætningen.
+**Forslag: mellemresultater og en kort slutformel** viser de konkrete trin i rækkefølge. Fx beregnes `V_1` og `V_2` hver for sig, og bagefter bruges `V_1 + V_2`. Hvis slutresultatet ønskes i liter, bliver sluttrinnet `(V_1 + V_2) · 1000`, når delvolumenerne er i m³. Store delformler deles videre efter behov. Et rent mellemudtryk får et ledigt navn som `M_1`; dets værdi bruges direkte i det efterfølgende trin. Forslaget ændrer ikke opsætningen.
 
-Vurderingen følger **Kort/Udfoldet**, valgte enheder, referencer, figurer og åbne/lukkede flader. I Kort forudsættes referencernes værdier allerede beregnet. Deltrinene bevarer parenteser, omregninger og rækkefølgen i subtraktion og division. Hvis et trin stadig er langt, står det ved forslaget. Afrund først til sidst.
+Vurderingen følger **Kort/Udfoldet**, valgte enheder, referencer, figurer og åbne/lukkede flader. I Kort forudsættes referencernes værdier allerede beregnet. Deltrinene bevarer nødvendige parenteser, omregninger og rækkefølgen i subtraktion og division. Hvis et trin stadig er langt, står det ved forslaget. Afrund først til sidst.
 
 Der gives også besked ved mere end fire indlejrede brøker, rødder eller potenser, som kan ramme [MathPrint-grænsen på fire niveauer](https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_Home.HTML). TI-30XS har [syv hukommelsesvariable](https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_MemVar.HTML): x, y, z, t, a, b og c. De kan bruges til mellemresultater; genbrug først en variabel, når dens tidligere værdi er færdigbrugt. Hele vejledningen fungerer offline; kun kildehenvisningerne kræver internet.
 
@@ -73,7 +75,7 @@ Hastighed, acceleration, volumenflow, masseflow, densitet, omdrejningstal, antal
 **Resultatets enhed** omregner hele det færdige udtryk, fx fra m³ til liter, sekunder til minutter, kg til ton eller W til kW. Den valgte enhed står ved formelresultatet. Eksempel med diameter i mm, indvendig højde i cm og rumfang i liter:
 
 ```text
-V [L] = ((π / 4) · D² · h) / 100000
+V [L] = π / 4 · D² · h / 100000
 ```
 
 - En længde i mm divideres med 1000, et areal i mm² med 1.000.000 og et rumfang i mm³ med 1.000.000.000. Diameterens omregningsfaktor kvadreres sammen med diameteren; efter forkortning kan faktoren stå samlet uden for potensen.

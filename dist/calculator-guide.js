@@ -12,14 +12,9 @@
   };
   const unwrap=ast=>ast.type==='group'?unwrap(ast.children[0]):ast;
   function estimate(ast){
-    function count(node,digits){
-      if(node.type==='symbol')return digits; // Count each occurrence, not its printed name.
-      if(node.type==='constant')return Array.from(node.value).length;
-      if(node.type==='group')return count(node.children[0],digits);
-      const children=node.children.map(c=>count(c,digits));
-      if(node.type==='sqrt')return children[0]+3;
-      return children.reduce((a,b)=>a+b,0)+children.length-1+2;
-    }
+    // Use the same linear notation as copied text: only necessary parentheses
+    // count, with one placeholder per numeric occurrence and no unit labels.
+    const count=(node,digits)=>Array.from(E.plain(node,()=> '0'.repeat(digits)).replace(/\s/g,'')).length;
     function depth(node){
       if(!node.children)return 0;
       return Math.max(...node.children.map(depth))+(['div','pow','sqrt'].includes(node.type)?1:0);

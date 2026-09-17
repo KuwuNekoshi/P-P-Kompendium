@@ -27,8 +27,8 @@ test('length estimates count numeric occurrences and conversions, not printed sy
   const a=op('mul',symbol('D'),symbol('D'));
   const b=op('mul',{...symbol('Meget_langt_navn'),unit:'mm'},{...symbol('Meget_langt_navn'),unit:'mm'});
   assert.deepEqual(G.estimate(a),G.estimate(b));
-  assert.equal(G.estimate(a).min,11);assert.equal(G.estimate(a).max,19);
-  assert(G.estimate(op('mul',...Array.from({length:9},()=>symbol('D')))).tooLong);
+  assert.equal(G.estimate(a).min,9);assert.equal(G.estimate(a).max,17);
+  assert(G.estimate(op('mul',...Array.from({length:10},()=>symbol('D')))).tooLong);
   assert(G.estimate(op('div',a,number(1000000))).max>G.estimate(a).max);
   assert.equal(G.LIMIT,80);
 });
@@ -44,19 +44,19 @@ test('MathPrint nesting is checked independently of length and split below four 
 });
 
 test('two volumes are calculated separately in cubic metres before the complete litre conversion',()=>{
-  const m=E.example();m.inputUnits={'D_1:length':'mm','h_1:length':'cm','h_2:length':'cm'};
+  const m=E.example();m.inputUnits={'D_1:length':'mm','h_1:length':'cm','h_2:length':'mm'};
   m.formulas[0].resultUnit='L';
   const ctx=E.context(m),guide=G.create(ctx,'formula:volume'),plan=guide.plan;
   assert(guide.estimate.recommend);assert(plan);assert(!plan.incomplete);
   assert.deepEqual(plan.steps.map(s=>s.symbol),['V_1','V_2']);
   assert.deepEqual(plan.steps.map(s=>s.unit),['m³','m³']);
-  assert.equal(E.plain(plan.final),'((V_1 + V_2) · 1000)');
-  near(follow(plan,{D_1:6000,h_1:1000,h_2:200}),96*Math.PI*1000);
+  assert.equal(E.plain(plan.final),'(V_1 + V_2) · 1000');
+  near(follow(plan,{D_1:6000,h_1:1000,h_2:2000}),96*Math.PI*1000);
 });
 
 test('fill-time advice has ordered intermediate volumes and keeps division by the complete flow',()=>{
   const m=E.example(),guide=G.create(E.context(m),'formula:time'),plan=guide.plan;
-  assert(guide.estimate.tooLong);assert.equal(plan.steps.length,2);
+  assert(guide.estimate.recommend);assert(!guide.estimate.tooLong);assert.equal(plan.steps.length,2);
   near(follow(plan,{D_1:6,h_1:10,h_2:2,D_3:.1,v:2}),19200);
   assert.match(E.tex(plan.final),/^\\frac\{/);assert(!plan.incomplete);
   const compact=G.create(E.context(m),'formula:time','compact');
@@ -96,4 +96,16 @@ test('invalid or missing dependencies produce no calculator advice in either vie
   const m=E.removeShape(E.example(),'pipe');
   for(const mode of ['expanded','compact'])assert.equal(G.create(E.context(m),'formula:time',mode),null);
   assert.equal(G.create(E.context(E.example()),'formula:missing'),null);
+});
+
+test('redundant parentheses do not trigger warnings for an already short unit-reduced formula',()=>{
+  const m=E.example();m.inputUnits={'D_1:length':'mm','h_1:length':'cm','h_2:length':'cm'};
+  m.formulas[0].resultUnit='L';
+  const guide=G.create(E.context(m),'formula:volume');
+  assert.equal(guide.estimate.max,60);assert(!guide.estimate.recommend);assert.equal(guide.plan,null);
+  // Two four-digit values and multiplication need nine characters, even when
+  // the source contains several explicit substitution groups.
+  const product=op('group',op('group',op('mul',op('group',symbol('a')),symbol('b'))));
+  assert.equal(G.estimate(product).min,9);
+  assert.equal(G.estimate(op('div',symbol('a'),op('mul',symbol('b'),symbol('c')))).min,16);
 });
