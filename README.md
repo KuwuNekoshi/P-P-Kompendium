@@ -18,7 +18,7 @@ Du kan også hente hele projektet:
 
 ## Fra opgave til formel
 
-**? øverst til højre** starter en guidet introduktion med 23 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
+**? øverst til højre** starter en guidet introduktion med 24 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
 
 Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, indsatte formler, formelkæden, omskrivning af formler, enheder, tal med små mærker og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
 
@@ -48,6 +48,18 @@ Under **Størrelserne i formlen** har hver kendt størrelse et felt **Tal (valgf
 - Samme symbol og dimension deler tal og enhed i hele opsætningen. Udvidede referencer viser deres kendte tal. Beregnede referencer i **Kort** vises fortsat som mellemresultatets symbol.
 - Tallene følger med i gemte opsætninger, omskrivninger og kopieret tekst. Eksisterende opsætninger uden tal kan stadig åbnes. Negative tal får nødvendige parenteser, og en potens afgrænses tydeligt fra tallets små mærker.
 - Talindsættelse ændrer ikke den symbolske forenkling: B og L bevarer hver deres identitet, også hvis de har samme talværdi. TI-30-skønnet bruger tallets faktiske længde og udelader enheds- og symbolmærkerne.
+
+### Værdier, enheder eller begge
+
+Den tredelte knap **Værdier · Enheder · Begge** ved formelvisningen skifter mellem:
+
+- **Værdier:** fx `30 · 50`. Størrelser uden indtastede tal vises som symboler.
+- **Enheder:** fx `L · B`. De oprindelige symboler vises i stedet for tallene.
+- **Begge:** fx `30 m (L) · 50 m (B)`, med enhed og symbol i mindre tekst.
+
+Faste tal, potenser og nødvendige omregningsfaktorer bevares. Resultatets enhed står ved venstresiden i alle tre visninger. Visningsvalget ændrer ikke dine tal, enheder eller formler. Browseren husker valget; standarden er **Begge**.
+
+Valget gælder også figursummer, formelkæden, tilpasningspanelet, delberegninger og **Kopiér formel**. I Værdier og Enheder kopieres selve formlen uden inputlisten. Begge tager også listen over tal og inputenheder med. TI-30-skønnet bruger de indtastede tal uanset visning. Formelsamlingens grundformler beholder deres almindelige symboler.
 
 ### Isolér en anden størrelse
 

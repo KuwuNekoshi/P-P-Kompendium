@@ -469,9 +469,9 @@
   }
   // Group nodes carry substitution/unit metadata. Keep them in the AST, but
   // decide visible parentheses from the operation and its position instead.
-  function needsParentheses(node,parent,index,linear) {
+  function needsParentheses(node,parent,index,linear,showValues=true) {
     if(!parent)return false;
-    const negative=node.type==='constant'?node.value.startsWith('-'):node.type==='symbol'&&node.inputValue?.startsWith('-');
+    const negative=node.type==='constant'?node.value.startsWith('-'):showValues&&node.type==='symbol'&&node.inputValue?.startsWith('-');
     const atomic=['symbol','constant','sqrt'].includes(node.type);
     if(parent.type==='pow')return (index===0||linear)&&(!atomic||negative);
     // Fraction bars, superscripts and radicals already delimit their contents.
@@ -490,22 +490,30 @@
     const base=greek[b]||(/^[A-Za-z]+$/.test(b)?b:'\\mathrm{'+b+'}');
     return (s.length?base+'_{'+s.join('_').replace(/[^\p{L}\p{N}]/gu,'')+'}':base)+(ast.unit?'\\,[\\text{'+ast.unit.replace(/%/g,'\\%')+'}]':'');
   }
-  function renderExpression(ast,format,symbolText) {
+  function renderExpression(ast,format,symbolText,display='both') {
+    if(!['values','units','both'].includes(display))display='both';
     const linear=format==='plain',markup=format==='math';
     function render(node,parent=null,index=0) {
       while(node.type==='group')node=node.children[0];
       let body;
+      const annotated=!symbolText&&node.type==='symbol'&&display==='both'&&node.inputValue!==undefined;
       if(node.type==='symbol'){
         if(linear&&symbolText)body=symbolText(node);
+        else if(display==='units'){
+          if(linear)body=node.symbol;
+          else if(markup)body=mathSymbol(node.symbol);
+          else body=texSymbol({...node,unit:undefined});
+        }
         else if(node.inputValue!==undefined){
           const value=node.inputValue.replace('.',','),unit=node.valueUnit;
-          if(linear)body=value+' '+unit+' ('+node.symbol+')';
+          if(display==='values')body=linear?value:markup?`<mn>${esc(value)}</mn>`:node.inputValue.replace('.','{,}');
+          else if(linear)body=value+' '+unit+' ('+node.symbol+')';
           else if(markup)body=`<mrow><mn>${esc(value)}</mn><mspace width="0.15em"/><mstyle mathsize="65%" class="value-annotation"><mtext>${esc(unit)} (</mtext>${mathSymbol(node.symbol)}<mtext>)</mtext></mstyle></mrow>`;
           else body=node.inputValue.replace('.','{,}')+'\\,{\\scriptstyle\\text{'+unit.replace(/%/g,'\\%')+'}\\,('+texSymbol({...node,unit:undefined})+')}';
         }
-        else if(linear)body=node.symbol+(node.unit?' ['+node.unit+']':'');
-        else if(markup)body=node.unit?`<mrow>${mathSymbol(node.symbol)}<mspace width="0.2em"/><mtext>[${esc(node.unit)}]</mtext></mrow>`:mathSymbol(node.symbol);
-        else body=texSymbol(node);
+        else if(linear)body=node.symbol+(node.unit&&display!=='values'?' ['+node.unit+']':'');
+        else if(markup)body=node.unit&&display!=='values'?`<mrow>${mathSymbol(node.symbol)}<mspace width="0.2em"/><mtext>[${esc(node.unit)}]</mtext></mrow>`:mathSymbol(node.symbol);
+        else body=texSymbol(display==='values'?{...node,unit:undefined}:node);
       }else if(node.type==='constant'){
         if(linear)body=node.value.replace('.',',');
         else if(markup)body=/^-?\d+(?:\.\d+)?$/.test(node.value)?`<mn>${esc(node.value.replace('.',','))}</mn>`:`<mi>${esc(node.value)}</mi>`;
@@ -523,18 +531,18 @@
       }
       // Keep a power visibly attached to the whole labelled value. The TI
       // estimate omits annotations and only needs mathematical parentheses.
-      const labelledPower=!symbolText&&node.inputValue!==undefined&&parent?.type==='pow'&&index===0;
-      if(labelledPower||needsParentheses(node,parent,index,linear))body=linear?'('+body+')':markup?'<mrow><mo>(</mo>'+body+'<mo>)</mo></mrow>':'\\left('+body+'\\right)';
+      const labelledPower=annotated&&parent?.type==='pow'&&index===0;
+      if(labelledPower||needsParentheses(node,parent,index,linear,display!=='units'||!!symbolText))body=linear?'('+body+')':markup?'<mrow><mo>(</mo>'+body+'<mo>)</mo></mrow>':'\\left('+body+'\\right)';
       return body;
     }
     return render(ast);
   }
-  function mathBody(ast) { return renderExpression(ast,'math'); }
-  function plain(ast,symbolText) { return renderExpression(ast,'plain',symbolText); }
-  function tex(ast) { return renderExpression(ast,'tex'); }
-  function math(ast, lhs, unit) {
-    const label = (lhs ? lhs + (unit?' ['+unit+']':'') + ' = ' : '') + plain(ast);
-    return `<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="${esc(label)}"><mrow>${lhs ? mathSymbol(lhs)+(unit?`<mspace width="0.2em"/><mtext>[${esc(unit)}]</mtext>`:'') + '<mo>=</mo>' : ''}${mathBody(ast)}</mrow></math>`;
+  function mathBody(ast,display) { return renderExpression(ast,'math',null,display); }
+  function plain(ast,symbolText,display) { return renderExpression(ast,'plain',symbolText,display); }
+  function tex(ast,display) { return renderExpression(ast,'tex',null,display); }
+  function math(ast, lhs, unit,display) {
+    const label = (lhs ? lhs + (unit?' ['+unit+']':'') + ' = ' : '') + plain(ast,null,display);
+    return `<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="${esc(label)}"><mrow>${lhs ? mathSymbol(lhs)+(unit?`<mspace width="0.2em"/><mtext>[${esc(unit)}]</mtext>`:'') + '<mo>=</mo>' : ''}${mathBody(ast,display)}</mrow></math>`;
   }
   function variables(ast) {
     const found = new Map();
