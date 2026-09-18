@@ -36,6 +36,15 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .unit-symbol-list>div{display:block;padding:16px 0}
 .unit-symbol-list dt{margin-bottom:11px}
 .unit-symbol-list dd{white-space:normal}
+.value-entry{display:flex;align-items:flex-end;gap:12px;margin-bottom:10px;min-width:0}
+.value-field{display:flex;flex:1;flex-direction:column;gap:6px;min-width:0;font-size:.75rem;color:var(--muted)}
+.value-field input{width:100%;min-width:0;min-height:42px;padding:9px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:1rem;font-variant-numeric:tabular-nums}
+.value-field input:hover{border-color:var(--muted)}
+.value-field input[aria-invalid=true]{border-color:var(--error)}
+.clear-value{margin-bottom:11px}
+.clear-value:disabled{opacity:.4;cursor:default}
+.value-error{font-size:.8rem;line-height:1.6;color:var(--error);margin:0 0 10px}
+.value-annotation{font-size:.65em;color:var(--muted)}
 .unit-pair{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;min-width:0;font-size:.875rem;color:var(--text)}
 .unit-choice{flex:1 1 160px;min-width:0;max-width:100%}
 .unit-fraction{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;flex-basis:220px}

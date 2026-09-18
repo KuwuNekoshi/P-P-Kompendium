@@ -15,7 +15,7 @@ assert(!/<script[^>]+src=/i.test(html), 'Standalone scripts must be inline.');
 assert(!/<link[^>]+rel="stylesheet"/i.test(html), 'Standalone styles must be inline.');
 assert(html.includes("connect-src 'none'"), 'Offline page must block network connections.');
 assert(!/\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(html), 'Unexpected network API.');
-assert(!/type="number"|inputmode="decimal"/.test(html), 'This is a symbolic compendium, not a numeric calculator.');
+assert(html.includes('inputmode="decimal"')&&html.includes('data-action="input-value"'), 'Optional numeric substitution fields must be available offline.');
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 assert.equal(scripts.length, 9);
 for (const [i, [, script]] of scripts.entries()) new vm.Script(script, { filename: 'inline-' + i + '.js' });

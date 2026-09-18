@@ -1,4 +1,4 @@
-/* Symbolic composition only. This module does not evaluate numbers. */
+/* Symbolic composition and optional numeric annotations; no result evaluation. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'));
   else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange);
@@ -21,6 +21,16 @@
   const geometricInput = (s,key) => diameterKeys(s).includes(key)?innerTarget(s,key):`shape:${s.id}:input:${key}`;
   const own = (object, key) => Object.hasOwn(object, key);
   const inputUnit = (model,variable) => Units.get(variable.dimension,model.inputUnits?.[Units.key(variable)] || Units.base(variable.dimension).id);
+  // Preserve decimal precision as text. Values annotate symbols; they never
+  // become constants in the symbolic simplifier or trigger result evaluation.
+  function parseInputValue(value) {
+    if(typeof value!=='string'||value.length>32)return null;
+    const text=value.trim().replace(/−/g,'-').replace(',','.');
+    if(!text)return '';
+    if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text))return null;
+    return text.replace(/^\+/,'').replace(/^(-?)\./,(_,sign)=>sign+'0.').replace(/\.$/,'');
+  }
+  const inputValue = (model,variable) => parseInputValue(model.inputValues?.[Units.key(variable)] ?? '') ?? '';
   const resultUnit = formula => Units.get(formula.dimension,formula.resultUnit || Units.base(formula.dimension).id);
   const esc = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
@@ -390,8 +400,9 @@
     function expandRaw(expr, dimension, mode = 'expanded', stack = [], budget = { nodes: 0 }, depth = 0, label = '') {
       if (++budget.nodes > 1200 || depth > 48 || stack.length > 80) throw new Error('Formelkæden er for stor. Behold nogle dele som symboler.');
       if (expr.kind === 'symbol') {
-        const variable=leaf(expr.symbol,dimension,label);
-        return Units.convert(variable,inputUnit(model,variable));
+        const variable=leaf(expr.symbol,dimension,label),unit=inputUnit(model,variable),value=inputValue(model,variable);
+        if(value!==''){variable.inputValue=value;variable.valueUnit=unit.label;}
+        return Units.convert(variable,unit);
       }
       if (expr.kind === 'zero' && expr.dimension === dimension) return {type:'constant',value:'0'};
       if (expr.kind === 'ref') {
@@ -460,7 +471,7 @@
   // decide visible parentheses from the operation and its position instead.
   function needsParentheses(node,parent,index,linear) {
     if(!parent)return false;
-    const negative=node.type==='constant'&&node.value.startsWith('-');
+    const negative=node.type==='constant'?node.value.startsWith('-'):node.type==='symbol'&&node.inputValue?.startsWith('-');
     const atomic=['symbol','constant','sqrt'].includes(node.type);
     if(parent.type==='pow')return (index===0||linear)&&(!atomic||negative);
     // Fraction bars, superscripts and radicals already delimit their contents.
@@ -485,7 +496,14 @@
       while(node.type==='group')node=node.children[0];
       let body;
       if(node.type==='symbol'){
-        if(linear)body=symbolText?symbolText(node):node.symbol+(node.unit?' ['+node.unit+']':'');
+        if(linear&&symbolText)body=symbolText(node);
+        else if(node.inputValue!==undefined){
+          const value=node.inputValue.replace('.',','),unit=node.valueUnit;
+          if(linear)body=value+' '+unit+' ('+node.symbol+')';
+          else if(markup)body=`<mrow><mn>${esc(value)}</mn><mspace width="0.15em"/><mstyle mathsize="65%" class="value-annotation"><mtext>${esc(unit)} (</mtext>${mathSymbol(node.symbol)}<mtext>)</mtext></mstyle></mrow>`;
+          else body=node.inputValue.replace('.','{,}')+'\\,{\\scriptstyle\\text{'+unit.replace(/%/g,'\\%')+'}\\,('+texSymbol({...node,unit:undefined})+')}';
+        }
+        else if(linear)body=node.symbol+(node.unit?' ['+node.unit+']':'');
         else if(markup)body=node.unit?`<mrow>${mathSymbol(node.symbol)}<mspace width="0.2em"/><mtext>[${esc(node.unit)}]</mtext></mrow>`:mathSymbol(node.symbol);
         else body=texSymbol(node);
       }else if(node.type==='constant'){
@@ -503,7 +521,10 @@
           body=linear?c.join(' '+operator+' '):markup?'<mrow>'+c.join(`<mo>${operator}</mo>`)+'</mrow>':c.join({mul:' \\cdot ',add:' + ',sub:' - '}[node.type]);
         }
       }
-      if(needsParentheses(node,parent,index,linear))body=linear?'('+body+')':markup?'<mrow><mo>(</mo>'+body+'<mo>)</mo></mrow>':'\\left('+body+'\\right)';
+      // Keep a power visibly attached to the whole labelled value. The TI
+      // estimate omits annotations and only needs mathematical parentheses.
+      const labelledPower=!symbolText&&node.inputValue!==undefined&&parent?.type==='pow'&&index===0;
+      if(labelledPower||needsParentheses(node,parent,index,linear))body=linear?'('+body+')':markup?'<mrow><mo>(</mo>'+body+'<mo>)</mo></mrow>':'\\left('+body+'\\right)';
       return body;
     }
     return render(ast);
@@ -553,6 +574,16 @@
       return form(e.formula,Object.fromEntries(Object.entries(f.args).map(([k,a]) => [k,cleanExpr(e.args?.[k],a.dimension,depth+1)])));
     }
     const model = { version:5,inputUnits:{},title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
+    if(own(input,'inputValues')){
+      if(!input.inputValues||typeof input.inputValues!=='object'||Array.isArray(input.inputValues)||Object.keys(input.inputValues).length>3000)fail('ugyldige talværdier.');
+      model.inputValues={};
+      for(const [key,value]of Object.entries(input.inputValues)){
+        const parts=key.split(':'),number=parseInputValue(value);
+        if(parts.length!==2||!validSymbol(parts[0])||!own(DIMENSIONS,parts[1]))fail('ugyldig størrelse i talværdien.');
+        if(number===null||number==='')fail('en talværdi skal være ét decimaltal med højst 32 tegn.');
+        model.inputValues[key]=number;
+      }
+    }
     if(input.version===5){
       if(!input.inputUnits||typeof input.inputUnits!=='object'||Array.isArray(input.inputUnits)||Object.keys(input.inputUnits).length>3000)fail('ugyldige enhedsvalg.');
       for(const [key,id]of Object.entries(input.inputUnits)){
@@ -637,5 +668,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, inputValue, parseInputValue, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });

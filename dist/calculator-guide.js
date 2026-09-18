@@ -14,7 +14,7 @@
   function estimate(ast){
     // Use the same linear notation as copied text: only necessary parentheses
     // count, with one placeholder per numeric occurrence and no unit labels.
-    const count=(node,digits)=>Array.from(E.plain(node,()=> '0'.repeat(digits)).replace(/\s/g,'')).length;
+    const count=(node,digits)=>Array.from(E.plain(node,v=>v.inputValue??'0'.repeat(digits)).replace(/\s/g,'')).length;
     function depth(node){
       if(!node.children)return 0;
       return Math.max(...node.children.map(depth))+(['div','pow','sqrt'].includes(node.type)?1:0);

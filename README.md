@@ -1,6 +1,6 @@
 # P&P Kompendium
 
-Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Kompendiet arbejder med symboler; det har ingen talindtastning eller numerisk beregning.
+Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Kompendiet viser formlen; resultatet beregner du selv.
 
 ## Brug det offline
 
@@ -18,16 +18,16 @@ Du kan også hente hele projektet:
 
 ## Fra opgave til formel
 
-**? øverst til højre** starter en guidet introduktion med 21 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
+**? øverst til højre** starter en guidet introduktion med 23 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
 
-Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, indsatte formler, formelkæden, omskrivning af formler, enheder og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
+Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, indsatte formler, formelkæden, omskrivning af formler, enheder, tal med små mærker og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
 
 - Vælg, hvad du vil finde, fx fyldetid, volumenflow eller rumfang.
 - Indsæt cylinder, kegle, halvkugle, keglestub, kasse, kugle, rør, **halvcylinder**, **V-bund** eller **pyramide**.
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
 - Vælg en figur, angiv **Indvendig diameter** eller **Udvendig diameter**, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra pladearealet.
 - Vælg ved hver størrelse: **kendt størrelse**, **indsæt en formel** eller **brug en reference**.
-- Vælg opgavens enheder under **Størrelserne i formlen**, og vælg **Resultatets enhed** nederst. Omregningerne sættes ind med de nødvendige parenteser.
+- Indtast eventuelt opgavens tal og vælg enheder under **Størrelserne i formlen**, og vælg **Resultatets enhed** nederst. Omregningerne sættes ind med de nødvendige parenteser.
 - Skift mellem **Kort** og **Udfoldet**. Se hele sammenhængen under **Se formelkæden**, eller kopiér formlen som tekst.
 
 En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af kildens aktuelle formel; eventuelle underreferencer i kopien bliver ved med at følge deres egne kilder.
@@ -37,6 +37,17 @@ En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af ki
 Formlerne viser **kun nødvendige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx bliver `((L · h) + (B · h))` til `L · h + B · h`, og `(D)^2` bliver til `D^2`. Skal hele summen ganges med 2, vises den som `2 · (L · h + B · h)`.
 
 Regnerækkefølgen bestemmer, hvor parenteserne bevares: `a − (b + c)`, `a / (b · c)` og `(D − 2 · t)^2` beholder dem. En brøkstreg eller rodstreg afgrænser allerede sit indhold på skærmen og i LaTeX, så der vises ingen ekstra parenteser omkring hele tælleren, nævneren eller rodudtrykket. Den kopierede tekst bruger de parenteser, der er nødvendige ved lineær indtastning. Figursummer og enhedsomregninger beholder deres betydning, og gemte opsætninger ændres ikke.
+
+### Sæt tal ind i formlen
+
+Under **Størrelserne i formlen** har hver kendt størrelse et felt **Tal (valgfrit)**. Skriv fx B = 50 og L = 30. Formlen viser 50 med **m (B)** i mindre tekst og 30 med **m (L)** i mindre tekst. Mærkerne forklarer tallene; de skal ikke indtastes på lommeregneren. Resultatet beregnes ikke af kompendiet.
+
+- Komma og punktum kan begge bruges til decimaltal, også med minus. Tallene bevares som tekst uden afrunding. Skriv ét decimaltal på højst 32 tegn; udtryk og tusindtalsseparatorer accepteres ikke.
+- Et tomt felt viser det oprindelige symbol. **Ryd** fjerner et tal igen. Ufuldstændige eller ugyldige tal erstatter ikke symbolet.
+- Enhedsmærket viser din valgte **inputenhed**, fx mm, %, t/m³ eller kg/h. Formlen indeholder de nødvendige omregninger. Hvis du skifter enhed, beholdes det indtastede tal, og omregningen tilpasses.
+- Samme symbol og dimension deler tal og enhed i hele opsætningen. Udvidede referencer viser deres kendte tal. Beregnede referencer i **Kort** vises fortsat som mellemresultatets symbol.
+- Tallene følger med i gemte opsætninger, omskrivninger og kopieret tekst. Eksisterende opsætninger uden tal kan stadig åbnes. Negative tal får nødvendige parenteser, og en potens afgrænses tydeligt fra tallets små mærker.
+- Talindsættelse ændrer ikke den symbolske forenkling: B og L bevarer hver deres identitet, også hvis de har samme talværdi. TI-30-skønnet bruger tallets faktiske længde og udelader enheds- og symbolmærkerne.
 
 ### Isolér en anden størrelse
 
@@ -71,7 +82,7 @@ Brug tallene direkte i de valgte inputenheder. Omregningerne under enhedsvalgene
 
 Under den aktive formel vises et **vejledende længdeskøn** for indtastning på TI-30XS MultiView. TI angiver op til **80 tegn** i indtastningslinjen ([TI, løsning 15401](https://education.ti.com/en/customer-support/knowledge-base/scientific-elem-calculators/general-information/15401)). Andre TI-30-modeller kan have andre grænser.
 
-Skønnet regner med **4–8 tegn pr. indsat tal**, for hver forekomst. Operatorer, nødvendige parenteser og enhedsomregninger indgår; symbolnavne og enhedslabels gør ikke. Skønnet bruger samme parentesregler som den kopierede tekst. Det tager udgangspunkt i lineær indtastning med division. Decimaler, minustegn, lange tal, skabeloner og tastemetode påvirker pladsen, så det er ingen garanti for, at formlen passer. Fra et øvre skøn på 72 tegn anbefales delberegninger, så der er lidt plads op til grænsen. Det er kompendiets vejledende tærskel, ikke en ekstra TI-grænse.
+Skønnet tæller **de indtastede tals faktiske længde** og regner med **4–8 tegn for hvert endnu ukendt tal**, for hver forekomst. Operatorer, nødvendige parenteser og enhedsomregninger indgår; symbolnavne og enhedslabels gør ikke. Skønnet tæller kun parenteser, som selve regnestykket behøver; eventuelle ekstra parenteser omkring små forklarende mærker udelades. Det tager udgangspunkt i lineær indtastning med division. Decimaler, minustegn, lange tal, skabeloner og tastemetode påvirker pladsen, så det er ingen garanti for, at formlen passer. Fra et øvre skøn på 72 tegn anbefales delberegninger, så der er lidt plads op til grænsen. Det er kompendiets vejledende tærskel, ikke en ekstra TI-grænse.
 
 **Forslag: mellemresultater og en kort slutformel** viser de konkrete trin i rækkefølge. Fx beregnes `V_1` og `V_2` hver for sig, og bagefter bruges `V_1 + V_2`. Hvis slutresultatet ønskes i liter, bliver sluttrinnet `(V_1 + V_2) · 1000`, når delvolumenerne er i m³. Store delformler deles videre efter behov. Et rent mellemudtryk får et ledigt navn som `M_1`; dets værdi bruges direkte i det efterfølgende trin. Forslaget ændrer ikke opsætningen.
 
@@ -81,7 +92,7 @@ Der gives også besked ved mere end fire indlejrede brøker, rødder eller poten
 
 ### Input- og resultatenheder
 
-Hver kendt størrelse har et enhedsvalg, fx **mm → m**, **L/min → m³/s** eller **% → tal**. Brug derefter tallet fra opgaven direkte som det viste symbol. Omregningsfaktorerne er allerede med i formlen; der er fortsat ingen talindtastning eller numerisk resultatberegning i kompendiet.
+Hver kendt størrelse har et enhedsvalg, fx **mm → m**, **L/min → m³/s** eller **% → tal**. Indtast eventuelt tallet fra opgaven i feltet ved symbolet. Omregningsfaktorerne er allerede med i formlen; selve resultatet beregner du på lommeregneren.
 
 Brøkenheder har **to uafhængige dropdowns** for tæller og nævner. Vælg fx **t (ton) / m³**, **kg / h**, **mg / min** eller **mL / h**, både for input og resultat. Skifter du tælleren, bevares nævneren, og omvendt. Alle kombinationer af de relevante enheder er tilgængelige; masseflow kombinerer masse og tid, mens densitet kombinerer masse og rumfang.
 
@@ -98,7 +109,7 @@ V [L] = π / 4 · D² · h / 100000
 - Absolutte temperaturer i °C får tillæg af 273,15 til K. Resultater i °C får det modsatte fradrag. **Temperaturforskelle** i °C og K har samme tal og får intet tillæg.
 - Samme symbol og dimension har samme inputenhed i hele opsætningen. Hver gemt formel har sin egen resultatenhed. Ændringer åbner automatisk den udfoldede visning.
 - En beregnet reference har en konsekvent grundværdi i SI. Resultatenheden ændrer dens visning, uden at omregningen gentages i en udfoldet kæde. I **Kort** vises en reference i sin kildes valgte resultatenhed og omregnes tilbage, hvor den indsættes. Kædens delformler og figurernes oversigter angiver deres grundenhed.
-- **Kopiér formel** tager parenteser, omregninger, resultatenhed og en liste over inputenheder med. Gemte opsætninger bevarer valgene; version 2–4 åbnes med de hidtidige SI-enheder i version 5.
+- **Kopiér formel** tager indtastede tal, symbolmærker, parenteser, omregninger, resultatenhed og en liste over størrelser og enheder med. Gemte opsætninger bevarer valgene; version 2–4 åbnes med de hidtidige SI-enheder i version 5.
 
 ### Indvendig eller udvendig diameter
 
@@ -233,6 +244,8 @@ Formlernes skabeloner består af faste matematiske operationer. Der bruges hverk
 Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
 
 Alle 323 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
+
+Talindsættelse kontrolleres på alle 128 grundformler og 323 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og TI-30-længdeskøn med de faktiske tal.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
 
