@@ -9,7 +9,7 @@ const wrap=node=>op('group',op('group',node));
 const near=(actual,expected,label)=>assert(Math.abs(actual-expected)<=1e-10*Math.max(1,Math.abs(expected)),`${label}: ${actual} != ${expected}`);
 
 // Independently compare the AST with JavaScript's operator precedence after
-// tokenizing trusted test output. No evaluator is shipped with the compendium.
+// tokenizing trusted test output independently of the engine's evaluator.
 function value(ast,vars){
   if(ast.type==='symbol')return vars[ast.symbol];
   if(ast.type==='constant')return ast.value==='π'?Math.PI:Number(ast.value);

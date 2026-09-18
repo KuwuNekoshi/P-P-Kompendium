@@ -1,4 +1,4 @@
-/* Symbolic composition and optional numeric annotations; no result evaluation. */
+/* Symbolic composition, numeric annotations and expression evaluation. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'));
   else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange);
@@ -493,6 +493,7 @@
   function renderExpression(ast,format,symbolText,display='both') {
     if(!['values','units','both'].includes(display))display='both';
     const linear=format==='plain',markup=format==='math';
+    const containsFraction=node=>node.type==='div'||(node.children||[]).some(containsFraction);
     function render(node,parent=null,index=0) {
       while(node.type==='group')node=node.children[0];
       let body;
@@ -520,7 +521,15 @@
         else body=node.value==='π'?'\\pi':node.value.replace('.','{,}');
       }else{
         const c=node.children.map((child,i)=>render(child,node,i));
-        if(node.type==='div')body=linear?c[0]+' / '+c[1]:markup?`<mfrac>${c[0]}${c[1]}</mfrac>`:'\\frac{'+c[0]+'}{'+c[1]+'}';
+        if(node.type==='div'){
+          if(linear)body=c[0]+' / '+c[1];
+          else if(markup){
+            // Inset nested contents so each enclosing bar extends beyond the
+            // inner bars. Native MathML spaces preserve the fraction structure.
+            const parts=node.children.some(containsFraction)?c.map(part=>`<mrow class="fraction-level"><mspace width="0.4em"/>${part}<mspace width="0.4em"/></mrow>`):c;
+            body=`<mfrac>${parts[0]}${parts[1]}</mfrac>`;
+          }else body='\\frac{'+c[0]+'}{'+c[1]+'}';
+        }
         else if(node.type==='pow')body=linear?c[0]+'^'+c[1]:markup?`<msup>${c[0]}${c[1]}</msup>`:'{'+c[0]+'}^{'+c[1]+'}';
         else if(node.type==='sqrt')body=linear?'√('+c[0]+')':markup?`<msqrt>${c[0]}</msqrt>`:'\\sqrt{'+c[0]+'}';
         else{
@@ -554,6 +563,47 @@
       for (const c of node.children || []) visit(c);
     }
     visit(ast); return [...found.values()];
+  }
+  function evaluate(ast) {
+    const missing=variables(ast).filter(v=>v.inputValue===undefined);
+    if(missing.length)return {status:'incomplete',missing:missing.map(v=>({symbol:v.symbol,dimension:v.dimension}))};
+    let count=0;
+    function visit(node,depth=0){
+      if(++count>20000||depth>160)throw new Error('Udtrykket er for stort til at beregne');
+      let value;
+      if(node.type==='symbol'){
+        const text=parseInputValue(node.inputValue);
+        if(text===null||text==='')throw new Error('En indtastet værdi er ikke et gyldigt tal');
+        value=Number(text);
+      }else if(node.type==='constant'){
+        if(node.value==='π')value=Math.PI;
+        else if(typeof node.value==='string'&&/^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i.test(node.value))value=Number(node.value);
+        else throw new Error('Udtrykket indeholder en ukendt konstant');
+      }else{
+        const c=(node.children||[]).map(child=>visit(child,depth+1));
+        if(node.type==='group'&&c.length===1)value=c[0];
+        else if(node.type==='add'&&c.length)value=c.reduce((a,b)=>a+b,0);
+        else if(node.type==='mul'&&c.length)value=c.reduce((a,b)=>a*b,1);
+        else if(node.type==='sub'&&c.length===2)value=c[0]-c[1];
+        else if(node.type==='div'&&c.length===2){
+          if(c[1]===0)throw new Error('Kan ikke dividere med 0');
+          value=c[0]/c[1];
+        }else if(node.type==='sqrt'&&c.length===1){
+          if(c[0]<0)throw new Error('Kvadratroden kræver et tal, der er mindst 0');
+          value=Math.sqrt(c[0]);
+        }else if(node.type==='pow'&&c.length===2){
+          if(c[0]===0&&c[1]<=0)throw new Error('Denne potens med 0 er ikke defineret');
+          // The catalogue uses 1/3 for cube roots; Math.cbrt also handles
+          // negative radicands and avoids fractional-power rounding errors.
+          value=c[1]===1/3?Math.cbrt(c[0]):Math.pow(c[0],c[1]);
+          if(Number.isNaN(value))throw new Error('Potensen giver ikke et reelt tal');
+        }else throw new Error('Udtrykket indeholder en ukendt operation');
+      }
+      if(!Number.isFinite(value))throw new Error('Resultatet er uden for det understøttede talområde');
+      return value;
+    }
+    try{const value=visit(ast);return {status:'ready',value:Object.is(value,-0)?0:value};}
+    catch(error){return {status:'error',error:error.message};}
   }
   function formulaAst(id) {
     const f = FORMULAS[id];
@@ -676,5 +726,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, inputValue, parseInputValue, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, inputValue, parseInputValue, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });

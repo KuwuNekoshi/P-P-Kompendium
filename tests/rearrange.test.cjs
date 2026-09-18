@@ -45,6 +45,15 @@ test('every generated inverse satisfies its original equation for two independen
       const answer=templateValue(f.template,{...args,given});
       if(!f.rearranged.negative)near(answer,args[key],id);
       near(templateValue(base.template,{...args,[key]:answer}),given,id+' substituted back');
+      const known={...args,given},bindings=new Map(Object.entries(f.args).map(([k,a])=>[E.Units.key(a),known[k]]));
+      const ast=E.formulaAst(id);
+      function annotate(node){
+        if(node.type==='symbol')node.inputValue=bindings.get(E.Units.key(node)).toLocaleString('en-US',{useGrouping:false,maximumSignificantDigits:16});
+        (node.children||[]).forEach(annotate);
+      }
+      annotate(ast);
+      const computed=E.evaluate(ast);assert.equal(computed.status,'ready',id+': '+computed.error);
+      near(computed.value,answer,id+' engine evaluation');
     }
     assert(E.math(E.formulaAst(id)).includes('<math'));assert(E.tex(E.formulaAst(id)).length);
     verified++;

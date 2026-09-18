@@ -11,7 +11,7 @@ function model(...types) {
 const end = (shape,face) => ({shape:'part'+shape,face});
 const closeAll = m => {for(const s of m.shapes)for(const face of Object.keys(s.faces))s.faces[face]='closed';return m;};
 // Numeric evaluation is deliberately test-only, to check the symbolic formulas
-// against independent geometric examples. The application never evaluates them.
+// against independent geometric examples.
 function value(ast,vars) {
   if(ast.type==='symbol'){assert(Object.hasOwn(vars,ast.symbol),ast.symbol);return vars[ast.symbol];}
   if(ast.type==='constant')return ast.value==='π'?Math.PI:Number(ast.value);

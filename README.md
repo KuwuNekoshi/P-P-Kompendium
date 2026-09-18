@@ -36,11 +36,13 @@ En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af ki
 
 Formlerne viser **kun nødvendige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx bliver `((L · h) + (B · h))` til `L · h + B · h`, og `(D)^2` bliver til `D^2`. Skal hele summen ganges med 2, vises den som `2 · (L · h + B · h)`.
 
+**Brøker inde i brøker** får en lille indrykning og ekstra lodret luft for hvert niveau. Den ydre brøkstreg strækker sig lidt længere ud end de indre streger, både når en brøk står i tælleren og i nævneren. Det gør niveauerne lettere at skelne i alle tre visninger og begge temaer. Kopieret tekst, LaTeX og TI-30-længdeskøn bruger fortsat det samme matematiske udtryk.
+
 Regnerækkefølgen bestemmer, hvor parenteserne bevares: `a − (b + c)`, `a / (b · c)` og `(D − 2 · t)^2` beholder dem. En brøkstreg eller rodstreg afgrænser allerede sit indhold på skærmen og i LaTeX, så der vises ingen ekstra parenteser omkring hele tælleren, nævneren eller rodudtrykket. Den kopierede tekst bruger de parenteser, der er nødvendige ved lineær indtastning. Figursummer og enhedsomregninger beholder deres betydning, og gemte opsætninger ændres ikke.
 
 ### Sæt tal ind i formlen
 
-Under **Størrelserne i formlen** har hver kendt størrelse et felt **Tal (valgfrit)**. Skriv fx B = 50 og L = 30. Formlen viser 50 med **m (B)** i mindre tekst og 30 med **m (L)** i mindre tekst. Mærkerne forklarer tallene; de skal ikke indtastes på lommeregneren. Resultatet beregnes ikke af kompendiet.
+Under **Størrelserne i formlen** har hver kendt størrelse et felt **Tal (valgfrit)**. Skriv fx B = 50 og L = 30. Formlen viser 50 med **m (B)** i mindre tekst og 30 med **m (L)** i mindre tekst. Mærkerne forklarer tallene; de skal ikke indtastes på lommeregneren. Standardvisningen viser udtrykket til din egen beregning.
 
 - Komma og punktum kan begge bruges til decimaltal, også med minus. Tallene bevares som tekst uden afrunding. Skriv ét decimaltal på højst 32 tegn; udtryk og tusindtalsseparatorer accepteres ikke.
 - Et tomt felt viser det oprindelige symbol. **Ryd** fjerner et tal igen. Ufuldstændige eller ugyldige tal erstatter ikke symbolet.

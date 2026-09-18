@@ -5,7 +5,7 @@ const model=(...ids)=>({version:5,inputUnits:{},inputValues:{},title:'Tal i form
 const result=(m,id=m.formulas[0].id,mode='expanded')=>E.context(m).result('formula:'+id,mode);
 const numericText=ast=>E.plain(ast,v=>v.inputValue??v.symbol);
 const near=(actual,expected)=>assert(Math.abs(actual-expected)<1e-10*Math.max(1,Math.abs(expected)),`${actual} != ${expected}`);
-// Independent numerical checks exist only in tests. The app substitutes text.
+// Independent numerical checks of substitution and conversion.
 function value(ast,vars={}){
   if(ast.type==='symbol')return ast.inputValue!==undefined?Number(ast.inputValue):vars[ast.symbol];
   if(ast.type==='constant')return ast.value==='π'?Math.PI:Number(ast.value);
