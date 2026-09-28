@@ -40,6 +40,18 @@ Formlerne viser **kun nødvendige parenteser**, både i MathML-visningen, kopier
 
 Regnerækkefølgen bestemmer, hvor parenteserne bevares: `a − (b + c)`, `a / (b · c)` og `(D − 2 · t)^2` beholder dem. En brøkstreg eller rodstreg afgrænser allerede sit indhold på skærmen og i LaTeX, så der vises ingen ekstra parenteser omkring hele tælleren, nævneren eller rodudtrykket. Den kopierede tekst bruger de parenteser, der er nødvendige ved lineær indtastning. Figursummer og enhedsomregninger beholder deres betydning, og gemte opsætninger ændres ikke.
 
+### Rækkefølge og grupper
+
+Under **Mine formler** i venstre side kan du bruge **↑ og ↓** under hver formel til at flytte den op eller ned. Når formlen ligger i en gruppe, flytter pilene inden for den gruppe. Første og sidste plads har tydeligt deaktiverede pile.
+
+- **Opret gruppe** giver en navngivet gruppe, fx *Opgave 1*, *Tank A* eller *Pumpeberegning*.
+- Dropdown-menuen under en formel flytter den til en gruppe, **Uden gruppe** eller en ny gruppe. Den placeres sidst i den nye gruppe.
+- Gruppens overskrift folder indholdet sammen eller ud. Gruppens egne pile ændrer gruppernes rækkefølge; **Uden gruppe** ligger efter grupperne.
+- **Redigér** omdøber eller fjerner gruppen. Fjernes gruppen, flyttes dens formler til **Uden gruppe**, hvor deres indbyrdes rækkefølge bevares.
+- **Tilføj formel her** opretter i den valgte gruppe. Andre nye formler følger den aktive formels gruppe, og omskrivninger følger deres kilde.
+
+Rækkefølge, grupper og sammenfoldning gemmes lokalt og i **Gem opsætning**. Formelvælgeren viser samme grupper og rækkefølge. Formlernes identiteter, lokale tal, enheder og referencer følger med under flytning. Gamle opsætninger uden grupper vises i deres hidtidige rækkefølge. Kontrollerne er også tilgængelige på små skærme og med tastatur.
+
 ### Sæt tal ind i formlen
 
 Under **Størrelserne i formlen** har hver kendt størrelse et felt **Tal (valgfrit)**. Skriv fx B = 50 og L = 30. Formlen viser 50 med **m (B)** i mindre tekst og 30 med **m (L)** i mindre tekst. Mærkerne forklarer tallene; de skal ikke indtastes på lommeregneren. Standardvisningen viser udtrykket til din egen beregning.

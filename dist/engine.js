@@ -72,6 +72,56 @@
     if (!f) throw new Error('Ukendt formel.');
     return { id, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: newExpression(formulaId) };
   }
+  function formulaSections(model){
+    const groups=(model.formulaGroups||[]).map(g=>({...g,formulas:model.formulas.filter(f=>f.groupId===g.id)}));
+    const ungrouped=model.formulas.filter(f=>!f.groupId);
+    if(ungrouped.length||!groups.length)groups.push({id:'',name:'Uden gruppe',collapsed:false,formulas:ungrouped});
+    return groups;
+  }
+  function moveFormula(model,id,direction){
+    if(![-1,1].includes(direction))throw new Error('Vælg op eller ned.');
+    const next=clone(model),f=next.formulas.find(f=>f.id===id);
+    if(!f)throw new Error('Formlen findes ikke.');
+    const siblings=next.formulas.filter(other=>(other.groupId||'')===(f.groupId||'')),index=siblings.indexOf(f),other=siblings[index+direction];
+    if(other){const a=next.formulas.indexOf(f),b=next.formulas.indexOf(other);[next.formulas[a],next.formulas[b]]=[next.formulas[b],next.formulas[a]];}
+    return next;
+  }
+  function assignFormulaGroup(model,id,groupId=''){
+    const next=clone(model),f=next.formulas.find(f=>f.id===id),group=next.formulaGroups?.find(g=>g.id===groupId);
+    if(!f)throw new Error('Formlen findes ikke.');
+    if(groupId&&!group)throw new Error('Gruppen findes ikke.');
+    if((f.groupId||'')===groupId)return next;
+    if(group){f.groupId=groupId;group.collapsed=false;}else delete f.groupId;
+    next.formulas.splice(next.formulas.indexOf(f),1);
+    const last=next.formulas.findLastIndex(other=>(other.groupId||'')===groupId);
+    next.formulas.splice(last<0?next.formulas.length:last+1,0,f);
+    return next;
+  }
+  function addFormulaGroup(model,id,name){
+    const next=clone(model);next.formulaGroups||=[];
+    next.formulaGroups.push({id,name:name.trim(),collapsed:false});
+    return validateModel(next);
+  }
+  function renameFormulaGroup(model,id,name){
+    const next=clone(model),group=next.formulaGroups?.find(g=>g.id===id);
+    if(!group)throw new Error('Gruppen findes ikke.');group.name=name.trim();
+    return validateModel(next);
+  }
+  function moveFormulaGroup(model,id,direction){
+    if(![-1,1].includes(direction))throw new Error('Vælg op eller ned.');
+    const next=clone(model),groups=next.formulaGroups||[],index=groups.findIndex(g=>g.id===id),other=index+direction;
+    if(index<0)throw new Error('Gruppen findes ikke.');
+    if(other>=0&&other<groups.length)[groups[index],groups[other]]=[groups[other],groups[index]];
+    return next;
+  }
+  function removeFormulaGroup(model,id){
+    const next=clone(model),group=next.formulaGroups?.find(g=>g.id===id);
+    if(!group)throw new Error('Gruppen findes ikke.');
+    next.formulaGroups=next.formulaGroups.filter(g=>g.id!==id);
+    const released=next.formulas.filter(f=>f.groupId===id);released.forEach(f=>delete f.groupId);
+    next.formulas=[...next.formulas.filter(f=>!released.includes(f)),...released];
+    return next;
+  }
   function rearrangements(formulaId) {
     const f=FORMULAS[formulaId];
     return f?REARRANGEMENTS[f.rearranged?.base||formulaId]:[];
@@ -86,6 +136,7 @@
     const fromKey=original.rearranged?.key||'given',toKey=target.rearranged?.key||'given';
     const values={...clone(source.expression.args),[fromKey]:symbol(source.symbol)};
     const next=clone(model),f=newFormula(id,formulaId),known=values[toKey];
+    if(source.groupId)f.groupId=source.groupId;
     if(known?.kind==='symbol')f.symbol=known.symbol;
     let unit=Units.base(f.dimension);
     if(known?.kind==='symbol')unit=inputUnit(model,{symbol:known.symbol,dimension:f.dimension,scope:'formula:'+sourceId});
@@ -726,6 +777,14 @@
       return form(e.formula,Object.fromEntries(Object.entries(f.args).map(([k,a]) => [k,cleanExpr(e.args?.[k],a.dimension,depth+1)])));
     }
     const model = { version:6,inputUnits:{},title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
+    const groupIds=new Set();
+    if(own(input,'formulaGroups')){
+      if(!Array.isArray(input.formulaGroups)||input.formulaGroups.length>40)fail('ugyldig liste over formelgrupper.');
+      model.formulaGroups=input.formulaGroups.map(g=>{
+        if(!g||!str(g.id,64)||!/^[a-zA-Z0-9_-]+$/.test(g.id)||groupIds.has(g.id)||!str(g.name)||!g.name.trim()||typeof g.collapsed!=='boolean')fail('ugyldig formelgruppe.');
+        groupIds.add(g.id);return {id:g.id,name:g.name,collapsed:g.collapsed};
+      });
+    }
     if(own(input,'inputValues')){
       if(!input.inputValues||typeof input.inputValues!=='object'||Array.isArray(input.inputValues)||Object.keys(input.inputValues).length>3000)fail('ugyldige talværdier.');
       model.inputValues={};
@@ -782,6 +841,7 @@
       identity(f);
       if (!own(DIMENSIONS,f.dimension) || !validSymbol(f.symbol)) fail('ugyldigt formelsymbol.');
       const formula={ id:f.id,name:f.name,symbol:f.symbol,dimension:f.dimension,expression:cleanExpr(f.expression,f.dimension) };
+      if(f.groupId!==undefined){if(!groupIds.has(f.groupId))fail('formlens gruppe findes ikke.');formula.groupId=f.groupId;}
       if(f.resultUnit!==undefined){
         try{Units.get(f.dimension,f.resultUnit);}catch(_){fail('resultatenheden passer ikke til formlen.');}
         formula.resultUnit=f.resultUnit;
@@ -848,5 +908,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
