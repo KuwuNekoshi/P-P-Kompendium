@@ -97,7 +97,7 @@ test('copied expressions preserve numerical meaning across nested operator combi
   }
   // Real formulas also combine roots, fractions and powers beyond two levels.
   const m=E.example();m.shapes[0].diameter.basis='outer';
-  m.inputUnits={'D_1:length':'mm','h_1:length':'cm','h_2:length':'cm','t_plade:length':'mm','ρ_mat:density':'ton_m3'};
+  m.inputUnits={'shape:cylinder:D_1:length':'mm','shape:cylinder:h_1:length':'cm','shape:cone:h_2:length':'cm','tank:tank:t_plade:length':'mm','formula:mass:ρ_mat:density':'ton_m3'};
   m.formulas.push(E.newTankMass(m,'mass'));m.formulas.at(-1).resultUnit='ton';
   const ast=E.context(m).result('formula:mass'),inputs={D_1:6000,h_1:1000,h_2:200,t_plade:2,ρ_mat:7.85};
   near(copiedValue(ast,inputs),value(ast,inputs),E.plain(ast));

@@ -51,7 +51,11 @@ test('input units, conversion factors and TI estimates survive every presentatio
     assert.deepEqual(G.estimate(ast),estimate);
     assert.equal(E.inputValue(m,{symbol:'D',dimension:'length'}),'500');
   }
-  assert.deepEqual(E.validateModel(JSON.parse(JSON.stringify(m))),m);
+  const saved=E.validateModel(JSON.parse(JSON.stringify(m)));
+  assert.equal(saved.version,6);
+  assert.deepEqual(saved.inputValues,{'formula:beltSpeed:D:length':'500','formula:beltSpeed:n:rotationRate':'120'});
+  assert.equal(plain(result(saved),'both'),plain(ast,'both'));
+  assert.deepEqual(E.validateModel(JSON.parse(JSON.stringify(saved))),saved);
 });
 
 test('compact references retain conversion factors and keep unknown symbols in all modes',()=>{

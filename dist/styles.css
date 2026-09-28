@@ -34,7 +34,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .diameter-settings{border:1px solid var(--border);border-radius:8px;padding:16px;margin:20px 0;background:var(--bg)}.diameter-settings>.field-label{font-weight:550;line-height:1.5;margin:0}.diameter-settings .source-select{margin-top:10px}.diameter-settings .field-note{font-size:.8rem}.diameter-wall{border-top:1px solid var(--border);padding-top:13px;margin-top:14px}.diameter-wall>summary{font-size:.875rem;line-height:1.5;cursor:pointer}.diameter-wall>.expression{margin-top:14px}.diameter-wall>.text-button{margin:0 0 8px;font-size:.8rem}.diameter-derived{border-top:1px solid var(--border);padding-top:14px;margin-top:16px}.diameter-derived>span{font-size:.8rem;color:var(--muted);line-height:1.5}.diameter-equation{overflow-x:auto;padding:12px 0 3px}.diameter-equation math{min-width:min-content;font-size:1rem}.shared-measure>math{min-width:min-content;max-width:100%}.shared-measure>span{flex-basis:100%}@media(max-width:640px){.diameter-settings{padding:14px}}
 .unit-intro{font-size:.875rem;line-height:1.7;color:var(--muted);margin:-2px 0 10px}
 .unit-symbol-list>div{display:block;padding:16px 0}
-.unit-symbol-list dt{margin-bottom:11px}
+.unit-symbol-list dt{margin-bottom:11px;flex-wrap:wrap;row-gap:4px}
 .unit-symbol-list dd{white-space:normal}
 .value-entry{display:flex;align-items:flex-end;gap:12px;margin-bottom:10px;min-width:0}
 .value-field{display:flex;flex:1;flex-direction:column;gap:6px;min-width:0;font-size:.75rem;color:var(--muted)}
@@ -46,6 +46,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .value-error{font-size:.8rem;line-height:1.6;color:var(--error);margin:0 0 10px}
 .value-annotation{font-size:.65em;color:var(--muted)}
 .fraction-level{padding-block:.14em}
+.quantity-owner{display:block;flex-basis:100%;padding-left:38px;color:var(--muted);font-size:.7rem;line-height:1.4;overflow-wrap:anywhere}
 .result-panel{padding:17px 22px;border-top:1px solid var(--border);background:var(--soft)}
 .result-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:.8rem;color:var(--muted)}
 .result-value{display:flex;align-items:baseline;flex-wrap:wrap;gap:9px;margin-top:12px;font-size:1.2rem}

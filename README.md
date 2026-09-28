@@ -47,9 +47,17 @@ Under **Størrelserne i formlen** har hver kendt størrelse et felt **Tal (valgf
 - Komma og punktum kan begge bruges til decimaltal, også med minus. Tallene bevares som tekst uden afrunding. Skriv ét decimaltal på højst 32 tegn; udtryk og tusindtalsseparatorer accepteres ikke.
 - Et tomt felt viser det oprindelige symbol. **Ryd** fjerner et tal igen. Ufuldstændige eller ugyldige tal erstatter ikke symbolet.
 - Enhedsmærket viser din valgte **inputenhed**, fx mm, %, t/m³ eller kg/h. Formlen indeholder de nødvendige omregninger. Hvis du skifter enhed, beholdes det indtastede tal, og omregningen tilpasses.
-- Samme symbol og dimension deler tal og enhed i hele opsætningen. Udvidede referencer viser deres kendte tal. Beregnede referencer i **Kort** vises fortsat som mellemresultatets symbol.
+- Hver selvstændig formel og figur har egne tal og enheder. To formler kan fx have hver sin r. Indsatte underformler deler symboler inden for samme formel; en reference følger fortsat sin kilde. Når flere kilder bruger samme symbol, viser inputlisten, hvilken formel eller figur hvert felt tilhører. Udvidede referencer viser deres kendte tal. Beregnede referencer i **Kort** vises fortsat som mellemresultatets symbol.
 - Tallene følger med i gemte opsætninger, omskrivninger og kopieret tekst. Eksisterende opsætninger uden tal kan stadig åbnes. Negative tal får nødvendige parenteser, og en potens afgrænses tydeligt fra tallets små mærker.
 - Talindsættelse ændrer ikke den symbolske forenkling: B og L bevarer hver deres identitet, også hvis de har samme talværdi. TI-30-skønnet bruger tallets faktiske længde og udelader enheds- og symbolmærkerne.
+
+Når inputenheden er **%**, bliver tallet vist som en decimalfaktor i **Værdier** og **Begge**: **87 % → 0,87**. Feltet beholder 87 og procentenheden; en linje under feltet viser omregningen. I **Enheder** og ved et tomt felt bevares den symbolske division med 100. Procentomregningen holdes adskilt fra andre enhedsfaktorer, så den ikke forsvinder ved fx omregning af kopafstand fra cm. Kopieret tekst og TI-30-skøn følger den viste decimalfaktor.
+
+### Kopelevator: kopafstand eller antal kopper
+
+Nye kopelevatorformler bruger kopafstanden direkte: `Q_v = V_kop · (1 / s_kop) · v · η`. Skriv fx **20** og vælg **cm** for `s_kop`. Antallet pr. meter bliver `1 / (20 / 100) = 5` — 20 cm er en afstand, ikke 20 kopper pr. meter.
+
+Under **Tilpas formlens dele → Antal kopper pr. meter** kan du vælge **Afstand mellem kopper · N = 1 / s** eller **Kendt antal kopper pr. længdeenhed**. Eksisterende formler beholder deres oplysningstype og tal; vælg kopafstand, hvis opgaven giver afstanden. Kopafstanden måles fra center til center og skal være større end 0. Hjælpeformlen kan også bruges selvstændigt og vendes til `s_kop = 1 / N_meter`.
 
 ### Værdier, enheder eller begge
 
@@ -67,11 +75,11 @@ Valget gælder også figursummer, formelkæden, tilpasningspanelet, delberegning
 
 Vælg en grundformel, og brug **Isolér en størrelse** over formelvisningen. Fx kan **v = π · D · n** omskrives til både **n = v / (π · D)** og **D = v / (π · n)**. v er båndhastighed; V bruges normalt til rumfang.
 
-Valget opretter en **ny formel**. Dine øvrige kendte størrelser, indsatte formler og referencer følger med. Den hidtidige venstreside bliver et kendt input, så du fx kan angive v fra opgaven. Dens resultatenhed genbruges som inputenhed, medmindre samme symbol allerede har et inputenhedsvalg. Den nye ukendtes enhed følger dens tidligere input, når det er muligt. Kontrollér enhederne under formlen. Originalen og dens eksisterende referencer bevares.
+Valget opretter en **ny formel**. Dine øvrige kendte størrelser, indsatte formler og referencer følger med. Lokale tal og enheder kopieres til den nye formel, så de bagefter kan ændres uafhængigt; referencer bliver ved med at følge deres kilder. Den hidtidige venstreside bliver et kendt input, så du fx kan angive v fra opgaven. Dens resultatenhed genbruges som inputenhed, medmindre samme symbol allerede har et inputenhedsvalg. Den nye ukendtes enhed følger dens tidligere input, når det er muligt. Kontrollér enhederne under formlen. Originalen og dens eksisterende referencer bevares.
 
 Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning, parentesregler og TI-30XS-vejledning gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
 
-**Alle 128 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **323 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
+**Alle 129 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **324 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
 
 - Geometriske mål bruger den ikke-negative løsning. For hastighed fra kinetisk energi eller dynamisk trykhøjde kan begge fortegn vælges.
 - Tid fra `s = v_start · t + (1/2) · a · t²` har to rodvalg. Vælg den tid, der passer til forløbet. Ved `a = 0` bruges `t = s / v_start`. Hvis også `v_start = 0`, kan tiden ikke bestemmes fra strækningen alene.
@@ -121,9 +129,9 @@ V [L] = π / 4 · D² · h / 100000
 - En længde i mm divideres med 1000, et areal i mm² med 1.000.000 og et rumfang i mm³ med 1.000.000.000. Diameterens omregningsfaktor kvadreres sammen med diameteren; efter forkortning kan faktoren stå samlet uden for potensen.
 - Flow og sammensatte enheder får både volumen-/massefaktoren og tidsfaktoren. Fx omregnes L/min til m³/s med division med 60.000.
 - Absolutte temperaturer i °C får tillæg af 273,15 til K. Resultater i °C får det modsatte fradrag. **Temperaturforskelle** i °C og K har samme tal og får intet tillæg.
-- Samme symbol og dimension har samme inputenhed i hele opsætningen. Hver gemt formel har sin egen resultatenhed. Ændringer åbner automatisk den udfoldede visning.
+- Inputenheder hører til den enkelte formel eller figur, ligesom talværdierne. Referencer bruger kildens inputenheder. Hver gemt formel har sin egen resultatenhed. Ændringer åbner automatisk den udfoldede visning.
 - En beregnet reference har en konsekvent grundværdi i SI. Resultatenheden ændrer dens visning, uden at omregningen gentages i en udfoldet kæde. I **Kort** vises en reference i sin kildes valgte resultatenhed og omregnes tilbage, hvor den indsættes. Kædens delformler og figurernes oversigter angiver deres grundenhed.
-- **Kopiér formel** tager indtastede tal, symbolmærker, parenteser, omregninger, resultatenhed og en liste over størrelser og enheder med. Gemte opsætninger bevarer valgene; version 2–4 åbnes med de hidtidige SI-enheder i version 5.
+- **Kopiér formel** tager indtastede tal, symbolmærker, parenteser, omregninger, resultatenhed og en liste over størrelser og enheder med. Gemte opsætninger bevarer valgene; version 2–5 åbnes i version 6. Tidligere delte værdier og enheder kopieres til de relevante formler og figurer, så eksisterende tal bevares, mens nye ændringer holdes adskilt. Rydning og nye formler henter ikke værdier fra gamle, globale symboler.
 
 ### Indvendig eller udvendig diameter
 
@@ -219,7 +227,7 @@ t = [(π/4) · D₁² · h₁ + (1/3) · (π/4) · D₁² · h₂]
 
 Keglebunden deler diameter med cylinderen. Røret leverer tværsnitsarealet til flowformlen og indgår ikke i beholderens rumfang. Kendes flowet allerede, vælger du **Kendt størrelse · Qv** ved flowet; så forsvinder rørdiameter og hastighed fra den udfoldede formel.
 
-Der er 128 grundformler, 323 omskrivninger og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
+Der er 129 grundformler, 324 omskrivninger og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
 
 ## Forudsætninger
 
@@ -257,9 +265,9 @@ Formlernes skabeloner består af faste matematiske operationer. Der bruges hverk
 
 Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
 
-Alle 323 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
+Alle 324 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
 
-Talindsættelse kontrolleres på alle 128 grundformler og 323 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og TI-30-længdeskøn med de faktiske tal.
+Talindsættelse kontrolleres på alle 129 grundformler og 324 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og TI-30-længdeskøn med de faktiske tal.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
 

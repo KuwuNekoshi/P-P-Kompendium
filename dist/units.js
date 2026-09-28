@@ -83,7 +83,7 @@
     const next={...current.parts,[part]:value};
     return combine(dimension,next.numerator,next.denominator);
   }
-  const key=variable=>variable.symbol+':'+variable.dimension;
+  const key=variable=>(variable.scope?variable.scope+':':'')+variable.symbol+':'+variable.dimension;
   const constant=value=>({type:'constant',value:String(value)});
   const unitFactor=value=>({...constant(value),unitFactor:true});
   const group=ast=>ast.type==='group'?ast:{type:'group',children:[ast]};
@@ -97,7 +97,7 @@
     if(numerator!==1)out={type:'mul',children:[out,unitFactor(numerator)]};
     if(denominator!==1)out={type:'div',children:[out,unitFactor(denominator)]};
     if(!inverse&&unit.offset!=='0')out={type:'add',children:[out,constant(unit.offset)]};
-    return {...group(out),unitConversion:true,...(unit.offset!=='0'?{unitOffset:true}:{})};
+    return {...group(out),unitConversion:true,...(unit.offset!=='0'?{unitOffset:true}:{}),...(!inverse&&unit.id==='percent'?{percentInput:true}:{})};
   }
   // Cancel only exact, positive unit scales. Formula constants and variable
   // denominators stay in place; affine temperatures are explicit boundaries.
@@ -112,7 +112,9 @@
     while(true){const y=(x+n/x)/2n;if(y>=x)return x;x=y;}
   }
   function scales(ast){
-    if(ast.unitOffset)return boundary(ast);
+    // Keep a percentage's /100 local so it cannot disappear into unrelated
+    // length or output-unit scales. Numeric views can then show its decimal.
+    if(ast.unitOffset||ast.percentInput)return boundary(ast);
     if(ast.type==='constant'&&ast.unitFactor)return {body:constant(1),n:BigInt(ast.value),d:1n};
     if(!ast.children)return boundary(ast);
     const parts=ast.children.map(scales);

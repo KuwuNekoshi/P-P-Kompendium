@@ -53,7 +53,7 @@ test('squared diameter and area scales cancel with the correct power',()=>{
   assert(E.math(ast).includes('<msup>'));
   assert(E.plain(ast).includes('100'));
   assert(!E.plain(ast).includes('1000'));
-  assert.deepEqual(E.variables(ast).map(U.key),['D:length']);
+  assert.deepEqual(E.variables(ast).map(U.key),['formula:circleArea:D:length']);
 });
 
 test('area in square millimetres and speed in millimetres per second produce litres per minute',()=>{
@@ -66,7 +66,7 @@ test('area in square millimetres and speed in millimetres per second produce lit
 
 test('mixed input units and T9 still share one inside diameter and one plate-thickness conversion',()=>{
   const m=E.example();m.shapes[0].diameter.basis='outer';
-  m.inputUnits={'D_1:length':'mm','h_1:length':'cm','h_2:length':'mm','t_plade:length':'mm','ρ_mat:density':'ton_m3'};
+  m.inputUnits={'shape:cylinder:D_1:length':'mm','shape:cylinder:h_1:length':'cm','shape:cone:h_2:length':'mm','tank:tank:t_plade:length':'mm','formula:tank:ρ_mat:density':'ton_m3'};
   const f=E.newTankMass(m,'tank');f.resultUnit='ton';m.formulas.push(f);
   const vars={D_1:1000,h_1:200,h_2:500,t_plade:10,'ρ_mat':7.85};
   const inside=.98,area=Math.PI*inside*2+Math.PI*(inside/2)*Math.hypot(inside/2,.5);
@@ -78,7 +78,7 @@ test('mixed input units and T9 still share one inside diameter and one plate-thi
 });
 
 test('litre and litre-per-minute results remain correct when referenced by a fill-time formula',()=>{
-  const m=E.example();m.inputUnits={'D_1:length':'cm','D_3:length':'mm'};
+  const m=E.example();m.inputUnits={'shape:cylinder:D_1:length':'cm','shape:pipe:D_3:length':'mm'};
   m.formulas[0].resultUnit='L';m.formulas[1].resultUnit='L_min';m.formulas[2].resultUnit='min';
   const values={D_1:200,h_1:3,h_2:1,D_3:50,v:2},c=E.context(m);
   near(value(c.result('formula:volume'),values),10000*Math.PI/3);
@@ -130,12 +130,12 @@ test('known symbol references and formula copies preserve units without applying
 });
 
 test('unit choices survive saving and migration while incompatible or malformed units are rejected',()=>{
-  const m=E.example();m.inputUnits={'D_1:length':'mm','v:velocity':'km_h'};m.formulas[2].resultUnit='h';
+  const m=E.example();m.inputUnits={'shape:cylinder:D_1:length':'mm','formula:flow:v:velocity':'km_h'};m.formulas[2].resultUnit='h';
   assert.deepEqual(E.validateModel(JSON.parse(JSON.stringify(m))),m);
   const old=E.example();old.version=4;delete old.inputUnits;
-  const migrated=E.validateModel(old);assert.equal(migrated.version,5);assert.deepEqual(migrated.inputUnits,{});
+  const migrated=E.validateModel(old);assert.equal(migrated.version,6);assert.deepEqual(migrated.inputUnits,{});
   assert.equal(E.plain(E.context(migrated).target('formula:time')),E.plain(E.context(old).target('formula:time')));
-  const bad=E.clone(m);bad.inputUnits['D_1:length']='kPa';assert.throws(()=>E.validateModel(bad),/inputenhed/);
+  const bad=E.clone(m);bad.inputUnits['shape:cylinder:D_1:length']='kPa';assert.throws(()=>E.validateModel(bad),/inputenhed/);
   const result=E.clone(m);result.formulas[2].resultUnit='L';assert.throws(()=>E.validateModel(result),/resultatenheden/);
   const malformed=E.clone(m);malformed.inputUnits={'<img>:length':'mm'};assert.throws(()=>E.validateModel(malformed),/ugyldig størrelse/);
   const removed=E.removeShape(m,'cylinder');assert.deepEqual(E.validateModel(removed).inputUnits,m.inputUnits);
@@ -168,7 +168,8 @@ test('new density and flow combinations give consistent mass-flow results and su
   // 2 mg/mL × 30 mL/min = 60 mg/min = 3.6 g/h.
   near(value(E.context(m).result('formula:massFlow'),{'ρ':2,Q_v:3}),3.6);
   const saved=E.validateModel(JSON.parse(JSON.stringify(m)));
-  assert.deepEqual(saved,m);
+  assert.deepEqual(saved,{...m,version:6,inputUnits:Object.fromEntries(Object.entries(m.inputUnits).map(([key,value])=>['formula:massFlow:'+key,value]))});
+  assert.deepEqual(E.validateModel(JSON.parse(JSON.stringify(saved))),saved);
   assert.deepEqual(E.resultUnit(saved.formulas[0]).parts,{numerator:'g',denominator:'h'});
   const invalid=E.clone(m);invalid.inputUnits['Q_v:flow']='ratio:kg:h';
   assert.throws(()=>E.validateModel(invalid),/inputenhed/);

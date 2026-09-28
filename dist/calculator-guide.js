@@ -14,7 +14,7 @@
   function estimate(ast){
     // Use the same linear notation as copied text: only necessary parentheses
     // count, with one placeholder per numeric occurrence and no unit labels.
-    const count=(node,digits)=>Array.from(E.plain(node,v=>v.inputValue??'0'.repeat(digits)).replace(/\s/g,'')).length;
+    const count=(node,digits)=>Array.from(E.plain(node,v=>v.inputValue??'0'.repeat(digits),'values').replace(/\s/g,'')).length;
     function depth(node){
       if(!node.children)return 0;
       return Math.max(...node.children.map(depth))+(['div','pow','sqrt'].includes(node.type)?1:0);
@@ -29,7 +29,7 @@
       ast=unwrap(ast);
       if(cache.has(ast))return cache.get(ast);
       let value;
-      if(ast.type==='symbol')value=JSON.stringify(['symbol',ast.symbol,ast.dimension||'',ast.reference||'',ast.unit||'']);
+      if(ast.type==='symbol')value=JSON.stringify(['symbol',E.Units.key(ast),ast.reference||'',ast.unit||'']);
       else if(ast.type==='constant')value=JSON.stringify(['constant',ast.value]);
       else value=ast.type+'['+ast.children.map(c=>{const s=key(c);return s.length+':'+s;}).join('')+']';
       cache.set(ast,value);return value;

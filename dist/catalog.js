@@ -4195,13 +4195,30 @@
         "v",
         "eta"
       ],
-      "note": "SI: m³, kopper/m og m/s giver m³/s. Skolens k er alene omregning af tidsenheden.",
+      "note": "N_meter er antal kopper pr. meter, ikke afstanden mellem kopperne. Ved én kop for hver s_kop meter er N_meter = 1 / s_kop. Fx giver 20 cm kopafstand 1 / 0,2 = 5 kopper/m. SI: m³, kopper/m og m/s giver m³/s. Skolens k er alene omregning af tidsenheden.",
       "source": {
         "pages": [
           6
         ],
         "triangles": []
       }
+    },
+    "bucketCountFromSpacing": {
+      "name": "Kopper pr. meter fra kopafstand",
+      "group": "Faststoftransport",
+      "symbol": "N_meter",
+      "dimension": "countPerLength",
+      "equation": "Nmeter = 1 / skop",
+      "args": {
+        "s": {
+          "symbol": "s_kop",
+          "label": "Afstand mellem kopper (center til center)",
+          "dimension": "length"
+        }
+      },
+      "template": ["div", "1", "s"],
+      "note": "Én kop for hver s_kop meter giver 1 / s_kop kopper pr. meter. Kopafstanden skal være større end 0. Skriv fx 20 og vælg cm: N_meter = 1 / (20 / 100) = 5 kopper/m.",
+      "aliases": ["kopelevator", "kopafstand", "deling", "20 cm", "kopper pr. meter"]
     },
     "screwFlow": {
       "name": "Sneglens volumenflow",

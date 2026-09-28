@@ -20,7 +20,9 @@
   const innerTarget = (s,key) => `shape:${s.id}:inner:${key}`;
   const geometricInput = (s,key) => diameterKeys(s).includes(key)?innerTarget(s,key):`shape:${s.id}:input:${key}`;
   const own = (object, key) => Object.hasOwn(object, key);
-  const inputUnit = (model,variable) => Units.get(variable.dimension,model.inputUnits?.[Units.key(variable)] || Units.base(variable.dimension).id);
+  const inputScope = descriptor => descriptor?descriptor.ownerType+':'+descriptor.ownerId:'';
+  const storedInput = (model,field,variable) => model[field]?.[Units.key(variable)] ?? (model.version<6?model[field]?.[Units.key({...variable,scope:undefined})]:undefined);
+  const inputUnit = (model,variable) => Units.get(variable.dimension,storedInput(model,'inputUnits',variable) || Units.base(variable.dimension).id);
   // Preserve decimal precision as text. Values annotate symbols; they never
   // become constants in the symbolic simplifier or trigger result evaluation.
   function parseInputValue(value) {
@@ -30,14 +32,31 @@
     if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text))return null;
     return text.replace(/^\+/,'').replace(/^(-?)\./,(_,sign)=>sign+'0.').replace(/\.$/,'');
   }
-  const inputValue = (model,variable) => parseInputValue(model.inputValues?.[Units.key(variable)] ?? '') ?? '';
+  function percentToDecimal(value) {
+    const text=parseInputValue(value);if(text===null||text==='')return null;
+    const negative=text.startsWith('-'),[whole,fraction='']=text.replace(/^-/,'').split('.'),digits=whole.padStart(3,'0');
+    return (negative?'-':'')+digits.slice(0,-2).replace(/^0+(?=\d)/,'')+'.'+digits.slice(-2)+fraction;
+  }
+  const inputValue = (model,variable) => parseInputValue(storedInput(model,'inputValues',variable) ?? '') ?? '';
+  // A copied/isolated formula starts with its source's local values, then owns
+  // them independently. Explicit references continue to use their own source.
+  function copyInputs(model,fromScope,toScope) {
+    if(!fromScope||!toScope||fromScope===toScope)return;
+    for(const field of ['inputValues','inputUnits'])for(const [key,value]of Object.entries(model[field]||{})){
+      if(!key.startsWith(fromScope+':'))continue;
+      const next=toScope+key.slice(fromScope.length);
+      if(!own(model[field],next))model[field][next]=value;
+    }
+  }
   const resultUnit = formula => Units.get(formula.dimension,formula.resultUnit || Units.base(formula.dimension).id);
   const esc = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
   function newExpression(id) {
     const f = FORMULAS[id];
     if (!f) throw new Error('Ukendt formel.');
-    return form(id, Object.fromEntries(Object.entries(f.args).map(([k, a]) => [k, symbol(a.symbol)])));
+    const args=Object.fromEntries(Object.entries(f.args).map(([k,a])=>[k,symbol(a.symbol)]));
+    if(id==='bucketFlow')args.N=newExpression('bucketCountFromSpacing');
+    return form(id,args);
   }
   function newShape(type, id, ordinal) {
     const s = SHAPES[type];
@@ -57,6 +76,7 @@
     return f?REARRANGEMENTS[f.rearranged?.base||formulaId]:[];
   }
   function rearrangeFormula(model,sourceId,formulaId,id) {
+    model=validateModel(model);
     const source=model.formulas.find(f=>f.id===sourceId);
     if(!source||source.expression.kind!=='formula')throw new Error('Vælg en grundformel at omskrive.');
     if(model.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
@@ -67,10 +87,10 @@
     const next=clone(model),f=newFormula(id,formulaId),known=values[toKey];
     if(known?.kind==='symbol')f.symbol=known.symbol;
     let unit=Units.base(f.dimension);
-    if(known?.kind==='symbol')unit=inputUnit(model,{symbol:known.symbol,dimension:f.dimension});
+    if(known?.kind==='symbol')unit=inputUnit(model,{symbol:known.symbol,dimension:f.dimension,scope:'formula:'+sourceId});
     else if(known?.kind==='ref'){
       const d=context(model).map.get(known.target);
-      if(d)unit=d.expression.kind==='symbol'?inputUnit(model,{symbol:d.expression.symbol,dimension:d.dimension}):resultUnit(d);
+      if(d)unit=d.expression.kind==='symbol'?inputUnit(model,{symbol:d.expression.symbol,dimension:d.dimension,scope:inputScope(d)}):resultUnit(d);
     }
     f.resultUnit=unit.id;
     if(model.formulas.some(other=>other.symbol===f.symbol)){
@@ -79,8 +99,9 @@
       f.symbol=stem+'_'+n;
     }
     for(const key of Object.keys(target.args))f.expression.args[key]=clone(values[key]);
+    copyInputs(next,'formula:'+sourceId,'formula:'+id);
     next.inputUnits||={};
-    const key=Units.key({symbol:source.symbol,dimension:source.dimension});
+    const key=Units.key({symbol:source.symbol,dimension:source.dimension,scope:'formula:'+id});
     if(!own(next.inputUnits,key))next.inputUnits[key]=resultUnit(source).id;
     next.formulas.push(f);
     return validateModel(next);
@@ -101,7 +122,7 @@
     const cylinder = newShape('cylinder', 'cylinder', 1);
     const cone = newShape('cone', 'cone', 2); cone.name = 'Keglebund'; cone.faces.base = 'closed';
     const pipe = newShape('pipe', 'pipe', 3); pipe.name = 'Indløbsrør';
-    return { version: 5, inputUnits:{}, title: 'Bassin med keglebund', tank:defaultTank(),shapes: [cylinder, cone, pipe], connections: [{ id:'basin-joint', a:{shape:'cylinder',face:'bottom'}, b:{shape:'cone',face:'base'} }], formulas: [
+    return { version: 6, inputUnits:{}, title: 'Bassin med keglebund', tank:defaultTank(),shapes: [cylinder, cone, pipe], connections: [{ id:'basin-joint', a:{shape:'cylinder',face:'bottom'}, b:{shape:'cone',face:'base'} }], formulas: [
       { id: 'volume', name: 'Samlet rumfang', symbol: 'V_fyld', dimension: 'volume', expression: assembly('volume') },
       { id: 'flow', name: 'Volumenflow', symbol: 'Q_v', dimension: 'flow', expression: form('flow', { A: ref('shape:pipe:crossSection'), v: symbol('v') }) },
       { id: 'time', name: 'Fyldetid', symbol: 't', dimension: 'time', expression: form('fillTime', { V: ref('formula:volume'), Q: ref('formula:flow') }) }
@@ -301,7 +322,7 @@
   }
   function expressionKey(ast) {
     ast=unwrap(ast);
-    if(ast.type==='symbol')return JSON.stringify(['symbol',ast.symbol,ast.dimension||'',ast.reference||'',ast.unit||'']);
+    if(ast.type==='symbol')return JSON.stringify(['symbol',Units.key(ast),ast.reference||'',ast.unit||'']);
     if(ast.type==='constant')return JSON.stringify(['constant',ast.value]);
     const keys=ast.children.map(expressionKey);
     if(['add','mul'].includes(ast.type))keys.sort();
@@ -400,7 +421,7 @@
     function expandRaw(expr, dimension, mode = 'expanded', stack = [], budget = { nodes: 0 }, depth = 0, label = '') {
       if (++budget.nodes > 1200 || depth > 48 || stack.length > 80) throw new Error('Formelkæden er for stor. Behold nogle dele som symboler.');
       if (expr.kind === 'symbol') {
-        const variable=leaf(expr.symbol,dimension,label),unit=inputUnit(model,variable),value=inputValue(model,variable);
+        const variable={...leaf(expr.symbol,dimension,label),scope:inputScope(map.get(stack.at(-1)))},unit=inputUnit(model,variable),value=inputValue(model,variable);
         if(value!==''){variable.inputValue=value;variable.valueUnit=unit.label;}
         return Units.convert(variable,unit);
       }
@@ -495,7 +516,14 @@
     const linear=format==='plain',markup=format==='math';
     const containsFraction=node=>node.type==='div'||(node.children||[]).some(containsFraction);
     function render(node,parent=null,index=0) {
-      while(node.type==='group')node=node.children[0];
+      if(node.type==='group'){
+        if(node.percentInput&&display!=='units'&&(!symbolText||display==='values')){
+          const quotient=node.children[0],variable=quotient.type==='div'?quotient.children[0]:null;
+          const decimal=variable?.type==='symbol'?percentToDecimal(variable.inputValue):null;
+          if(decimal!==null)return render({...variable,inputValue:decimal,valueUnit:'tal'},parent,index);
+        }
+        return render(node.children[0],parent,index);
+      }
       let body;
       const annotated=!symbolText&&node.type==='symbol'&&display==='both'&&node.inputValue!==undefined;
       if(node.type==='symbol'){
@@ -614,7 +642,14 @@
     const fail = message => { throw new Error('Ugyldig opsætning: ' + message); };
     const str = (value, max = 120) => typeof value === 'string' && value.length > 0 && value.length <= max;
     const validSymbol = value => str(value,24) && /^[\p{L}\p{N}]+(?:_[\p{L}\p{N}]+)?$/u.test(value);
-    if (!input || ![2,3,4,5].includes(input.version) || !str(input.title) || !Array.isArray(input.shapes) || !Array.isArray(input.formulas) || input.shapes.length > 24 || input.formulas.length > 40) fail('formatet genkendes ikke, eller opsætningen er for stor.');
+    if (!input || ![2,3,4,5,6].includes(input.version) || !str(input.title) || !Array.isArray(input.shapes) || !Array.isArray(input.formulas) || input.shapes.length > 24 || input.formulas.length > 40) fail('formatet genkendes ikke, eller opsætningen er for stor.');
+    function inputDimension(key) {
+      const parts=key.split(':'),scoped=input.version>=6;
+      if(parts.length!==(scoped?4:2))return null;
+      if(scoped&&(!['formula','shape','tank'].includes(parts[0])||!str(parts[1],64)||!/^[a-zA-Z0-9_-]+$/.test(parts[1])||(parts[0]==='tank'&&parts[1]!=='tank')))return null;
+      const [name,dimension]=parts.slice(-2);
+      return validSymbol(name)&&own(DIMENSIONS,dimension)?dimension:null;
+    }
     const ids = new Set(), ordinals = new Set();
     function identity(item) {
       if (!item || !str(item.id,64) || !/^[a-zA-Z0-9_-]+$/.test(item.id) || ids.has(item.id) || !str(item.name)) fail('ugyldigt navn eller id.');
@@ -631,23 +666,23 @@
       if (e.kind !== 'formula' || !f || f.dimension !== dimension) fail('formlen passer ikke til størrelsen.');
       return form(e.formula,Object.fromEntries(Object.entries(f.args).map(([k,a]) => [k,cleanExpr(e.args?.[k],a.dimension,depth+1)])));
     }
-    const model = { version:5,inputUnits:{},title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
+    const model = { version:6,inputUnits:{},title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
     if(own(input,'inputValues')){
       if(!input.inputValues||typeof input.inputValues!=='object'||Array.isArray(input.inputValues)||Object.keys(input.inputValues).length>3000)fail('ugyldige talværdier.');
       model.inputValues={};
       for(const [key,value]of Object.entries(input.inputValues)){
-        const parts=key.split(':'),number=parseInputValue(value);
-        if(parts.length!==2||!validSymbol(parts[0])||!own(DIMENSIONS,parts[1]))fail('ugyldig størrelse i talværdien.');
+        const number=parseInputValue(value);
+        if(!inputDimension(key))fail('ugyldig størrelse i talværdien.');
         if(number===null||number==='')fail('en talværdi skal være ét decimaltal med højst 32 tegn.');
         model.inputValues[key]=number;
       }
     }
-    if(input.version===5){
+    if(input.version>=5){
       if(!input.inputUnits||typeof input.inputUnits!=='object'||Array.isArray(input.inputUnits)||Object.keys(input.inputUnits).length>3000)fail('ugyldige enhedsvalg.');
       for(const [key,id]of Object.entries(input.inputUnits)){
-        const parts=key.split(':');
-        if(parts.length!==2||!validSymbol(parts[0])||!own(DIMENSIONS,parts[1]))fail('ugyldig størrelse i enhedsvalget.');
-        try{Units.get(parts[1],id);}catch(_){fail('en inputenhed passer ikke til størrelsen.');}
+        const dimension=inputDimension(key);
+        if(!dimension)fail('ugyldig størrelse i enhedsvalget.');
+        try{Units.get(dimension,id);}catch(_){fail('en inputenhed passer ikke til størrelsen.');}
         model.inputUnits[key]=id;
       }
     }
@@ -716,6 +751,29 @@
     for (const d of map.values()) check(d.expression,d.dimension);
     for(const s of model.shapes)for(const e of Object.values(s.inputs))check(e,'length');
     for(const s of model.shapes)if(s.diameter)check(s.diameter.thickness,'length');
+    if(input.version<6){
+      // Copy each legacy value to the owners that used it. Do not retain a
+      // global fallback: clearing a field or adding a formula must stay local.
+      const old={inputUnits:model.inputUnits,inputValues:model.inputValues};
+      model.inputUnits={};if(old.inputValues)model.inputValues={};
+      function migrateSymbol(name,dimension,scope){
+        const legacy=Units.key({symbol:name,dimension}),key=Units.key({symbol:name,dimension,scope});
+        for(const field of ['inputUnits','inputValues'])if(old[field]&&own(old[field],legacy))model[field][key]=old[field][legacy];
+      }
+      function migrateExpression(expr,dimension,scope){
+        if(expr.kind==='symbol')migrateSymbol(expr.symbol,dimension,scope);
+        if(expr.kind==='formula')for(const [key,arg]of Object.entries(FORMULAS[expr.formula].args))migrateExpression(expr.args[key],arg.dimension,scope);
+      }
+      migrateExpression(model.tank.thickness,'length','tank:tank');
+      for(const s of model.shapes){
+        for(const [key,arg]of Object.entries(SHAPES[s.type].inputs))migrateExpression(s.inputs[key],arg.dimension,'shape:'+s.id);
+        if(s.diameter)migrateExpression(s.diameter.thickness,'length','shape:'+s.id);
+      }
+      for(const f of model.formulas){
+        migrateExpression(f.expression,f.dimension,'formula:'+f.id);
+        migrateSymbol(f.symbol,f.dimension,'formula:'+f.id);
+      }
+    }
     // Missing references and cycles remain visible as actionable errors, never guessed away.
     return model;
   }
@@ -726,5 +784,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputUnit, inputValue, parseInputValue, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });

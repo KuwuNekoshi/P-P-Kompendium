@@ -59,7 +59,7 @@ test('result panel expands references, uses the selected unit and rounds only th
   const fake={safe:(target,mode,asResult)=>{assert.equal(mode,'expanded');assert.equal(asResult,true);return {ok:true,ast:{type:'constant',value:'50'}};}};
   assert.match(h.scope.renderResult(fake,m.formulas[0]),/<strong>50,000<\/strong>/);
   fake.safe=()=>({ok:true,ast:{type:'constant',value:'0.000000123456'}});
-  assert.match(h.scope.renderResult(fake,m.formulas[0]),/<strong>1,235E-7<\/strong>/);
+  assert.match(h.scope.renderResult(fake,m.formulas[0]),/<strong>0,0000001235<\/strong>/);
 });
 
 test('missing values, invalid operations and broken references replace the previous output',()=>{
@@ -68,4 +68,12 @@ test('missing values, invalid operations and broken references replace the previ
   let html=show({type:'symbol',symbol:'B',dimension:'length'});assert.match(html,/Udfyld de manglende værdier: B/);assert(!html.includes('<output'));
   html=show({type:'div',children:[{type:'constant',value:'1'},{type:'constant',value:'0'}]});assert.match(html,/dividere med 0/);assert(!html.includes('<output'));
   html=h.scope.renderResult({safe:()=>({ok:false,error:'Manglende reference <test>'})},f);assert.match(html,/Manglende reference &lt;test&gt;/);assert(!html.includes('<output'));
+});
+
+test('ordinary decimal result formatting keeps tiny volumes visible without E notation',()=>{
+  const {scope}=harness();
+  const example=.15*.07*.05+(Math.PI/8)*.07**2*.15;
+  for(const [value,expected]of [[example,'0,0008136'],[-example,'-0,0008136'],[0,'0,000'],[50,'50,000'],[188.495559,'188,496'],[.00099999,'0,001'],[1e-24,'0,'+'0'.repeat(23)+'1'],[1e21,'1000000000000000000000,000']]){
+    const text=scope.formatResultValue(value);assert.equal(text,expected);assert(!/[eE]/.test(text));
+  }
 });

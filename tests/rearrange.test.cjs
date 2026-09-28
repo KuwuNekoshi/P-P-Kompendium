@@ -24,7 +24,7 @@ function inputs(f,scale=1){
 const model=(...ids)=>({version:5,title:'Omskrivninger',tank:E.defaultTank(),inputUnits:{},shapes:[],connections:[],formulas:ids.map(id=>E.newFormula(id,id))});
 
 test('every base formula and every input has an explicit rearrangement or a specific explanation',()=>{
-  assert.equal(Object.keys(E.BASE_FORMULAS).length,128);
+  assert.equal(Object.keys(E.BASE_FORMULAS).length,129);
   const blocked=[];
   for(const [id,f]of Object.entries(E.BASE_FORMULAS)){
     const options=E.rearrangements(id);
@@ -58,7 +58,7 @@ test('every generated inverse satisfies its original equation for two independen
     assert(E.math(E.formulaAst(id)).includes('<math'));assert(E.tex(E.formulaAst(id)).length);
     verified++;
   }
-  assert.equal(verified,323);
+  assert.equal(verified,324);
 });
 
 test('belt speed can find n or D with minute units and preserves existing formulas and references',()=>{
@@ -69,7 +69,7 @@ test('belt speed can find n or D with minute units and preserves existing formul
   const before=JSON.stringify(m),next=E.rearrangeFormula(m,'beltSpeed','inverse:beltSpeed:n','motor');
   assert.equal(JSON.stringify(m),before);assert.deepEqual(next.formulas.slice(0,2),m.formulas);
   const n=next.formulas.at(-1);assert.equal(n.dimension,'rotationRate');assert.equal(n.resultUnit,'rpm');
-  assert.equal(next.inputUnits['v:velocity'],'m_min');assert.equal(n.expression.args.given.kind,'symbol');
+  assert.equal(next.inputUnits['formula:motor:v:velocity'],'m_min');assert.equal(n.expression.args.given.kind,'symbol');
   const ast=E.context(next).result('formula:motor');assert(!E.plain(ast).includes('60'));
   near(value(ast,{v:60*Math.PI,D:500}),120,'rpm');
   const restored=E.validateModel(JSON.parse(JSON.stringify(next)));

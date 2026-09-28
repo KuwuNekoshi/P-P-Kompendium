@@ -90,7 +90,7 @@ test('equal display labels never merge references to different sources',()=>{
 test('copied formulas stay live and preserve each conversion and the complete T9 sum',()=>{
   let m=setup('box','halfCylinder');m.shapes[1].diameter.basis='outer';
   m=E.connect(m,{shape:'part1',face:'top'},{shape:'part0',face:'bottom'},'joint');
-  m.inputUnits={'D_2:length':'mm','L_2:length':'cm','h_1:length':'cm','t_plade:length':'mm','ρ_mat:density':'ton_m3'};
+  m.inputUnits={'shape:part1:D_2:length':'mm','shape:part1:L_2:length':'cm','shape:part0:h_1:length':'cm','tank:tank:t_plade:length':'mm','formula:mass:ρ_mat:density':'ton_m3'};
   const copy=E.newFormula('copy','areaSum');copy.expression=E.clone(E.context(m).map.get('shape:part0:area').expression);m.formulas.push(copy);
   const mass=E.newTankMass(m,'mass');mass.resultUnit='ton';m.formulas.push(mass);
   const saved=JSON.stringify(m),c=E.context(m),vars={D_2:6000,L_2:1000,h_1:700,t_plade:2,ρ_mat:7.85};

@@ -27,7 +27,7 @@ test('result evaluation respects input units, output units, percentage and absol
   power.inputUnits={'P_teo:power':'kW','η:scalar':'percent'};power.formulas[0].resultUnit='kW';near(result(power),10);
   const temperature=model('temperatureDifference');temperature.inputUnits={'T_start:temperature':'C','T_slut:temperature':'C'};
   const inverse=E.rearrangeFormula(temperature,'temperatureDifference','inverse:temperatureDifference:end','end');
-  inverse.formulas.at(-1).resultUnit='C';inverse.inputValues={'T_start:temperature':'-20','ΔT:temperatureChange':'30'};
+  inverse.formulas.at(-1).resultUnit='C';inverse.inputValues={'formula:end:T_start:temperature':'-20','formula:end:ΔT:temperatureChange':'30'};
   near(result(inverse,'end'),10);
 });
 

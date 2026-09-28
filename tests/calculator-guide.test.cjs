@@ -44,7 +44,7 @@ test('MathPrint nesting is checked independently of length and split below four 
 });
 
 test('two volumes are calculated separately in cubic metres before the complete litre conversion',()=>{
-  const m=E.example();m.inputUnits={'D_1:length':'mm','h_1:length':'cm','h_2:length':'mm'};
+  const m=E.example();m.inputUnits={'shape:cylinder:D_1:length':'mm','shape:cylinder:h_1:length':'cm','shape:cone:h_2:length':'mm'};
   m.formulas[0].resultUnit='L';
   const ctx=E.context(m),guide=G.create(ctx,'formula:volume'),plan=guide.plan;
   assert(guide.estimate.recommend);assert(plan);assert(!plan.incomplete);
@@ -82,7 +82,7 @@ test('wide sums split into bounded blocks without collisions with existing names
 
 test('T9 advice preserves outside diameters, mixed units and all selected plates without mutating the setup',()=>{
   const m=E.example();m.shapes[0].diameter.basis='outer';
-  m.inputUnits={'D_1:length':'mm','h_1:length':'cm','h_2:length':'cm','t_plade:length':'mm','ρ_mat:density':'ton_m3'};
+  m.inputUnits={'shape:cylinder:D_1:length':'mm','shape:cylinder:h_1:length':'cm','shape:cone:h_2:length':'cm','tank:tank:t_plade:length':'mm','formula:mass:ρ_mat:density':'ton_m3'};
   m.formulas.push(E.newTankMass(m,'mass'));m.formulas.at(-1).resultUnit='ton';
   const before=JSON.stringify(m),guide=G.create(E.context(m),'formula:mass'),vars={D_1:6000,h_1:1000,h_2:200,t_plade:2,ρ_mat:7.85};
   const D=5.996,expected=(Math.PI*D*10+Math.PI*D/2*Math.sqrt((D/2)**2+4))*.002*7.85;
@@ -99,7 +99,7 @@ test('invalid or missing dependencies produce no calculator advice in either vie
 });
 
 test('redundant parentheses do not trigger warnings for an already short unit-reduced formula',()=>{
-  const m=E.example();m.inputUnits={'D_1:length':'mm','h_1:length':'cm','h_2:length':'cm'};
+  const m=E.example();m.inputUnits={'shape:cylinder:D_1:length':'mm','shape:cylinder:h_1:length':'cm','shape:cone:h_2:length':'cm'};
   m.formulas[0].resultUnit='L';
   const guide=G.create(E.context(m),'formula:volume');
   assert.equal(guide.estimate.max,60);assert(!guide.estimate.recommend);assert.equal(guide.plan,null);

@@ -86,8 +86,8 @@ test('percent and negative Celsius inputs preserve their annotations and offsets
   near(value(result(m)),20);assert.match(E.plain(result(m)),/-10 °C \(T_slut\)/);
   const unit=E.Units.get('scalar','percent');
   const ast=E.Units.convert({type:'symbol',symbol:'η',dimension:'scalar',inputValue:'80',valueUnit:unit.label},unit);
-  near(value(ast),.8);assert.match(E.mathBody(ast),/<mtext>% \(<\/mtext>/);
-  assert.match(E.tex(ast),/\\text\{\\%\}/);
+  near(value(ast),.8);assert.match(E.mathBody(ast),/<mn>0,80<\/mn>/);assert.match(E.mathBody(ast),/<mtext>tal \(<\/mtext>/);
+  assert.match(E.tex(ast),/0\{,\}80/);assert.match(E.tex(ast),/\\text\{tal\}/);
 });
 
 test('live and compact references distinguish supplied inputs from computed results',()=>{
@@ -106,13 +106,20 @@ test('live and compact references distinguish supplied inputs from computed resu
 test('values survive save/open and rearrangement while blank and malformed saved values are rejected',()=>{
   const m=model('rectangleArea');m.inputValues={'B:length':'50','L:length':'30','A:area':'1500'};
   m.inputUnits={'B:length':'mm'};
-  assert.deepEqual(E.validateModel(JSON.parse(JSON.stringify(m))),m);
+  const saved=E.validateModel(JSON.parse(JSON.stringify(m)));
+  assert.equal(saved.version,6);
+  assert.deepEqual(saved.inputValues,{'formula:rectangleArea:B:length':'50','formula:rectangleArea:L:length':'30','formula:rectangleArea:A:area':'1500'});
+  assert.equal(E.plain(result(saved)),E.plain(result(m)));
+  assert.deepEqual(E.validateModel(JSON.parse(JSON.stringify(saved))),saved);
   const inverse=E.rearrangeFormula(m,'rectangleArea','inverse:rectangleArea:L','length');
-  assert.deepEqual(inverse.inputValues,m.inputValues);
+  for(const [key,value]of Object.entries(m.inputValues)){
+    assert.equal(inverse.inputValues['formula:rectangleArea:'+key],value);
+    assert.equal(inverse.inputValues['formula:length:'+key],value);
+  }
   const text=E.plain(result(inverse,'length'));assert.match(text,/1500 m² \(A\)/);assert.match(text,/50 mm \(B\)/);assert(!text.includes('30 m (L)'));
   for(const inputValues of [null,[],{'B:length':''},{'B:length':'Infinity'},{'B:length':'2+3'},{'B:length':50},{'B:unknown':'50'},{'<img>:length':'50'},Object.fromEntries(Array.from({length:3001},(_,i)=>['x'+i+':length','1']))])assert.throws(()=>E.validateModel({...m,inputValues}),/Ugyldig opsætning/);
   const old=E.example();assert.deepEqual(E.validateModel(old),old);
-  const decimal=E.validateModel({...m,inputValues:{'B:length':'2,500'}});assert.equal(decimal.inputValues['B:length'],'2.500');
+  const decimal=E.validateModel({...m,inputValues:{'B:length':'2,500'}});assert.equal(decimal.inputValues['formula:rectangleArea:B:length'],'2.500');
 });
 
 test('TI estimates count supplied digits and signs but exclude labels and annotation parentheses',()=>{
