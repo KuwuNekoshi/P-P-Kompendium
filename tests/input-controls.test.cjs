@@ -10,10 +10,10 @@ function harness(model){
     $:()=>guide,save:()=>{},render:()=>{},notify:()=>{},
     ownerTarget:path=>'formula:'+model.formulas[path[1]].id,
     document:{addEventListener:(type,fn)=>handlers[type]=fn,querySelectorAll:()=>[]}});
-  scope.getAt=path=>path.reduce((value,key)=>value[key],scope.model);
+  scope.getAt=path=>path.reduce((value,key)=>value?.[key],scope.model);
   scope.setAt=(path,value)=>scope.getAt(path.slice(0,-1))[path.at(-1)]=value;
   const excerpt=(start,end)=>app.slice(app.indexOf(start),app.indexOf(end));
-  vm.runInContext(excerpt('  function formulaSummary(','  function renderSidebar(')+
+  vm.runInContext(excerpt('  function ownerTarget(','  function notify(')+excerpt('  function plateEditor(','  function renderTankInspector(')+excerpt('  function formulaSummary(','  function renderSidebar(')+
     excerpt('  function unitOptions(','  function inspectorHeader(')+
     excerpt("  document.addEventListener('click',event=>{","  $('#file-input').addEventListener('change'"),scope);
   const input=(key,value)=>handlers.input({target:{value,dataset:{action:'input-value',id:key}}});
@@ -88,4 +88,28 @@ test('percentage inputs keep 87 in the field while showing 0.87 as the formula f
   assert.equal(E.plain(ast,null,'values'),'P_teo / 0,87');
   h.change({value:'number',dataset:{action:'input-unit',id:key,symbol:'η',dimension:'scalar'}});h.input(key,'0,87');
   assert.equal(E.plain(E.context(m).target('formula:power'),null,'values'),'P_teo / 0,87');
+});
+
+
+test('production controls preview preconverted values and flag recurring decimals without altering inputs',()=>{
+  const m=setup(E.newFormula('distance','distance')),h=harness(m),key='formula:distance:v:velocity';
+  h.input(key,'20');h.change({value:'m_min',dataset:{action:'input-unit',id:key,symbol:'v',dimension:'velocity'}});
+  const tree=E.context(m).target('formula:distance');h.scope.renderUnitGuide(tree,m.formulas[0]);
+  assert.match(h.guide.innerHTML,/I formlen: 20 m\/min → ≈ 0,3333333333333333 m\/s/);
+  assert.equal(m.inputValues[key],'20');assert.match(E.plain(tree,null,'values'),/0,3333333333333333/);
+});
+
+test('production surface controls assign local side and bottom thicknesses and retain nested formula edits',()=>{
+  const m=setup();m.shapes=[E.newShape('box','box',1)];m.formulas=[E.newTankMass(m,'mass')];
+  const h=harness(m),base=['shapes',0,'plateThickness'];
+  let html=h.scope.plateEditor(m.shapes[0],0,E.context(m));assert.match(html,/t_bund/);assert.match(html,/Fælles for siderne/);
+  for(const [key,symbol]of [['side','t_side1'],['bottom','t_bund1']])h.change({value:'symbol',dataset:{action:'source',path:JSON.stringify([...base,key]),dimension:'length',symbol}});
+  assert.equal(h.scope.model.shapes[0].plateThickness.side.symbol,'t_side1');assert.equal(h.scope.model.shapes[0].plateThickness.bottom.symbol,'t_bund1');
+  assert.equal(h.scope.model.formulas[0].expression.formula,'tankMassSurfaces');
+  h.change({value:'formula:diameter',dataset:{action:'source',path:JSON.stringify([...base,'side']),dimension:'length',symbol:'t_side1'}});
+  h.change({value:'symbol',dataset:{action:'source',path:JSON.stringify([...base,'side','args','r']),dimension:'length',symbol:'r_side'}});
+  assert.equal(h.scope.model.shapes[0].plateThickness.side.formula,'diameter');assert.equal(h.scope.model.shapes[0].plateThickness.side.args.r.symbol,'r_side');
+  const f=h.scope.model.formulas[0],expr=f.expression.args.V;
+  html=h.scope.expressionEditor(expr,'volume',['formulas',0,'expression','args','V'],'V_mat',E.context(h.scope.model));
+  assert.match(html,/value="material" selected/);assert.match(html,/plademateriale/);
 });

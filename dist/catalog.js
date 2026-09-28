@@ -4216,9 +4216,19 @@
           "dimension": "length"
         }
       },
-      "template": ["div", "1", "s"],
+      "template": [
+        "div",
+        "1",
+        "s"
+      ],
       "note": "Én kop for hver s_kop meter giver 1 / s_kop kopper pr. meter. Kopafstanden skal være større end 0. Skriv fx 20 og vælg cm: N_meter = 1 / (20 / 100) = 5 kopper/m.",
-      "aliases": ["kopelevator", "kopafstand", "deling", "20 cm", "kopper pr. meter"]
+      "aliases": [
+        "kopelevator",
+        "kopafstand",
+        "deling",
+        "20 cm",
+        "kopper pr. meter"
+      ]
     },
     "screwFlow": {
       "name": "Sneglens volumenflow",
@@ -5299,6 +5309,175 @@
         ],
         "triangles": []
       }
+    },
+    "balanceMass": {
+      "name": "Momentligevægt · masser",
+      "group": "Bevægelse og mekanik",
+      "symbol": "m_B",
+      "dimension": "mass",
+      "equation": "mB = mA · lA / lB",
+      "args": {
+        "m": {
+          "symbol": "m_A",
+          "label": "Samlet masse på side A",
+          "dimension": "mass"
+        },
+        "a": {
+          "symbol": "l_A",
+          "label": "Vinkelret arm på side A",
+          "dimension": "length"
+        },
+        "b": {
+          "symbol": "l_B",
+          "label": "Vinkelret arm på side B",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "div",
+        [
+          "mul",
+          "m",
+          "a"
+        ],
+        "b"
+      ],
+      "note": "mA · lA = mB · lB. Begge masser omfatter beholder og indhold. Samme tyngdeacceleration på begge sider, så g forkortes væk. Kræver statisk ligevægt, positive arme og ingen andre nettomomenter. En eventuel bjælkevægt skal medregnes særskilt. Alle masser og begge arme kan isoleres.",
+      "aliases": [
+        "ligevægt",
+        "vægtarm",
+        "moment",
+        "balance"
+      ]
+    },
+    "balanceForce": {
+      "name": "Momentligevægt · kræfter",
+      "group": "Bevægelse og mekanik",
+      "symbol": "F_B",
+      "dimension": "force",
+      "equation": "FB = FA · lA / lB",
+      "args": {
+        "F": {
+          "symbol": "F_A",
+          "label": "Kraft på side A",
+          "dimension": "force"
+        },
+        "a": {
+          "symbol": "l_A",
+          "label": "Vinkelret arm på side A",
+          "dimension": "length"
+        },
+        "b": {
+          "symbol": "l_B",
+          "label": "Vinkelret arm på side B",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "div",
+        [
+          "mul",
+          "F",
+          "a"
+        ],
+        "b"
+      ],
+      "note": "FA · lA = FB · lB. Armene måles vinkelret på kraftens virkelinje fra omdrejningspunktet. Kræver statisk ligevægt og ingen andre nettomomenter; arme større end 0.",
+      "aliases": [
+        "ligevægt",
+        "vægtarm",
+        "moment",
+        "balance"
+      ]
+    },
+    "balanceLiquidVolume": {
+      "name": "Væskemængde ved ligevægt",
+      "group": "Bevægelse og mekanik",
+      "symbol": "V_B",
+      "dimension": "volume",
+      "equation": "VB = (mA · lA / lB − mtankB) / ρB",
+      "args": {
+        "m": {
+          "symbol": "m_A",
+          "label": "Samlet masse på side A (beholder + indhold)",
+          "dimension": "mass"
+        },
+        "a": {
+          "symbol": "l_A",
+          "label": "Vinkelret arm på side A",
+          "dimension": "length"
+        },
+        "b": {
+          "symbol": "l_B",
+          "label": "Vinkelret arm på side B",
+          "dimension": "length"
+        },
+        "tank": {
+          "symbol": "m_tankB",
+          "label": "Tom beholders masse på side B",
+          "dimension": "mass"
+        },
+        "rho": {
+          "symbol": "ρ_B",
+          "label": "Væskens densitet på side B",
+          "dimension": "density"
+        }
+      },
+      "template": [
+        "div",
+        [
+          "sub",
+          [
+            "div",
+            [
+              "mul",
+              "m",
+              "a"
+            ],
+            "b"
+          ],
+          "tank"
+        ],
+        "rho"
+      ],
+      "note": "Først mB = mA · lA / lB, derefter trækkes den tomme beholders masse fra og resten divideres med væskens densitet. Brug referencer til samlet masse på A og materialemasse på B. Vælg L som resultatenhed for liter. Arme og densitet skal være positive. Negativt rumfang betyder, at B allerede er for tung; krævet rumfang må ikke overstige beholderens kapacitet. Forudsætter ingen andre nettomomenter. Brug fyldetid t = V / Qv bagefter ved konstant flow.",
+      "aliases": [
+        "ligevægt",
+        "vægtarm",
+        "moment",
+        "balance"
+      ]
+    },
+    "tankMassSurfaces": {
+      "name": "Tankmasse med separate pladetykkelser",
+      "group": "Masse og tankvægt",
+      "symbol": "m_tank",
+      "dimension": "mass",
+      "equation": "mtank = Vmateriale · ρmateriale",
+      "args": {
+        "V": {
+          "symbol": "V_mat",
+          "label": "Pladematerialets samlede rumfang",
+          "dimension": "volume"
+        },
+        "rho": {
+          "symbol": "ρ_mat",
+          "label": "Materialets densitet",
+          "dimension": "density"
+        }
+      },
+      "template": [
+        "mul",
+        "V",
+        "rho"
+      ],
+      "note": "Vmateriale er summen af Aflade · tflade for de lukkede, frie flader. Vælg Fra beholderdelene · plademateriale, eller referér til en bestemt figurs plademateriale. Sider, bund og top kan have hver sin tykkelse. Ens materiale; ved forskellige materialer beregnes og summeres delmasser. Tyndpladetilnærmelse ud fra indvendige mål; ben, studs, samlinger og bjælkevægt medregnes separat.",
+      "aliases": [
+        "pladetykkelse",
+        "t_bund",
+        "t_side",
+        "T9"
+      ]
     }
   },
   "SHAPES": {

@@ -27,7 +27,7 @@ Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjer
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
 - Vælg en figur, angiv **Indvendig diameter** eller **Udvendig diameter**, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra pladearealet.
 - Vælg ved hver størrelse: **kendt størrelse**, **indsæt en formel** eller **brug en reference**.
-- Indtast eventuelt opgavens tal og vælg enheder under **Størrelserne i formlen**, og vælg **Resultatets enhed** nederst. Omregningerne sættes ind med de nødvendige parenteser.
+- Indtast eventuelt opgavens tal og vælg enheder under **Størrelserne i formlen**, og vælg **Resultatets enhed** nederst. Indtastede tal omregnes før visning; ubekendte og resultatet beholder nødvendige omregninger.
 - Skift mellem **Kort** og **Udfoldet**. Se hele sammenhængen under **Se formelkæden**, eller kopiér formlen som tekst.
 
 En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af kildens aktuelle formel; eventuelle underreferencer i kopien bliver ved med at følge deres egne kilder.
@@ -46,16 +46,22 @@ Under **Størrelserne i formlen** har hver kendt størrelse et felt **Tal (valgf
 
 - Komma og punktum kan begge bruges til decimaltal, også med minus. Tallene bevares som tekst uden afrunding. Skriv ét decimaltal på højst 32 tegn; udtryk og tusindtalsseparatorer accepteres ikke.
 - Et tomt felt viser det oprindelige symbol. **Ryd** fjerner et tal igen. Ufuldstændige eller ugyldige tal erstatter ikke symbolet.
-- Enhedsmærket viser din valgte **inputenhed**, fx mm, %, t/m³ eller kg/h. Formlen indeholder de nødvendige omregninger. Hvis du skifter enhed, beholdes det indtastede tal, og omregningen tilpasses.
+- Indtastede tal omregnes før visning. **20 mm** vises som **0,02 m**, **8 g/cm³** som **8000 kg/m³**, og **87 %** som **0,87**. Enhedsmærket viser den omregnede enhed; inputfeltet beholder dit tal og din valgte enhed. Skifter du inputenhed, beholdes tallet i feltet.
 - Hver selvstændig formel og figur har egne tal og enheder. To formler kan fx have hver sin r. Indsatte underformler deler symboler inden for samme formel; en reference følger fortsat sin kilde. Når flere kilder bruger samme symbol, viser inputlisten, hvilken formel eller figur hvert felt tilhører. Udvidede referencer viser deres kendte tal. Beregnede referencer i **Kort** vises fortsat som mellemresultatets symbol.
 - Tallene følger med i gemte opsætninger, omskrivninger og kopieret tekst. Eksisterende opsætninger uden tal kan stadig åbnes. Negative tal får nødvendige parenteser, og en potens afgrænses tydeligt fra tallets små mærker.
 - Talindsættelse ændrer ikke den symbolske forenkling: B og L bevarer hver deres identitet, også hvis de har samme talværdi. TI-30-skønnet bruger tallets faktiske længde og udelader enheds- og symbolmærkerne.
 
 Når inputenheden er **%**, bliver tallet vist som en decimalfaktor i **Værdier** og **Begge**: **87 % → 0,87**. Feltet beholder 87 og procentenheden; en linje under feltet viser omregningen. I **Enheder** og ved et tomt felt bevares den symbolske division med 100. Procentomregningen holdes adskilt fra andre enhedsfaktorer, så den ikke forsvinder ved fx omregning af kopafstand fra cm. Kopieret tekst og TI-30-skøn følger den viste decimalfaktor.
 
+### Omregn tal før visning
+
+Enhedsomregningen sker før tallet sættes ind i skærmformlen, kopieret tekst, LaTeX og TI-30-delberegninger. Fx bliver `B = 20 mm` til `0,02 m (B)`; omregningen `/ 1000` fylder ikke i regnestykket. Felter uden tal og visningen **Enheder** beholder den symbolske omregning. Resultatenhedens omregning gælder stadig hele udtrykket og vises sidst.
+
+Decimaler, der kan skrives endeligt, omregnes eksakt. Periodiske decimaler vises med op til 16 betydende cifre og markeres med **≈** under feltet. Den oprindelige inputværdi og den præcise omregningsfaktor bevares. °C omregnes til K for absolutte temperaturer; temperaturforskelle ændrer ikke talværdi. TI-30-skønnet tæller de omregnede tal.
+
 ### Kopelevator: kopafstand eller antal kopper
 
-Nye kopelevatorformler bruger kopafstanden direkte: `Q_v = V_kop · (1 / s_kop) · v · η`. Skriv fx **20** og vælg **cm** for `s_kop`. Antallet pr. meter bliver `1 / (20 / 100) = 5` — 20 cm er en afstand, ikke 20 kopper pr. meter.
+Nye kopelevatorformler bruger kopafstanden direkte: `Q_v = V_kop · (1 / s_kop) · v · η`. Skriv fx **20** og vælg **cm** for `s_kop`. Formlen bliver `1 / 0,2`, som giver 5 kopper pr. meter — 20 cm er en afstand, ikke 20 kopper pr. meter.
 
 Under **Tilpas formlens dele → Antal kopper pr. meter** kan du vælge **Afstand mellem kopper · N = 1 / s** eller **Kendt antal kopper pr. længdeenhed**. Eksisterende formler beholder deres oplysningstype og tal; vælg kopafstand, hvis opgaven giver afstanden. Kopafstanden måles fra center til center og skal være større end 0. Hjælpeformlen kan også bruges selvstændigt og vendes til `s_kop = 1 / N_meter`.
 
@@ -67,7 +73,7 @@ Den tredelte knap **Værdier · Enheder · Begge** ved formelvisningen skifter m
 - **Enheder:** fx `L · B`. De oprindelige symboler vises i stedet for tallene.
 - **Begge:** fx `30 m (L) · 50 m (B)`, med enhed og symbol i mindre tekst.
 
-Faste tal, potenser og nødvendige omregningsfaktorer bevares. Resultatets enhed står ved venstresiden i alle tre visninger. Visningsvalget ændrer ikke dine tal, enheder eller formler. Browseren husker valget; standarden er **Begge**.
+Faste tal og potenser bevares. I Værdier og Begge er indtastede tal allerede omregnet; ubekendte og resultatets enhed beholder nødvendige omregningsfaktorer. Resultatets enhed står ved venstresiden i alle tre visninger. Visningsvalget ændrer ikke dine tal, enheder eller formler. Browseren husker valget; standarden er **Begge**.
 
 Valget gælder også figursummer, formelkæden, tilpasningspanelet, delberegninger og **Kopiér formel**. I Værdier og Enheder kopieres selve formlen uden inputlisten. Begge tager også listen over tal og inputenheder med. TI-30-skønnet bruger de indtastede tal uanset visning. Formelsamlingens grundformler beholder deres almindelige symboler.
 
@@ -79,7 +85,7 @@ Valget opretter en **ny formel**. Dine øvrige kendte størrelser, indsatte form
 
 Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning, parentesregler og TI-30XS-vejledning gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
 
-**Alle 129 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **324 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
+**Alle 133 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **337 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
 
 - Geometriske mål bruger den ikke-negative løsning. For hastighed fra kinetisk energi eller dynamisk trykhøjde kan begge fortegn vælges.
 - Tid fra `s = v_start · t + (1/2) · a · t²` har to rodvalg. Vælg den tid, der passer til forløbet. Ved `a = 0` bruges `t = s / v_start`. Hvis også `v_start = 0`, kan tiden ikke bestemmes fra strækningen alene.
@@ -144,13 +150,33 @@ D_ydre  = (D_indre + (2 · t_radial))
 
 Rumfang, flowtværsnit og pladeareal i T9 bruger **indvendige mål**. Med en oplyst udvendig diameter indsættes omregningen automatisk, inklusive parenteser under fx `D²`. Højde og længde skal oplyses indvendigt; diametervalget ændrer ikke deres betydning. Den udvendige diameter skal være større end to gange den radiale godstykkelse.
 
-På cylinder, rør og kugledele bruger **Godstykkelse til omregning** som standard samme fælles pladetykkelse som T9. **Tilpas fælles pladetykkelse · T9** ændrer denne kilde ét sted. Et rør kan få sin egen tykkelse, og hvis en beholderdel får anden pladetykkelse, skal dens delmasse beregnes med samme tykkelse.
+På cylinder, rør og kugledele bruger **Godstykkelse til omregning** som standard samme fælles pladetykkelse som T9. **Tilpas fælles pladetykkelse · T9** ændrer denne kilde ét sted. Tilpasser du figurens sidetykkelse, følger standardreferencen for diameterens godstykkelse med. En særskilt valgt diameterreference ændres ikke.
 
 På kegle og keglestub bruges et separat **Radial godstykkelse**-felt: afstanden i diameterretningen ved samme endeflade. Den er forskellig fra tykkelsen vinkelret på en skrå plade. Ved kendt væghældning kan formlen `t_radial = (t_plade · s) / h` vælges. Her skal skrå længde `s` og aksial højde `h` beskrive samme væghældning. Der gættes ikke på denne hældning ud fra en diameter, som omregningen selv skal finde.
 
 Samlinger deler den **indvendige diameter**. En figur med udvendigt mål kan derfor samles med en figur med indvendigt mål. Omregningen foretages én gang på kildens diameter; hver del viser derefter den valgte indre eller ydre diameter. **Skil ad** gendanner delens egne diametermål og tykkelsesvalg.
 
 Gamle opsætninger åbnes med indvendige diametre, som før. Hvis en gammel opsætning har én T9-formel, genbruges dens tykkelsesformel som fælles pladetykkelse.
+
+### Pladetykkelser pr. flade
+
+Vælg en figur og fold **Pladetykkelser · sider, bund og top** ud. Vælg **Kendt størrelse** ved fx `t_side` og `t_bund` for separate tykkelser. Der kan også vælges en formel eller reference. Kappens og kassens fire siders tykkelse følger sidetykkelsen, mens en bestemt flade kan få sin egen kilde. Top og bund følger som udgangspunkt den fælles pladetykkelse.
+
+Find **Tankmasse med separate pladetykkelser** i formelsamlingen. Under **Størrelserne i formlen** kan du fx skrive 1,25 mm for siderne og 2,5 mm for bunden. Formlen bruger `m = ρ · Σ(A_flade · t_flade)`. Flader med samme tykkelse samles før multiplikation. Åbne eller sammenføjede flader udelades; deres tykkelsesvalg huskes til senere.
+
+Når en særskilt tykkelse vælges, skifter en eksisterende automatisk T9-formel med samlet beholderareal og fælles pladetykkelse til denne form. Formler med manuelt valgt areal eller tykkelse bevarer deres valg. Hver figur har desuden referencen **Pladematerialets rumfang**. Brug den, når to separate beholdere skal have hver sin masse. Fælles plademateriale under Fra beholderdelene omfatter alle inkluderede figurer. Materialemodellen bruger indvendige mål og tynde plader, også ved krumme flader.
+
+### Momentligevægt med beholdere
+
+Søg på **ligevægt** i formelsamlingen:
+
+- **Momentligevægt · masser:** `m_B = m_A · l_A / l_B`, fra `m_A · l_A = m_B · l_B`.
+- **Momentligevægt · kræfter:** `F_B = F_A · l_A / l_B`.
+- **Væskemængde ved ligevægt:** `V_B = (m_A · l_A / l_B − m_tankB) / ρ_B`.
+
+Til opgaven med kassen og keglen bruges den samlede masse af kasse og indhold som `m_A`, armene 1,5 m og 500 cm samt den tomme kegles masse som `m_tankB`. Vælg referencer til tankmassernes formler, og vælg **L** som resultat for liter. Brug derefter **Fyldetid**, `t = V / Q_v`. Alle de nye ligevægtsformler kan vendes via **Isolér en størrelse**.
+
+Forudsætninger: statisk ligevægt, vinkelrette positive arme og ingen andre nettomomenter. I masseformen forkortes samme tyngdeacceleration væk. Bjælke, ophæng eller andre belastninger skal medregnes særskilt, hvis de giver et nettomoment. Et negativt væskerumfang betyder, at beholder B allerede er for tung; kontrollér også beholderens kapacitet.
 
 ### Tankens egenvægt · T9
 
@@ -164,7 +190,7 @@ Pladearealet følger de valgte beholderdele. Åbne flader og fælles samleflader
 
 Vælg **pladetykkelse** og **materialets massefylde** som kendte symboler, formler eller referencer. `t_plade` er en længde, ikke tid. Grundformlen bruger areal i m², tykkelse i m og massefylde i kg/m³ og giver kg. Vælg fx **mm** for tykkelsen, **ton/m³** for massefylden og **ton** som resultatenhed; nødvendige omregninger indsættes, og modgående faktorer forkortes automatisk.
 
-T9 er skolens plademodel `m = A · t · ρ` (side 3 og 10). Den bruger ens materiale og tykkelse. For krumme flader med indvendige mål er materialerumfanget en tilnærmelse for tynd plade. Ben, studs, svejsninger og andet ekstraudstyr er ikke med. Ved forskelligt materiale eller forskellig tykkelse kan du vælge hver figurs areal i sin egen T9-formel og bruge **Sum af masser**.
+T9 er skolens plademodel `m = A · t · ρ` (side 3 og 10). Den bruger ens materiale og tykkelse. For krumme flader med indvendige mål er materialerumfanget en tilnærmelse for tynd plade. Ben, studs, svejsninger og andet ekstraudstyr er ikke med. Ved forskellige pladetykkelser bruges **Tankmasse med separate pladetykkelser**. Ved forskelligt materiale beregnes delmasser separat og samles med **Sum af masser**.
 
 **Tank med indhold** bruger `m_total = m_tank + ρ_væske · V_væske`. Den kan referere til egenvægtsformlen, men væskens massefylde og faktiske volumen vælges separat. Det fulde tankrumfang antages ikke automatisk. **Tyngdekraft** giver i stedet kraften i newton med `F = m · g`.
 
@@ -227,7 +253,7 @@ t = [(π/4) · D₁² · h₁ + (1/3) · (π/4) · D₁² · h₂]
 
 Keglebunden deler diameter med cylinderen. Røret leverer tværsnitsarealet til flowformlen og indgår ikke i beholderens rumfang. Kendes flowet allerede, vælger du **Kendt størrelse · Qv** ved flowet; så forsvinder rørdiameter og hastighed fra den udfoldede formel.
 
-Der er 129 grundformler, 324 omskrivninger og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
+Der er 133 grundformler, 337 omskrivninger og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
 
 ## Forudsætninger
 
@@ -265,12 +291,14 @@ Formlernes skabeloner består af faste matematiske operationer. Der bruges hverk
 
 Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
 
-Alle 324 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
+Alle 337 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
 
-Talindsættelse kontrolleres på alle 129 grundformler og 324 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og TI-30-længdeskøn med de faktiske tal.
+Talindsættelse kontrolleres på alle 133 grundformler og 337 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og TI-30-længdeskøn med de faktiske tal.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
 
 ### Udgivelser
 
 GitHub-workflowen **Udgiv offline-kompendium** kører ved ændringer i `package.json` på `main` og kan også startes manuelt. Den kører testene, bygger offlinefilen og kontrollerer, at den matcher den indcheckede `index.html`. Versionsnummeret i `package.json` og den tilsvarende tekst i `releases/vX.Y.Z.md` bruges til en GitHub Release med `index.html` som asset. Udgivelsen peger på det præcise commit; allerede udgivne versioner ændres ikke.
+
+Kontroller for forhåndsomregning dækker alle enhedsfamilier, periodiske decimaler og forkortede TI-30-udtryk. Fladetykkelser testes med åbne/lukkede flader, samlinger, separate diametermål, alle ti figurer og gem/åbn. Ligevægt kontrolleres med blandede enheder og en samlet referencekæde for kassen og keglen fra opgaven.

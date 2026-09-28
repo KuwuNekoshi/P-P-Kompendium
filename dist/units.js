@@ -87,6 +87,34 @@
   const constant=value=>({type:'constant',value:String(value)});
   const unitFactor=value=>({...constant(value),unitFactor:true});
   const group=ast=>ast.type==='group'?ast:{type:'group',children:[ast]};
+  // Convert the entered decimal exactly as a rational. Terminating decimals
+  // stay exact; recurring decimals are shown to 16 significant digits only.
+  // The evaluation tree below always retains the original input and factor.
+  function convertedValue(value,unit){
+    if(typeof value!=='string')return null;
+    const text=value.trim().replace(/−/g,'-').replace(',','.');
+    if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text))return null;
+    const rational=s=>{const [a,b='']=s.replace(/^[+-]/,'').split('.');return {n:BigInt((a||'0')+b)*(s.startsWith('-')?-1n:1n),d:10n**BigInt(b.length)};};
+    const input=rational(text),offset=rational(unit.offset);
+    let n=input.n*BigInt(unit.numerator)*offset.d+offset.n*input.d*BigInt(unit.denominator),d=input.d*BigInt(unit.denominator)*offset.d;
+    if(n===0n)return {value:'0',approximate:false};
+    const negative=n<0n;if(negative)n=-n;
+    const divisor=bigGcd(n,d);n/=divisor;d/=divisor;
+    let rest=d;while(rest%2n===0n)rest/=2n;while(rest%5n===0n)rest/=5n;
+    const approximate=rest!==1n;
+    let whole=(n/d).toString(),remainder=n%d,fraction='';
+    let significant=whole==='0'?0:whole.length;
+    while(remainder&&(!approximate||significant<16)){
+      remainder*=10n;const digit=(remainder/d).toString();remainder%=d;fraction+=digit;
+      if(significant||digit!=='0')significant++;
+    }
+    if(approximate&&remainder*2n>=d){
+      const rounded=(BigInt(whole+fraction)+1n).toString().padStart(whole.length+fraction.length,'0');
+      whole=rounded.slice(0,rounded.length-fraction.length);fraction=rounded.slice(rounded.length-fraction.length);
+    }
+    fraction=fraction.replace(/0+$/,'');
+    return {value:(negative?'-':'')+whole+(fraction?'.'+fraction:''),approximate};
+  }
   function convert(ast,unit,direction='toBase'){
     if(!['toBase','fromBase'].includes(direction))throw new Error('Ukendt omregningsretning.');
     const inverse=direction==='fromBase';
@@ -97,7 +125,8 @@
     if(numerator!==1)out={type:'mul',children:[out,unitFactor(numerator)]};
     if(denominator!==1)out={type:'div',children:[out,unitFactor(denominator)]};
     if(!inverse&&unit.offset!=='0')out={type:'add',children:[out,constant(unit.offset)]};
-    return {...group(out),unitConversion:true,...(unit.offset!=='0'?{unitOffset:true}:{}),...(!inverse&&unit.id==='percent'?{percentInput:true}:{})};
+    const converted=!inverse&&ast.type==='symbol'?convertedValue(ast.inputValue,unit):null;
+    return {...group(out),unitConversion:true,...(unit.offset!=='0'?{unitOffset:true}:{}),...(!inverse&&unit.id==='percent'?{percentInput:true}:{}),...(converted?{convertedInput:{...converted,variable:ast,unit:base(unit.dimension).label}}:{})};
   }
   // Cancel only exact, positive unit scales. Formula constants and variable
   // denominators stay in place; affine temperatures are explicit boundaries.
@@ -114,7 +143,7 @@
   function scales(ast){
     // Keep a percentage's /100 local so it cannot disappear into unrelated
     // length or output-unit scales. Numeric views can then show its decimal.
-    if(ast.unitOffset||ast.percentInput)return boundary(ast);
+    if(ast.unitOffset||ast.percentInput||ast.convertedInput)return boundary(ast);
     if(ast.type==='constant'&&ast.unitFactor)return {body:constant(1),n:BigInt(ast.value),d:1n};
     if(!ast.children)return boundary(ast);
     const parts=ast.children.map(scales);
@@ -146,7 +175,7 @@
   function reduce(ast){
     if(!ast.children)return ast;
     let node={...ast,children:ast.children.map(reduce)};
-    if(node.type==='group'&&!node.unitOffset&&node.children[0].type==='group')node=node.children[0];
+    if(node.type==='group'&&!node.unitOffset&&!node.convertedInput&&node.children[0].type==='group')node=node.children[0];
     const part=scales(node),divisor=bigGcd(part.n,part.d);
     if(divisor===1n)return node;
     const n=part.n/divisor,d=part.d/divisor;
@@ -165,5 +194,5 @@
     if(!inverse&&unit.offset!=='0')parts.push('+ '+format(unit.offset));
     return parts.join(' · derefter ')||'Samme tal';
   }
-  return {choices,base,get,ratio,combine,withPart,key,convert,reduce,hint};
+  return {choices,base,get,ratio,combine,withPart,key,convert,convertedValue,reduce,hint};
 });

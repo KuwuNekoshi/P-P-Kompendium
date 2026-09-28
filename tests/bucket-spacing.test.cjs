@@ -5,9 +5,9 @@ const setup=id=>({version:6,title:'Kopelevator',inputUnits:{},inputValues:{},tan
 const ast=m=>E.context(m).result('formula:bucket');
 const near=(m,n)=>{const answer=E.evaluate(ast(m));assert.equal(answer.status,'ready',answer.error);assert(Math.abs(answer.value-n)<1e-10,`${answer.value} != ${n}`);};
 
-test('one bucket every 20 cm means 1 / (20 / 100), giving five buckets per metre',()=>{
+test('one bucket every 20 cm means 1 / 0,2, giving five buckets per metre',()=>{
   const m=setup('bucketCountFromSpacing');m.inputValues={'formula:bucket:s_kop:length':'20'};m.inputUnits={'formula:bucket:s_kop:length':'cm'};
-  assert.equal(E.plain(ast(m),null,'values'),'1 / (20 / 100)');near(m,5);
+  assert.equal(E.plain(ast(m),null,'values'),'1 / 0,2');near(m,5);
   m.inputValues['formula:bucket:s_kop:length']='0.2';m.inputUnits['formula:bucket:s_kop:length']='m';
   assert.equal(E.plain(ast(m),null,'values'),'1 / 0,2');near(m,5);
   m.inputValues['formula:bucket:s_kop:length']='200';m.inputUnits['formula:bucket:s_kop:length']='mm';near(m,5);

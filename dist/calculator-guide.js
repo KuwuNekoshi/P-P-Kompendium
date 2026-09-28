@@ -12,6 +12,7 @@
   };
   const unwrap=ast=>ast.type==='group'?unwrap(ast.children[0]):ast;
   function estimate(ast){
+    ast=E.displayAst(ast);
     // Use the same linear notation as copied text: only necessary parentheses
     // count, with one placeholder per numeric occurrence and no unit labels.
     const count=(node,digits)=>Array.from(E.plain(node,v=>v.inputValue??'0'.repeat(digits),'values').replace(/\s/g,'')).length;
@@ -63,6 +64,7 @@
     function choose(node){
       const whole=key(node);let best=null;
       function visit(current){
+        if(current.convertedInput)return;
         const simple=unwrap(current),identity=key(simple),size=estimate(simple);
         if(simple.children&&identity!==whole&&size.max>14){
           const fits=size.max<=TARGET&&!size.deep;

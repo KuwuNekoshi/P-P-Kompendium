@@ -11,7 +11,8 @@
   const symbol = name => ({ kind: 'symbol', symbol: name });
   const ref = target => ({ kind: 'ref', target });
   const form = (formula, args) => ({ kind: 'formula', formula, args });
-  const assembly = dimension => ({ kind: 'assembly', dimension });
+  const assembly = (dimension,property) => ({ kind: 'assembly', dimension,...(property?{property}:{}) });
+  const assemblyOutput = expr => expr.property==='materialVolume'?'materialVolume':expr.dimension==='volume'?'volume':'area';
   const defaultTank = () => ({ thickness:symbol('t_plade') });
   const diameterKeys = s => Object.keys(SHAPES[s.type].inputs).filter(key=>key==='D'||key==='d');
   const slopedWall = s => ['cone','frustum'].includes(s.type);
@@ -106,7 +107,10 @@
     next.formulas.push(f);
     return validateModel(next);
   }
-  function newTankMass(model,id) {
+  function newTankMass(model,id,separate=false) {
+    if(model.shapes.some(s=>s.include)&&(separate||model.shapes.some(s=>Object.keys(s.plateThickness||{}).length))){
+      const f=newFormula(id,'tankMassSurfaces');f.expression.args.V=assembly('volume','materialVolume');return f;
+    }
     const f=newFormula(id,'tankMass');
     if(model.shapes.some(s=>s.include))f.expression.args.A=assembly('area');
     f.expression.args.thickness=ref('tank:thickness');
@@ -114,7 +118,7 @@
   }
   function newFilledTankMass(model,id) {
     const f=newFormula(id,'filledTankMass');
-    const candidates=model.formulas.filter(other=>other.expression.kind==='formula'&&other.expression.formula==='tankMass');
+    const candidates=model.formulas.filter(other=>other.expression.kind==='formula'&&['tankMass','tankMassSurfaces'].includes(other.expression.formula));
     if(candidates.length===1)f.expression.args.tank=ref('formula:'+candidates[0].id);
     return f;
   }
@@ -210,6 +214,46 @@
     for(const [key,face]of Object.entries(type.faces)) if(faces[key]==='closed'&&!connectionAt(model,s.id,key)) parts.push(shapeFormula(s,face.formula,face.args));
     return sumAreas(parts);
   }
+  const plateSymbol=(s,key)=>'t_'+({side:'side',bottom:'bund',top:'top',base:'ende',front:'front',back:'bag',left:'venstre',right:'højre'}[key]||key)+s.ordinal;
+  function plateThickness(s,key){
+    return s.plateThickness?.[key]||(['front','back','left','right'].includes(key)?ref(`shape:${s.id}:plate:side`):ref('tank:thickness'));
+  }
+  function materialExpression(model,s){
+    const type=SHAPES[s.type],groups=new Map();
+    function thicknessKey(key,seen=new Set()){
+      const e=plateThickness(s,key),prefix=`shape:${s.id}:plate:`;
+      if(e.kind==='ref'&&e.target.startsWith(prefix)&&['side',...Object.keys(type.faces)].includes(e.target.slice(prefix.length))&&!seen.has(key)){seen.add(key);return thicknessKey(e.target.slice(prefix.length),seen);}
+      return JSON.stringify(e);
+    }
+    const add=(key,area)=>{
+      const identity=thicknessKey(key);
+      if(!groups.has(identity))groups.set(identity,{key,areas:[]});
+      groups.get(identity).areas.push(area);
+    };
+    if(type.body)add('side',shapeFormula(s,type.body));
+    for(const [key,face]of Object.entries(type.faces))if(s.faces[key]==='closed'&&!connectionAt(model,s.id,key))add(key,shapeFormula(s,face.formula,face.args));
+    const parts=[...groups.values()].map(({key,areas})=>form('plateVolume',{A:sumAreas(areas),thickness:ref(`shape:${s.id}:plate:${key}`)}));
+    return parts.length?parts.reduce((a,b)=>form('volumeSum',{V1:a,V2:b})):{kind:'zero',dimension:'volume'};
+  }
+  function upgradeTankMasses(model){
+    // Only the automatic whole-container T9 setup can be replaced safely.
+    // User-defined areas/thicknesses retain their explicitly chosen formula.
+    for(const f of model.formulas){
+      const e=f.expression;
+      if(e.kind==='formula'&&e.formula==='tankMass'&&e.args.A.kind==='assembly'&&e.args.thickness.kind==='ref'&&e.args.thickness.target==='tank:thickness')
+        f.expression=form('tankMassSurfaces',{V:assembly('volume','materialVolume'),rho:e.args.rho});
+    }
+  }
+  function setPlateThickness(model,id,key,expression){
+    const next=clone(model),s=next.shapes.find(s=>s.id===id);
+    if(!s||!['side',...Object.keys(SHAPES[s.type].faces)].includes(key))throw new Error('Figuren har ikke den valgte flade.');
+    s.plateThickness||={};s.plateThickness[key]=clone(expression);
+    if(key==='side'&&s.diameter&&!slopedWall(s)&&s.diameter.thickness.kind==='ref'&&s.diameter.thickness.target==='tank:thickness')s.diameter.thickness=ref(`shape:${s.id}:plate:side`);
+    upgradeTankMasses(next);
+    const checked=validateModel(next),ctx=context(checked),before=context(model);
+    for(const d of ctx.list)if(before.safe(d.target).ok&&!ctx.safe(d.target).ok)throw new Error('Tykkelsen giver en cirkulær reference. Vælg et selvstændigt symbol eller en anden kilde.');
+    return checked;
+  }
   function connect(model,a,b,id) {
     const error=canConnect(model,a,b); if(error)throw new Error(error);
     const next=clone(model); next.connections ||= [];
@@ -252,6 +296,7 @@
     }
     for (const s of model.shapes) {
       const type = SHAPES[s.type],diameter=diameterSettings(s),dKeys=diameterKeys(s);
+      for(const key of ['side',...Object.keys(type.faces)])list.push({target:`shape:${s.id}:plate:${key}`,name:`${s.name} · Tykkelse: ${key==='side'?'sider / kappe':type.faces[key].label}`,symbol:plateSymbol(s,key),dimension:'length',expression:plateThickness(s,key),ownerType:'shape',ownerId:s.id,input:'plate:'+key});
       if(dKeys.length)list.push({target:`shape:${s.id}:diameterThickness`,name:`${s.name} · ${slopedWall(s)?'Radial godstykkelse':'Godstykkelse til diameter'}`,symbol:slopedWall(s)?'t_radial'+s.ordinal:'t_væg'+s.ordinal,dimension:'length',expression:diameter.thickness,ownerType:'shape',ownerId:s.id,input:'diameterThickness'});
       for (const [key, a] of Object.entries(type.inputs)) {
         const target=`shape:${s.id}:input:${key}`,source=shared.get(target);
@@ -278,6 +323,7 @@
       };
       addOutput('volume', 'Rumfang', type.volume, 'V');
       list.push({ target:`shape:${s.id}:area`,name:`${s.name} · Pladeareal ved indvendige mål`,symbol:'A_'+s.ordinal,dimension:'area',expression:surfaceExpression(model,s),ownerId:s.id,ownerType:'shape',output:'area' });
+      list.push({target:`shape:${s.id}:materialVolume`,name:`${s.name} · Pladematerialets rumfang`,symbol:'V_mat'+s.ordinal,dimension:'volume',expression:materialExpression(model,s),ownerId:s.id,ownerType:'shape',output:'materialVolume'});
       if (type.crossSection) addOutput('crossSection', 'Tværsnitsareal', type.crossSection, 'A_t' + s.ordinal, type.crossSectionArgs);
     }
     for (const f of model.formulas) list.push({ target: `formula:${f.id}`, name: f.name, symbol: f.symbol, dimension: f.dimension, resultUnit:f.resultUnit, expression: f.expression, ownerType: 'formula', ownerId: f.id });
@@ -286,7 +332,7 @@
   function references(expr, model) {
     if (expr.kind === 'ref') return [expr.target];
     if (expr.kind === 'formula') return Object.values(expr.args).flatMap(e => references(e, model));
-    if (expr.kind === 'assembly') return model.shapes.filter(s => s.include).map(s => `shape:${s.id}:${expr.dimension === 'volume' ? 'volume' : 'area'}`);
+    if (expr.kind === 'assembly') return model.shapes.filter(s => s.include).map(s => `shape:${s.id}:${assemblyOutput(expr)}`);
     return [];
   }
   function dependsOn(model, source, target) {
@@ -445,7 +491,7 @@
         if (!['volume', 'area'].includes(dimension) || expr.dimension !== dimension) throw new Error('Figursummen passer ikke til størrelsen.');
         const selected = model.shapes.filter(s => s.include);
         if (!selected.length) throw new Error('Vælg mindst én figur, der indgår i beholderen.');
-        const children = selected.map(s => expandRaw(ref(`shape:${s.id}:${dimension === 'volume' ? 'volume' : 'area'}`), dimension, mode, stack, budget, depth + 1));
+        const children = selected.map(s => expandRaw(ref(`shape:${s.id}:${assemblyOutput(expr)}`), dimension, mode, stack, budget, depth + 1));
         return grouped(children.length === 1 ? children[0] : { type: 'add', children, assemblyParts:true },depth);
       }
       const f = own(FORMULAS, expr.formula) && FORMULAS[expr.formula];
@@ -511,8 +557,21 @@
     const base=greek[b]||(/^[A-Za-z]+$/.test(b)?b:'\\mathrm{'+b+'}');
     return (s.length?base+'_{'+s.join('_').replace(/[^\p{L}\p{N}]/gu,'')+'}':base)+(ast.unit?'\\,[\\text{'+ast.unit.replace(/%/g,'\\%')+'}]':'');
   }
+  function displayAst(ast){
+    if(ast.convertedInput){
+      const c=ast.convertedInput;
+      return {...c.variable,inputValue:ast.percentInput?percentToDecimal(c.variable.inputValue):c.value,valueUnit:c.unit,approximate:c.approximate};
+    }
+    return ast.children?{...ast,children:ast.children.map(displayAst)}:ast;
+  }
+  function symbolicAst(ast){
+    const {convertedInput,...node}=ast;
+    return node.children?{...node,children:node.children.map(symbolicAst)}:node;
+  }
   function renderExpression(ast,format,symbolText,display='both') {
     if(!['values','units','both'].includes(display))display='both';
+    if(display!=='units'&&(!symbolText||display==='values'))ast=displayAst(ast);
+    else ast=Units.reduce(symbolicAst(ast));
     const linear=format==='plain',markup=format==='math';
     const containsFraction=node=>node.type==='div'||(node.children||[]).some(containsFraction);
     function render(node,parent=null,index=0) {
@@ -659,9 +718,9 @@
     function cleanExpr(e, dimension, depth = 0) {
       if (!e || typeof e !== 'object' || ++count > 3000 || depth > 12) fail('formlen er for dyb eller ufuldstændig.');
       if (e.kind === 'symbol') { if (!validSymbol(e.symbol)) fail('ugyldigt symbol.'); return symbol(e.symbol); }
-      if (e.kind === 'zero') { if(dimension!=='area'||e.dimension!==dimension)fail('ugyldigt nulareal.');return {kind:'zero',dimension}; }
+      if (e.kind === 'zero') { if(!['area','volume'].includes(dimension)||e.dimension!==dimension)fail('ugyldigt nulareal eller nulrumfang.');return {kind:'zero',dimension}; }
       if (e.kind === 'ref') { if (!str(e.target,160)) fail('ugyldig reference.'); return ref(e.target); }
-      if (e.kind === 'assembly') { if (!['volume','area'].includes(dimension) || e.dimension !== dimension) fail('ugyldig figursum.'); return assembly(dimension); }
+      if (e.kind === 'assembly') { if (!['volume','area'].includes(dimension) || e.dimension !== dimension || (e.property!==undefined&&(e.property!=='materialVolume'||dimension!=='volume'))) fail('ugyldig figursum.'); return assembly(dimension,e.property); }
       const f = own(FORMULAS,e.formula) && FORMULAS[e.formula];
       if (e.kind !== 'formula' || !f || f.dimension !== dimension) fail('formlen passer ikke til størrelsen.');
       return form(e.formula,Object.fromEntries(Object.entries(f.args).map(([k,a]) => [k,cleanExpr(e.args?.[k],a.dimension,depth+1)])));
@@ -707,6 +766,10 @@
         }));
       }
       const shape={ id:s.id,type:s.type,name:s.name,ordinal:s.ordinal,include:s.include,faces,inputs:Object.fromEntries(Object.entries(type.inputs).map(([k,a])=>[k,cleanExpr(s.inputs?.[k],a.dimension)])) };
+      if(s.plateThickness!==undefined){
+        if(!s.plateThickness||typeof s.plateThickness!=='object'||Array.isArray(s.plateThickness)||Object.keys(s.plateThickness).some(key=>!['side',...Object.keys(type.faces)].includes(key)))fail('ugyldige pladetykkelser.');
+        shape.plateThickness=Object.fromEntries(Object.entries(s.plateThickness).map(([key,e])=>[key,cleanExpr(e,'length')]));
+      }
       if(diameterKeys(shape).length){
         if(input.version>=4){
           if(!s.diameter||!['inner','outer'].includes(s.diameter.basis))fail('ugyldigt valg af indre/ydre diameter.');
@@ -768,6 +831,7 @@
       for(const s of model.shapes){
         for(const [key,arg]of Object.entries(SHAPES[s.type].inputs))migrateExpression(s.inputs[key],arg.dimension,'shape:'+s.id);
         if(s.diameter)migrateExpression(s.diameter.thickness,'length','shape:'+s.id);
+        for(const e of Object.values(s.plateThickness||{}))migrateExpression(e,'length','shape:'+s.id);
       }
       for(const f of model.formulas){
         migrateExpression(f.expression,f.dimension,'formula:'+f.id);
@@ -784,5 +848,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });

@@ -28,7 +28,7 @@ test('centimetres and percent cannot hide each others conversion in bucket flow'
   m.inputValues={'formula:bucket:V_kop:volume':'1','formula:bucket:s_kop:length':'20','formula:bucket:v:velocity':'1','formula:bucket:η:scalar':'87'};
   m.inputUnits={'formula:bucket:s_kop:length':'cm','formula:bucket:η:scalar':'percent'};
   const ast=E.context(m).result('formula:bucket'),text=E.plain(ast,null,'values');
-  assert.match(text,/1 \/ \(20 \/ 100\)/);assert.match(text,/0,87/);near(E.evaluate(ast),4.35);
+  assert.match(text,/1 \/ 0,2/);assert.match(text,/0,87/);near(E.evaluate(ast),4.35);
   assert.equal(m.inputValues['formula:bucket:η:scalar'],'87');
   m.formulas[0].resultUnit='m3_h';near(E.evaluate(E.context(m).result('formula:bucket')),15660);
   assert.match(E.plain(E.context(m).result('formula:bucket'),null,'values'),/0,87/);

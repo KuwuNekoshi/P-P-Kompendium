@@ -18,13 +18,13 @@ function value(ast,vars){
 }
 function inputs(f,scale=1){
   const defaults={scalar:2,length:3,time:4,area:8,volume:12,mass:5,density:1000,velocity:3,acceleration:2,flow:6,massFlow:4,pressure:20,force:12,power:15,energy:30,torque:9,massMoment:10,rotationRate:8,countPerLength:2,temperature:320,temperatureChange:25,heatCapacity:4200,specificEnergy:100};
-  const named={D:6,d:2,R:5,r:1,L:5,B:3,h:4,s:7,G:20,g:6,m1:3,m2:5,cp1:4200,cp2:2300,T1:300,T2:360,end:350,start:290,large:8,small:2,fast:8,slow:2,eta:.8};
+  const named={D:6,d:2,R:5,r:1,L:5,B:3,h:4,s:7,G:20,g:6,m1:3,m2:5,cp1:4200,cp2:2300,T1:300,T2:360,end:350,start:290,large:8,small:2,fast:8,slow:2,eta:.8,tank:2};
   return Object.fromEntries(Object.entries(f.args).map(([key,a])=>[key,(named[key]??defaults[a.dimension])*scale]));
 }
 const model=(...ids)=>({version:5,title:'Omskrivninger',tank:E.defaultTank(),inputUnits:{},shapes:[],connections:[],formulas:ids.map(id=>E.newFormula(id,id))});
 
 test('every base formula and every input has an explicit rearrangement or a specific explanation',()=>{
-  assert.equal(Object.keys(E.BASE_FORMULAS).length,129);
+  assert.equal(Object.keys(E.BASE_FORMULAS).length,133);
   const blocked=[];
   for(const [id,f]of Object.entries(E.BASE_FORMULAS)){
     const options=E.rearrangements(id);
@@ -58,7 +58,7 @@ test('every generated inverse satisfies its original equation for two independen
     assert(E.math(E.formulaAst(id)).includes('<math'));assert(E.tex(E.formulaAst(id)).length);
     verified++;
   }
-  assert.equal(verified,324);
+  assert.equal(verified,337);
 });
 
 test('belt speed can find n or D with minute units and preserves existing formulas and references',()=>{
