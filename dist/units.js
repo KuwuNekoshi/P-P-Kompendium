@@ -143,7 +143,7 @@
   function scales(ast){
     // Keep a percentage's /100 local so it cannot disappear into unrelated
     // length or output-unit scales. Numeric views can then show its decimal.
-    if(ast.unitOffset||ast.percentInput||ast.convertedInput)return boundary(ast);
+    if(ast.unitOffset||ast.percentInput||ast.convertedInput||ast.type==='fillHeight')return boundary(ast);
     if(ast.type==='constant'&&ast.unitFactor)return {body:constant(1),n:BigInt(ast.value),d:1n};
     if(!ast.children)return boundary(ast);
     const parts=ast.children.map(scales);
@@ -173,7 +173,7 @@
     return boundary(ast);
   }
   function reduce(ast){
-    if(!ast.children)return ast;
+    if(!ast.children||ast.type==='fillHeight')return ast;
     let node={...ast,children:ast.children.map(reduce)};
     if(node.type==='group'&&!node.unitOffset&&!node.convertedInput&&node.children[0].type==='group')node=node.children[0];
     const part=scales(node),divisor=bigGcd(part.n,part.d);

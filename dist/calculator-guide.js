@@ -111,6 +111,9 @@
   function create(ctx,target,mode='expanded'){
     const result=ctx.safe(target,mode,true);
     if(!result.ok||(mode==='compact'&&!ctx.safe(target).ok))return null;
+    // Hx has a conditional branch and a dedicated plan with physical volumes.
+    // Splitting the opaque node would sever its geometry from its child indices.
+    if(E.FillHeight.find(result.ast).length)return null;
     const descriptor=ctx.map.get(target),size=estimate(result.ast);
     if(!size.recommend)return {estimate:size,plan:null,mode};
     const candidates=[];

@@ -94,7 +94,7 @@
     }).join('');
   }
   function renderGoal() {
-    $('#goal-select').innerHTML = (model.formulas.length ? E.formulaSections(model).filter(g=>g.formulas.length).map(g=>`<optgroup label="${esc(model.formulaGroups?.length?g.name:'Mine formler')}">` + g.formulas.map(f => `<option value="saved:${esc(f.id)}" ${f.id === activeId ? 'selected' : ''}>${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>').join('') : '<option value="" selected>Vælg en formel…</option>') + '<optgroup label="Tilføj en ny formel">' + Object.entries(E.BASE_FORMULAS).map(([id,f]) => `<option value="new:${id}">${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>';
+    $('#goal-select').innerHTML = (model.formulas.length ? E.formulaSections(model).filter(g=>g.formulas.length).map(g=>`<optgroup label="${esc(model.formulaGroups?.length?g.name:'Mine formler')}">` + g.formulas.map(f => `<option value="saved:${esc(f.id)}" ${f.id === activeId ? 'selected' : ''}>${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>').join('') : '<option value="" selected>Vælg en formel…</option>') + '<optgroup label="Tilføj en ny formel"><option value="new:fillHeight">Produkthøjde i tank · Hx</option>' + Object.entries(E.BASE_FORMULAS).map(([id,f]) => `<option value="new:${id}">${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>';
   }
   function refreshOrganization(action,id,part){
     save();render(true);
@@ -149,12 +149,44 @@
     const source=schoolRef(definition);
     let note=definition?.note||'';
     if (f.expression.kind === 'assembly') note = f.dimension === 'volume' ? 'Geometrisk rumfang af de valgte dele. Åbne sider ændrer ikke rumfanget; delene må ikke overlappe.' : 'Åbne flader og endeflader i samlinger er automatisk udeladt.';
-    $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div>${rearrangeControl(f)}${valueDisplayControl()}<div class="formula-display">${r.ok ? displayMath(r.ast,f.symbol,E.resultUnit(f).label) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${renderResult(ctx,f)}${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}${source?`<p class="formula-source">Skolens formelsamling · ${esc(source)}</p>`:''}`;
+    $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div>${rearrangeControl(f)}${valueDisplayControl()}<div class="formula-display">${r.ok ? displayMath(r.ast,f.symbol,E.resultUnit(f).label) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${renderResult(ctx,f)}${full.ok?fillHeightGuide(full.ast):''}${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}${source?`<p class="formula-source">Skolens formelsamling · ${esc(source)}</p>`:''}`;
     let steps;
     try { steps = ctx.steps(`formula:${f.id}`); } catch (_) { steps = []; }
     $('#formula-chain').innerHTML = steps.length ? `<details class="chain-details" data-detail-key="chain-${esc(f.id)}"><summary><span>Se formelkæden</span><span class="chain-count">${steps.length} ${steps.length === 1 ? 'formel' : 'formler'}</span></summary><ol class="chain-list">${steps.map(d => `<li><div class="chain-step-heading"><span>${esc(d.name)}</span><button class="text-button" data-action="inspect-reference" data-target="${esc(d.target)}">Tilpas</button></div><div class="chain-math">${formulaSummary(d.expression,d.dimension,ctx,d.symbol,d.target)}</div></li>`).join('')}</ol></details>` : '';
     if (!full.ok) { $('#symbol-guide').innerHTML = ''; return; }
     renderUnitGuide(full.ast,f);
+  }
+  function fillHeightGuide(ast){
+    const nodes=E.FillHeight.find(ast);
+    if(!nodes.length)return '';
+    return nodes.map((node,n)=>{
+      const state=E.FillHeight.analyze(node,E.evaluate);
+      const short=node.parts.map((p,i)=>E.FillHeight.shortBranch(node,i,state.parts?.[i]?.d));
+      const equation=(tree,symbol,unit)=>`<div class="fill-equation">${displayMath(tree,symbol,unit)}</div>`;
+      const steps=b=>`${equation(b.remaining,'V_rest','m³')}${equation(b.offset,'H_fyldt','m')}${b.local?equation(b.local,'h_del','m'):`<p>Find h_del mellem 0 og ${esc('H_del'+(node.parts.indexOf(b.part)+1))}, så denne ligning passer:</p>${equation(b.equation,'V_rest','m³')}<p class="field-note">Prøv en højde, beregn rumfanget, og justér højden op eller ned. Halvér intervallet mellem for lav og for høj, indtil højden er præcis nok.${b.part.type==='halfCylinder'?' Brug acos (cos⁻¹) i <strong>radianer</strong>, dvs. RAD på TI-30.':''}</p>`}${equation(b.ast,'H_x','m')}`;
+      const active=state.status==='ready'?short[state.active]:null;
+      const rows=short.map((b,i)=>`<li class="fill-part ${state.status==='ready'&&i===state.active?'fill-active':''}"><div class="fill-part-heading"><strong>${i+1}. ${esc(b.part.name)}</strong><span>${state.status==='ready'?(i<state.active?'Helt fyldt':i===state.active?(state.remaining===state.parts[i].capacity?'Fyldt til kanten':state.remaining===0?'Tom · start her':'Her ligger væskeoverfladen'):'Endnu tom'):'Del '+(i+1)}</span></div>${equation(b.capacity,'V_del'+(i+1),'m³')}${equation(b.h,'H_del'+(i+1),'m')}<details data-detail-key="fill-branch-${n}-${b.part.id}"><summary>Delvis fyldning af denne del</summary><p>Brug denne gren, når alle dele nedenunder er fulde, og restvolumen er mellem 0 og V_del${i+1}.</p>${steps(b)}</details></li>`).join('');
+      const warning=state.status==='error'?`<p class="error-box" role="status">${esc(state.error)}</p>`:state.status==='incomplete'?'<p class="fill-status" role="status">Angiv produktets volumen og tankens indvendige mål under <strong>Størrelserne i formlen</strong>. Så markeres den del, hvor væskeoverfladen ligger. Indtil da kan du bruge grenene nedenfor.</p>':`<p class="fill-status" role="status">${state.volume===0?'Tanken er tom.':state.volume>=state.total?'Tanken er helt fyldt.':'Væskeoverfladen ligger i del '+(state.active+1)+': '+esc(active.part.name)+'.'}</p>`;
+      return `<section class="fill-height-guide" aria-label="Hx · fyldning fra bunden"><h3>Hx · fra bunden og op</h3><p>Højden måles fra tankens laveste indvendige punkt. Fyld de nederste dele først, træk deres rumfang fra produktvolumen, og læg deres højder til højden i den næste del.</p><p class="field-note">${node.inverted?'I denne Hx-formel er tanken vendt på hovedet i forhold til figurvisningen.':'Rækkefølgen følger den lodrette samling i figurvisningen.'} Hx bruger netop denne samling; separate tanke tælles ikke med.</p>${warning}<ol class="fill-parts">${rows}</ol>${active?`<div class="fill-current"><h4>Delberegninger for den aktuelle fyldning</h4>${steps(active)}</div>`:''}<p class="field-note">TI-30: Beregn V_del og H_del for hver relevant del separat. Brug derefter V_rest, H_fyldt og h_del ovenfor. Formlerne kan blive for lange i én indtastning; brug hukommelsesvariable og afrund først det endelige svar. Alle deltrin her bruger m³ og m; resultatets enhed vælges nedenfor.</p><p class="field-note">Hx er geometrisk: tanken skal stå lodret og kunne holde på produktet. Åbne sider eller bunde begrænser ikke automatisk rumfanget. Indvendige skilleplader, hældning, rørforbindelser mellem separate tanke og overløb indgår ikke.</p></section>`;
+    }).join('');
+  }
+  function fillHeightCopy(ast){
+    return E.FillHeight.find(ast).map(node=>{
+      const state=E.FillHeight.analyze(node,E.evaluate);
+      const lines=['Hx: delene står i rækkefølge fra bunden. Alle deltrin bruger m og m³.'];
+      if(state.status==='error')lines.push(state.error);
+      node.parts.forEach((part,i)=>{
+        const b=E.FillHeight.shortBranch(node,i,state.parts?.[i]?.d);
+        lines.push(`${i+1}. ${part.name}`,`V_del${i+1} = ${E.plain(b.capacity,null,valueDisplay)}`,`H_del${i+1} = ${E.plain(b.h,null,valueDisplay)}`);
+        if(state.status!=='ready'||state.active===i){
+          lines.push('Når denne del fyldes (0 ≤ V_rest ≤ V_del'+(i+1)+'):', 'V_rest = '+E.plain(b.remaining,null,valueDisplay),'H_fyldt = '+E.plain(b.offset,null,valueDisplay));
+          if(b.local)lines.push('h_del = '+E.plain(b.local,null,valueDisplay));
+          else lines.push('Find 0 ≤ h_del ≤ H_del'+(i+1)+' fra: V_rest = '+E.plain(b.equation,null,valueDisplay),'Løs ved intervalhalvering; acos bruger radianer.');
+          lines.push('Hx [m] = '+E.plain(b.ast,null,valueDisplay));
+        }
+      });
+      return lines.join('\n');
+    }).join('\n\n');
   }
   function valueDisplayControl(){
     return `<div class="value-display-control"><span>Vis i formlen</span><div class="segmented" role="group" aria-label="Vis værdier, enheder eller begge">${Object.entries(VALUE_DISPLAYS).map(([mode,choice])=>`<button data-action="value-display" data-id="${mode}" aria-pressed="${valueDisplay===mode}" aria-describedby="value-display-hint">${choice.label}</button>`).join('')}</div><p id="value-display-hint">${VALUE_DISPLAYS[valueDisplay].hint}</p></div>`;
@@ -231,10 +263,11 @@
   }
   function expressionEditor(expr, dimension, path, defaultSymbol, ctx, depth = 0) {
     if (depth > 12) return '<div class="error-box">Formlen er for dyb til at blive vist.</div>';
-    const current = expr.kind === 'symbol' ? 'symbol' : expr.kind === 'assembly' ? (expr.property==='materialVolume'?'material':'assembly') : expr.kind === 'zero' ? 'zero' : expr.kind + ':' + (expr.formula || expr.target);
+    const current = expr.kind === 'symbol' ? 'symbol' : expr.kind === 'assembly' ? (expr.property==='materialVolume'?'material':'assembly') : expr.kind === 'fillHeight' ? 'fillHeight' : expr.kind === 'zero' ? 'zero' : expr.kind + ':' + (expr.formula || expr.target);
     const owner = ownerTarget(path);
     const targets = ctx.list.filter(d => d.dimension === dimension && d.target !== owner && !E.dependsOn(model,d.target,owner));
     let options = `<option value="symbol">${dimension==='countPerLength'?'Kendt antal kopper pr. længdeenhed':'Kendt størrelse'} · ${esc(pretty(defaultSymbol))}</option>`;
+    if(dimension==='length')options+='<option value="fillHeight">Hx · produkthøjde i en valgt tank</option>';
     if(dimension==='countPerLength')options+='<option value="formula:bucketCountFromSpacing">Afstand mellem kopper · N = 1 / s</option>';
     if(expr.kind==='zero')options+='<option value="zero">Ingen valgte flader · 0</option>';
     if (['volume','area'].includes(dimension)) options += `<option value="assembly">Fra beholderdelene · samlet ${dimension === 'volume' ? 'rumfang' : 'areal'}</option>`;
@@ -250,6 +283,10 @@
     else if (expr.kind === 'ref') {
       const source = ctx.map.get(expr.target);
       html += `<div class="reference-preview">${source ? formulaSummary(source.expression,source.dimension,ctx,source.symbol,source.target) : '<p class="inline-error">Vælg en ny reference.</p>'}</div>${source ? `<div class="reference-actions"><button class="text-button" data-action="inspect-reference" data-target="${esc(source.target)}">Tilpas kilde</button>${source.expression.kind !== 'symbol' ? `<button class="text-button" data-action="inline" data-path="${pathAttr(path)}" title="Indsætter en kopi af kildens formel, som du kan tilpasse her">Indsæt formlen her</button>` : ''}</div>` : ''}`;
+    } else if(expr.kind==='fillHeight'){
+      const tanks=E.components(model).map(ids=>({ids,parts:model.shapes.filter(s=>ids.includes(s.id))}));
+      const tankOptions=tanks.map(t=>`<option value="${esc(t.ids.includes(expr.shapeId)?expr.shapeId:t.ids[0])}" ${t.ids.includes(expr.shapeId)?'selected':''}>${esc(t.parts.map(s=>s.name+' ('+s.ordinal+')').join(' + '))}</option>`).join('');
+      html+=`<label class="field-label fill-tank-choice">Tank til Hx<select class="source-select" data-action="fill-tank" data-path="${pathAttr(path)}" aria-label="Vælg samlet tank til Hx"><option value="" ${expr.shapeId?'':'selected'}>Vælg en figur eller samling…</option>${expr.shapeId&&!model.shapes.some(s=>s.id===expr.shapeId)?'<option value="'+esc(expr.shapeId)+'" selected>Manglende figur · vælg en ny tank</option>':''}${tankOptions}</select></label><p class="field-note">Alle sammenføjede dele følger med. Sæt delene sammen under Figurer; separate figurer er separate tanke.</p><label class="field-label">Tankens retning<select class="source-select" data-action="fill-orientation" data-path="${pathAttr(path)}" aria-label="Tankens retning til Hx"><option value="normal" ${expr.inverted?'':'selected'}>Som i figurvisningen</option><option value="inverted" ${expr.inverted?'selected':''}>Vend hele tanken på hovedet</option></select></label><div class="input-group"><div class="input-label">${symbolHtml('V_produkt')}<span>Produktets volumen</span></div>${expressionEditor(expr.volume,'volume',[...path,'volume'],'V_produkt',ctx,depth+1)}</div><p class="field-note">Brug produktets faktiske volumen, fx fra Qᵥ · tid eller masse / densitet. Tankens samlede rumfang giver Hx for en helt fyldt tank.</p>`;
     } else if (expr.kind === 'assembly') {
       html += `<div class="reference-preview">${formulaSummary(expr,dimension,ctx,undefined,owner)}</div><p class="field-note">Følger de figurer, der er valgt som beholderdele.${dimension === 'area'||expr.property==='materialVolume' ? ' Åbne flader og endeflader i samlinger udelades automatisk.' : ''}</p>`;
     } else {
@@ -324,7 +361,8 @@
       return words.every(word=>/^t\d+$/.test(word)?f.source?.triangles.some(t=>t.toLowerCase()===word):haystack.includes(word));
     });
     const groups=[...new Set(formulas.map(([,f])=>f.group))];
-    $('.library-results').innerHTML=`<p class="search-count" role="status">${formulas.length} formler${query?' fundet':''}</p>`+(formulas.length?groups.map(group=>`<section class="formula-group"><h3>${esc(group)}</h3><div class="formula-grid">${formulas.filter(([,f])=>f.group===group).map(([id,f])=>`<button class="formula-card" data-action="use-formula" data-formula="${id}"><h4>${esc(f.name)}</h4>${schoolRef(f)?`<span class="school-reference">${esc(schoolRef(f))}</span>`:''}<div class="library-equation">${E.math(E.formulaAst(id),f.symbol)}</div>${f.note?`<p>${esc(f.note)}</p>`:''}<div class="formula-card-foot"><span>${esc(E.DIMENSIONS[f.dimension].name)}</span><span>Brug formel +</span></div></button>`).join('')}</div></section>`).join(''):'<p class="empty-search">Ingen formler matcher. Prøv fx T9, masse eller tryk.</p>');
+    const showHx=words.every(word=>normalize('Hx produkthøjde væskehøjde fyldehøjde højde volumen tank beholder cylinder kegle kasse firkant sammensat').includes(word));
+    $('.library-results').innerHTML=`<p class="search-count" role="status">${formulas.length+(showHx?1:0)} formler${query?' fundet':''}</p>`+(showHx?'<section class="formula-group"><h3>Fyldning af tanke</h3><div class="formula-grid"><button class="formula-card" data-action="use-formula" data-formula="fillHeight"><h4>Produkthøjde i tank (Hx)</h4><div class="library-equation">Hx = højde af fyldte dele + delvis højde</div><p>Vælg din samlede tank og produktets volumen. Finder rækkefølgen fra bunden og bruger restvolumen i næste del.</p><div class="formula-card-foot"><span>Længde</span><span>Brug formel +</span></div></button></div></section>':'')+(formulas.length?groups.map(group=>`<section class="formula-group"><h3>${esc(group)}</h3><div class="formula-grid">${formulas.filter(([,f])=>f.group===group).map(([id,f])=>`<button class="formula-card" data-action="use-formula" data-formula="${id}"><h4>${esc(f.name)}</h4>${schoolRef(f)?`<span class="school-reference">${esc(schoolRef(f))}</span>`:''}<div class="library-equation">${E.math(E.formulaAst(id),f.symbol)}</div>${f.note?`<p>${esc(f.note)}</p>`:''}<div class="formula-card-foot"><span>${esc(E.DIMENSIONS[f.dimension].name)}</span><span>Brug formel +</span></div></button>`).join('')}</div></section>`).join(''):showHx?'':'<p class="empty-search">Ingen formler matcher. Prøv fx T9, masse eller tryk.</p>');
   }
   function render(keepFocus = false) {
     const el = document.activeElement;
@@ -414,12 +452,12 @@
   }
   function formulaPicker(groupId=active()?.groupId||'') {
     const groups=[...new Set(Object.values(E.BASE_FORMULAS).map(f=>f.group))];
-    openDialog('Hvad vil du finde?','<p>Vælg en grundformel. Under Isolér en størrelse kan du bagefter vælge en anden ukendt.</p><div class="dialog-formula-list">'+groups.map(group=>`<h3>${esc(group)}</h3>${Object.entries(E.BASE_FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="dialog-formula-item" data-action="use-formula" data-formula="${id}" data-group="${esc(groupId)}"><span>${esc(formulaTitle(f))}</span><span>${esc(f.equation)}</span></button>`).join('')}`).join('')+'</div>');
+    openDialog('Hvad vil du finde?','<p>Vælg en grundformel. Under Isolér en størrelse kan du bagefter vælge en anden ukendt.</p><div class="dialog-formula-list"><button class="dialog-formula-item" data-action="use-formula" data-formula="fillHeight" data-group="'+esc(groupId)+'"><span>Produkthøjde i tank (Hx)</span><span>Fyld sammensatte figurer fra bunden</span></button>'+groups.map(group=>`<h3>${esc(group)}</h3>${Object.entries(E.BASE_FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="dialog-formula-item" data-action="use-formula" data-formula="${id}" data-group="${esc(groupId)}"><span>${esc(formulaTitle(f))}</span><span>${esc(f.equation)}</span></button>`).join('')}`).join('')+'</div>');
   }
   function addFormula(id,groupId=active()?.groupId||'') {
     if (model.formulas.length>=40) {notify('Der kan højst være 40 formler i én opsætning.');return;}
     const key=newId('formula');
-    const f=['tankMass','tankMassSurfaces'].includes(id)?E.newTankMass(model,key,id==='tankMassSurfaces'):id==='filledTankMass'?E.newFilledTankMass(model,key):E.newFormula(key,id);
+    const f=id==='fillHeight'?E.newFillHeight(key,E.components(model).length===1?model.shapes[0]?.id||'':''):['tankMass','tankMassSurfaces'].includes(id)?E.newTankMass(model,key,id==='tankMassSurfaces'):id==='filledTankMass'?E.newFilledTankMass(model,key):E.newFormula(key,id);
     if(model.formulas.some(other=>other.symbol===f.symbol)){
       const base=f.symbol.replace(/_/g,'');let n=2;
       while(model.formulas.some(other=>other.symbol===base+'_'+n))n++;
@@ -455,7 +493,7 @@
     const f=active();if(!f)return;
     const ctx=E.context(model),r=ctx.safe('formula:'+f.id,expanded?'expanded':'compact',true);if(!r.ok)return;
     const quantities=E.variables(r.ast).map(v=>v.symbol+(quantityOwner(v)?' ('+quantityOwner(v)+')':'')+': '+(valueDisplay!=='units'&&v.inputValue!==undefined?v.inputValue.replace('.',',')+' ':'')+(v.reference?E.resultUnit(ctx.map.get(v.reference)):E.inputUnit(model,v)).label);
-    const text=f.symbol+' ['+E.resultUnit(f).label+'] = '+E.plain(r.ast,null,valueDisplay)+(quantities.length&&valueDisplay==='both'?'\n\nStørrelser og enheder:\n'+quantities.join('\n'):'');
+    const text=f.symbol+' ['+E.resultUnit(f).label+'] = '+E.plain(r.ast,null,valueDisplay)+(E.FillHeight.find(r.ast).length?'\n\n'+fillHeightCopy(r.ast):'')+(quantities.length&&valueDisplay==='both'?'\n\nStørrelser og enheder:\n'+quantities.join('\n'):'');
     try { if(!navigator.clipboard?.writeText)throw new Error('Unavailable');await navigator.clipboard.writeText(text);notify('Formlen er kopieret.'); }
     catch(_) {
       const area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();let success=false;
@@ -478,7 +516,7 @@
     {section:'SAMLINGER', title:'Vælg figur, ende og endestykke', target:'.join-fields', scene:'join', focus:'cylinder', body:'<p>Vælg først <strong>Cylinder</strong>, derefter <strong>Bund</strong> og til sidst <strong>Keglebund · Plan endeflade</strong>. Tryk normalt <strong>Sæt sammen</strong> for at forbinde dem.</p><p>Menuen tilbyder både eksisterende figurer og nye endestykker, fx <strong>Ny halvkugle</strong>. Kun passende, ledige samleflader kan vælges. Vi viser resultatet på næste trin.</p>'},
     {section:'SAMLINGER', title:'Se den samlede figur i 3D', target:'.solid-viewer', body:'<p>Nu sidder keglen på cylinderens bund. Træk i <strong>3D-visningen</strong> for at dreje den; brug scroll eller +/− til zoom. <strong>Skitse</strong> viser et snit med fladernes navne.</p><p>Visningen følger samlinger og åbne/lukkede flader. Den er skematisk og uden målestok.</p>'},
     {section:'SAMLINGER', title:'Fælles flader og samlede formler', target:'.assembly-totals', detail:'assembly-totals', body:'<p>Her finder du det samlede <strong>rumfang</strong> og <strong>pladeareal</strong>. Åbne flader og de to endeflader i en samling udelades automatisk fra pladearealet. <strong>Brug formel</strong> føjer summen til Mine formler.</p><p><strong>Skil ad</strong> under visningen løsner samlingen. Delene får deres egne mål og fladevalg tilbage. Sum af rumfang forudsætter, at delene ikke overlapper.</p>'},
-    {section:'FORMLER', title:'Vælg, hvad du vil finde', target:'.goal-row', body:'<p>Her vælger du hovedformlen. I eksemplet vil vi finde <strong>Fyldetid</strong>: t = V / Qᵥ.</p><p>Menuen viser både dine egne formler og muligheden for at tilføje en ny. Figurerne leverer fx rumfanget V, mens en anden formel kan levere volumenflowet Qᵥ.</p>'},
+    {section:'FORMLER', title:'Vælg, hvad du vil finde', target:'.goal-row', body:'<p>Her vælger du hovedformlen. I eksemplet vil vi finde <strong>Fyldetid</strong>: t = V / Qᵥ.</p><p>Menuen viser både dine egne formler og muligheden for at tilføje en ny. Figurerne leverer fx rumfanget V, mens en anden formel kan levere volumenflowet Qᵥ.</p><p>Vælg <strong>Produkthøjde i tank (Hx)</strong>, når du kender produktvolumen. Vælg den samlede tank i højre side. Hx følger delene fra bunden, bruger restvolumen i den næste del og viser delberegningerne.</p>'},
     {section:'FIGURER', title:'Særskilt tykkelse for sider og bund', target:'.plate-settings', scene:'parts', focus:'cylinder', detail:'plates-cylinder', body:'<p>Under <strong>Pladetykkelser</strong> vælger du en fælles sidetykkelse og eventuelt en anden tykkelse for bund, top eller en bestemt flade. Vælg <strong>Kendt størrelse</strong> for at bruge fx t_side og t_bund.</p><p>Brug <strong>Tankmasse med separate pladetykkelser</strong> i formelsamlingen. Den summerer areal gange tykkelse for de lukkede flader. Åbne og sammenføjede flader tæller ikke med.</p>'},
     {section:'OVERBLIK', title:'Sæt formlerne i rækkefølge og grupper', target:'#saved-formulas', scene:'organize', body:'<p>Brug <strong>↑ og ↓</strong> under en formel for at flytte den i sin gruppe. Dropdown-menuen flytter formlen til en anden gruppe eller <strong>Uden gruppe</strong>.</p><p><strong>Opret gruppe</strong> giver en ny gruppe. Gruppen har også flytteknapper, og overskriften folder indholdet sammen. <strong>Redigér</strong> ændrer navnet eller fjerner gruppen; formlerne bliver bevaret. Rækkefølge og grupper gemmes med opsætningen.</p>'},
     {section:'FORMLER', title:'Find formler fra formelsamlingen', target:'.formula-search', scene:'library', body:'<p>Fanen <strong>Formelsamling</strong> samler formlerne fra jeres materiale. Søg på et navn, symbol eller T-nummer, fx <strong>Pvirk</strong>, <strong>eta</strong> eller <strong>T9</strong>.</p><p>Kortene viser formlen, forudsætninger og henvisning til siden i jeres samling. Tryk <strong>Brug formel</strong> for at arbejde videre med den.</p>'},
@@ -677,11 +715,17 @@
       }catch(error){render(true);notify(error.message);}
     }else if(a==='source'){
       const path=JSON.parse(el.dataset.path),old=getAt(path);
-      const next=el.value==='symbol'?E.symbol(el.dataset.symbol):el.value==='zero'?{kind:'zero',dimension:el.dataset.dimension}:el.value==='material'?E.assembly('volume','materialVolume'):el.value==='assembly'?E.assembly(el.dataset.dimension):el.value.startsWith('formula:')?E.newExpression(el.value.slice(8)):E.ref(el.value.slice(4));
+      const next=el.value==='fillHeight'?E.fillHeight(E.components(model).length===1?model.shapes[0]?.id||'':''):el.value==='symbol'?E.symbol(el.dataset.symbol):el.value==='zero'?{kind:'zero',dimension:el.dataset.dimension}:el.value==='material'?E.assembly('volume','materialVolume'):el.value==='assembly'?E.assembly(el.dataset.dimension):el.value.startsWith('formula:')?E.newExpression(el.value.slice(8)):E.ref(el.value.slice(4));
       if(path[0]==='shapes'&&path[2]==='plateThickness'&&path.length===4){
         try{model=E.setPlateThickness(model,model.shapes[path[1]].id,path[3],next);save();render(true);}catch(error){render(true);notify(error.message);}return;
       }
       setAt(path,next);try{E.validateModel(model);save();render(true);}catch(_){setAt(path,old);render(true);notify('Formlen bliver for dyb. Tilføj en separat formel og brug en reference.');}
+    }else if(a==='fill-tank'||a==='fill-orientation'){
+      const expr=getAt(JSON.parse(el.dataset.path));
+      if(expr?.kind==='fillHeight'){
+        if(a==='fill-tank')expr.shapeId=el.value;else expr.inverted=el.value==='inverted';
+        save();render(true);
+      }
     }else if(a==='diameter-basis'){
       try{model=E.setDiameterBasis(model,el.dataset.id,el.value);save();render(true);}catch(error){render(true);notify(error.message);}
     }else if(a==='include'){E.setIncluded(model,el.dataset.id,el.checked);save();render(true);}

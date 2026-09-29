@@ -163,7 +163,19 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .group-delete{color:var(--error);margin-top:12px}
 @media(max-width:640px){.catalog .section-label{display:flex;margin-top:20px}.catalog .section-label h2{margin-bottom:0}.saved-formulas{display:flex;max-height:340px;overflow-y:auto;padding:3px}.formula-order-controls select{font-size:.8rem}.order-button{min-height:34px;flex-basis:34px}.saved-group{flex-shrink:0}.create-formula-group{margin-bottom:9px}}
 
+/* Hx is a sequence of physical fill layers, with short reusable SI steps. */
+.fill-height-guide{border-top:1px solid var(--border);padding:24px;line-height:1.7;font-size:.875rem;min-width:0}
+.fill-height-guide h3{font-size:1.05rem;margin:0 0 12px}.fill-height-guide h4{font-size:.95rem;margin:0 0 12px}
+.fill-height-guide p{margin:10px 0}.fill-status{padding:12px 15px;background:var(--soft);border-radius:7px}
+.fill-parts{list-style:none;padding:0;margin:18px 0;display:grid;gap:12px}.fill-part{border:1px solid var(--border);border-radius:8px;padding:16px;min-width:0}
+.fill-part.fill-active{border-color:var(--blue);background:var(--blue-soft)}.fill-part-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.fill-part-heading span{font-size:.75rem;color:var(--muted)}
+.fill-equation{max-width:100%;overflow-x:auto;padding:12px 3px}.fill-equation math{font-size:1.1rem;min-width:min-content}
+.fill-part summary{cursor:pointer;margin-top:10px;font-size:.8rem;color:var(--blue-ink)}.fill-current{padding:18px;border:1px solid var(--border);border-radius:8px;margin:20px 0;background:var(--soft)}
+.fill-tank-choice{margin-top:18px}.fill-height-guide .field-note{font-size:.78rem}
+@media(max-width:650px){.fill-height-guide{padding:16px}.fill-part,.fill-current{padding:12px}.fill-equation math{font-size:1rem}}
+
 </style>
+  
   
   
   
@@ -6721,7 +6733,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   function scales(ast){
     // Keep a percentage's /100 local so it cannot disappear into unrelated
     // length or output-unit scales. Numeric views can then show its decimal.
-    if(ast.unitOffset||ast.percentInput||ast.convertedInput)return boundary(ast);
+    if(ast.unitOffset||ast.percentInput||ast.convertedInput||ast.type==='fillHeight')return boundary(ast);
     if(ast.type==='constant'&&ast.unitFactor)return {body:constant(1),n:BigInt(ast.value),d:1n};
     if(!ast.children)return boundary(ast);
     const parts=ast.children.map(scales);
@@ -6751,7 +6763,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     return boundary(ast);
   }
   function reduce(ast){
-    if(!ast.children)return ast;
+    if(!ast.children||ast.type==='fillHeight')return ast;
     let node={...ast,children:ast.children.map(reduce)};
     if(node.type==='group'&&!node.unitOffset&&!node.convertedInput&&node.children[0].type==='group')node=node.children[0];
     const part=scales(node),divisor=bigGcd(part.n,part.d);
@@ -6909,12 +6921,213 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 
 </script>
 <script>
+/* fill-height.js */
+/* Bottom-up fill profiles. Geometry follows the orientation of the tank preview. */
+(function(root,factory){
+  if(typeof module==='object'&&module.exports)module.exports=factory();
+  else root.PPFillHeight=factory();
+})(typeof globalThis!=='undefined'?globalThis:this,function(){
+  'use strict';
+  const c=value=>({type:'constant',value:String(value)});
+  const op=(type,...children)=>({type,children});
+  const add=(...xs)=>xs.length===0?c(0):xs.length===1?xs[0]:op('add',...xs);
+  const mul=(...xs)=>op('mul',...xs),sub=(a,b)=>op('sub',a,b),div=(a,b)=>op('div',a,b);
+  const pow=(a,n)=>op('pow',a,typeof n==='number'?c(n):n),sqrt=a=>op('sqrt',a);
+  const derived=symbol=>({type:'derived',symbol});
+  const TYPES=['cylinder','pipe','box','cone','frustum','sphere','hemisphere','halfCylinder','triangularPrism','pyramid'];
+
+  function ordered(model,shapeId,shapes,inverted=false){
+    const anchor=model.shapes.find(s=>s.id===shapeId);
+    if(!anchor)throw new Error('Vælg den tank, du vil finde Hx for.');
+    const ids=new Set([shapeId]),todo=[shapeId];
+    while(todo.length){const id=todo.shift();for(const j of model.connections||[]){
+      if(j.a.shape!==id&&j.b.shape!==id)continue;
+      const next=j.a.shape===id?j.b.shape:j.a.shape;
+      if(!ids.has(next)){ids.add(next);todo.push(next);}
+    }}
+    const members=model.shapes.filter(s=>ids.has(s.id));
+    const root=members.find(s=>['cylinder','box','pipe'].includes(s.type))||members[0];
+    const positions=new Map([[root.id,{rank:0,orientation:inverted?-1:1}]]);todo.push(root.id);
+    while(todo.length){
+      const id=todo.shift(),parent=members.find(s=>s.id===id),position=positions.get(id);
+      for(const j of model.connections||[]){
+        if(j.a.shape!==id&&j.b.shape!==id)continue;
+        const from=j.a.shape===id?j.a:j.b,to=j.a.shape===id?j.b:j.a;
+        if(positions.has(to.shape))continue;
+        const child=members.find(s=>s.id===to.shape),a=shapes[parent.type].faces[from.face],b=shapes[child.type].faces[to.face];
+        if(!a?.direction||!b?.direction)throw new Error('Hx kræver dele stablet lodret over hinanden.');
+        positions.set(child.id,{rank:position.rank+position.orientation*a.direction,orientation:-position.orientation*a.direction/b.direction});todo.push(child.id);
+      }
+    }
+    const result=members.map(s=>({shape:s,...positions.get(s.id)})).sort((a,b)=>b.rank-a.rank);
+    if(new Set(result.map(p=>p.rank)).size!==result.length)throw new Error('Hx kræver én sammenhængende lodret tank uden forgreninger.');
+    return result;
+  }
+  function create(model,expr,shapes,inputTarget,expand){
+    const children=[expand(expr.volume,'volume')];
+    const parts=ordered(model,expr.shapeId,shapes,expr.inverted).map(({shape:s,orientation})=>{
+      if(!TYPES.includes(s.type))throw new Error('Denne figur har endnu ingen Hx-profil.');
+      const dimensions={};
+      for(const key of Object.keys(shapes[s.type].inputs)){
+        dimensions[key]=children.length;children.push(expand({kind:'ref',target:inputTarget(s,key)},'length'));
+      }
+      return {id:s.id,name:s.name,ordinal:s.ordinal,type:s.type,orientation,dimensions};
+    });
+    return {type:'fillHeight',children,parts,inverted:!!expr.inverted};
+  }
+  function geometry(part,children){
+    const d=Object.fromEntries(Object.entries(part.dimensions).map(([k,i])=>[k,children[i]]));
+    const R=d.D&&div(d.D,c(2)),area=R&&mul(c('π'),pow(R,2));
+    // The pipe stores its length under h, with L as its displayed symbol.
+    const h=part.type==='sphere'?d.D:['hemisphere','halfCylinder'].includes(part.type)?R:d.h;
+    let capacity;
+    switch(part.type){
+      case 'cylinder':case 'pipe':capacity=mul(area,h);break;
+      case 'box':capacity=mul(d.L,d.B,h);break;
+      case 'cone':capacity=div(mul(area,h),c(3));break;
+      case 'pyramid':capacity=div(mul(d.L,d.B,h),c(3));break;
+      case 'triangularPrism':capacity=div(mul(d.L,d.B,h),c(2));break;
+      case 'sphere':capacity=mul(div(c(4),c(3)),c('π'),pow(R,3));break;
+      case 'hemisphere':capacity=mul(div(c(2),c(3)),c('π'),pow(R,3));break;
+      case 'halfCylinder':capacity=div(mul(area,d.L),c(2));break;
+      case 'frustum':capacity=mul(div(mul(c('π'),h),c(12)),add(pow(d.D,2),mul(d.D,d.d),pow(d.d,2)));break;
+    }
+    return {d,R,area,h,capacity};
+  }
+  // Stable circular-segment fraction: theta - sin(theta)cos(theta) loses
+  // precision near the bottom, so use its series for small theta.
+  function segmentFraction(u){
+    const theta=2*Math.asin(Math.sqrt(Math.max(0,Math.min(1,u))/2));
+    const t2=theta*theta;
+    const area=theta<0.01?theta*t2*(2/3+t2*(-2/15+t2*(4/315-t2*2/2835))):theta-Math.sin(theta)*Math.cos(theta);
+    return area/(Math.PI/2);
+  }
+  function fraction(part,d,u){
+    if(u<=0)return 0;if(u>=1)return 1;
+    const reversed=part.orientation<0;
+    switch(part.type){
+      case 'cylinder':case 'pipe':case 'box':return u;
+      case 'cone':case 'pyramid':return reversed?u*(3-3*u+u*u):u*u*u;
+      case 'triangularPrism':return reversed?u*(2-u):u*u;
+      case 'sphere':return u*u*(3-2*u);
+      // In the preview the hemisphere's default is a dome, not a bowl.
+      case 'hemisphere':return reversed?u*u*(3-u)/2:u*(3-u*u)/2;
+      case 'halfCylinder':return reversed?(2/Math.PI)*(Math.asin(u)+u*Math.sqrt(1-u*u)):segmentFraction(u);
+      case 'frustum':{
+        const scale=Math.max(d.D,d.d),bottom=(reversed?d.D:d.d)/scale,top=(reversed?d.d:d.D)/scale,k=top-bottom;
+        return u*(bottom*bottom+bottom*k*u+k*k*u*u/3)/((bottom*bottom+bottom*top+top*top)/3);
+      }
+    }
+    throw new Error('Ukendt Hx-profil.');
+  }
+  function invert(part,d,ratio){
+    if(ratio<=0)return 0;if(ratio>=1)return 1;
+    let lo=0,hi=1;
+    for(let i=0;i<180;i++){
+      const mid=(lo+hi)/2;if(mid===lo||mid===hi)break;
+      if(fraction(part,d,mid)<ratio)lo=mid;else hi=mid;
+    }
+    return (lo+hi)/2;
+  }
+  function analyze(ast,evaluate){
+    const values=ast.children.map(evaluate),bad=values.find(v=>v.status==='error');
+    if(bad)return bad;
+    const parts=[];
+    for(const part of ast.parts){
+      const d={};for(const [key,index]of Object.entries(part.dimensions)){
+        const value=values[index];if(value.status!=='ready')continue;
+        if(value.value<0||(value.value===0&&!(part.type==='frustum'&&key==='d')))return {status:'error',error:part.name+': De indvendige mål skal være positive (den lille keglediameter må være 0).'};
+        d[key]=value.value;
+      }
+      const g=geometry(part,ast.children),height=evaluate(g.h),capacity=evaluate(g.capacity);
+      parts.push({...part,d,geometry:g,height:height.value,capacity:capacity.value});
+    }
+    if(values.some(v=>v.status==='incomplete'))return {status:'incomplete',parts};
+    const volume=values[0].value,total=parts.reduce((sum,p)=>sum+p.capacity,0);
+    if(!Number.isFinite(total)||total<=0||parts.some(p=>!Number.isFinite(p.height)||p.capacity<=0))return {status:'error',error:'Tankens mål giver ikke et gyldigt rumfang.'};
+    if(volume<0)return {status:'error',error:'Produktets volumen må ikke være negativt.'};
+    if(volume>total&&volume-total>total*32*Number.EPSILON)return {status:'error',error:'Produktets volumen overstiger tankens samlede rumfang. Der findes ingen Hx inde i tanken.'};
+    let remaining=Math.min(volume,total),offset=0,active=parts.length-1;
+    for(let i=0;i<parts.length;i++){
+      const part=parts[i],tolerance=Math.max(remaining,part.capacity)*32*Number.EPSILON;
+      if(remaining<=part.capacity+tolerance){active=i;remaining=Math.min(remaining,part.capacity);break;}
+      remaining-=part.capacity;offset+=part.height;
+    }
+    const p=parts[active],local=p.height*invert(p,p.d,remaining/p.capacity);
+    return {status:'ready',parts,volume,total,active,remaining,offset,local,value:offset+local};
+  }
+  function volumeAt(part,children,x){
+    const {d,R,h,capacity,area}=geometry(part,children),reversed=part.orientation<0;
+    const cap=y=>mul(c('π'),pow(y,2),sub(R,div(y,c(3))));
+    const segment=y=>mul(d.L,sub(mul(pow(R,2),op('acos',div(sub(R,y),R))),mul(sub(R,y),sqrt(sub(mul(c(2),R,y),pow(y,2))))));
+    if(['box','cylinder','pipe'].includes(part.type))return mul(div(capacity,h),x);
+    if(['cone','pyramid','triangularPrism'].includes(part.type)){
+      const n=part.type==='triangularPrism'?2:3,u=div(x,h);
+      return mul(capacity,reversed?sub(c(1),pow(sub(c(1),u),n)):pow(u,n));
+    }
+    if(part.type==='sphere')return cap(x);
+    if(part.type==='hemisphere')return reversed?cap(x):sub(capacity,cap(sub(R,x)));
+    if(part.type==='halfCylinder')return reversed?sub(capacity,segment(sub(R,x))):segment(x);
+    if(part.type==='frustum'){
+      const r0=div(reversed?d.D:d.d,c(2)),r1=div(reversed?d.d:d.D,c(2)),k=div(sub(r1,r0),h);
+      return mul(c('π'),add(mul(pow(r0,2),x),mul(r0,k,pow(x,2)),div(mul(pow(k,2),pow(x,3)),c(3))));
+    }
+    return mul(area,x);
+  }
+  function inverse(part,children,volume,numeric,shortGeometry){
+    const {d,R,area,h,capacity}=shortGeometry||geometry(part,children),reversed=part.orientation<0;
+    if(['cylinder','pipe'].includes(part.type))return div(volume,area);
+    if(part.type==='box')return div(volume,mul(d.L,d.B));
+    if(['cone','pyramid','triangularPrism'].includes(part.type)){
+      const root=a=>part.type==='triangularPrism'?sqrt(a):pow(a,div(c(1),c(3)));
+      const ratio=div(volume,capacity);
+      return mul(h,reversed?sub(c(1),root(sub(c(1),ratio))):root(ratio));
+    }
+    if(part.type==='frustum'&&Number.isFinite(numeric?.D)&&Number.isFinite(numeric?.d)){
+      if(numeric.D===numeric.d)return div(volume,area);
+      const bottom=div(reversed?d.D:d.d,c(2)),top=div(reversed?d.d:d.D,c(2));
+      const radius=pow(add(pow(bottom,3),mul(sub(pow(top,3),pow(bottom,3)),div(volume,capacity))),div(c(1),c(3)));
+      // Difference-of-cubes identity avoids a nearly zero radius difference
+      // when the frustum is almost cylindrical.
+      return div(mul(c(3),volume),mul(c('π'),add(pow(bottom,2),mul(bottom,radius),pow(radius,2))));
+    }
+    return null;
+  }
+  function branch(ast,index,numeric){
+    const lower=ast.parts.slice(0,index).map(p=>geometry(p,ast.children));
+    const below=add(...lower.map(p=>p.capacity)),offset=add(...lower.map(p=>p.h));
+    const remaining=index?sub(ast.children[0],below):ast.children[0];
+    const part=ast.parts[index],g=geometry(part,ast.children),local=inverse(part,ast.children,remaining,numeric);
+    return {part,below,offset,remaining,...g,local,equation:volumeAt(part,ast.children,derived('h_del')),ast:add(...(index?[offset]:[]),local||derived('h_del'))};
+  }
+  function shortBranch(ast,index,numeric){
+    const b=branch(ast,index,numeric),g=geometry(b.part,ast.children);
+    const lower=ast.parts.slice(0,index);
+    const below=add(...lower.map((p,i)=>derived('V_del'+(i+1))));
+    const offset=add(...lower.map((p,i)=>derived('H_del'+(i+1))));
+    const remaining=index?sub(ast.children[0],below):ast.children[0];
+    const local=inverse(b.part,ast.children,derived('V_rest'),numeric,{...g,h:derived('H_del'+(index+1)),capacity:derived('V_del'+(index+1))});
+    return {...b,below,offset,remaining,local,ast:index?add(derived('H_fyldt'),derived('h_del')):derived('h_del')};
+  }
+  function presentation(ast,evaluate){
+    const state=analyze(ast,evaluate);
+    if(state.status!=='ready')return add(derived('H_fyldt'),derived('h_del'));
+    if(state.volume===0)return c(0);
+    if(state.remaining===state.parts[state.active].capacity)return add(...ast.parts.slice(0,state.active+1).map(p=>geometry(p,ast.children).h));
+    return branch(ast,state.active,state.parts[state.active].d).ast;
+  }
+  function find(ast){return (ast.type==='fillHeight'?[ast]:[]).concat((ast.children||[]).flatMap(find));}
+  return {ordered,create,geometry,fraction,invert,analyze,volumeAt,inverse,branch,shortBranch,presentation,find};
+});
+
+</script>
+<script>
 /* engine.js */
 /* Symbolic composition, numeric annotations and expression evaluation. */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'));
-  else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units, Rearrange) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'),require('./fill-height.js'));
+  else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange,root.PPFillHeight);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units, Rearrange, FillHeight) {
   'use strict';
   const { SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE } = catalog;
   const BASE_FORMULAS=catalog.FORMULAS;
@@ -6924,6 +7137,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   const ref = target => ({ kind: 'ref', target });
   const form = (formula, args) => ({ kind: 'formula', formula, args });
   const assembly = (dimension,property) => ({ kind: 'assembly', dimension,...(property?{property}:{}) });
+  const fillHeight = (shapeId='',volume=symbol('V_produkt'),inverted=false) => ({kind:'fillHeight',shapeId,volume,inverted});
+  const newFillHeight = (id,shapeId='') => ({id,name:'Produkthøjde i tank (Hx)',symbol:'H_x',dimension:'length',expression:fillHeight(shapeId)});
   const assemblyOutput = expr => expr.property==='materialVolume'?'materialVolume':expr.dimension==='volume'?'volume':'area';
   const defaultTank = () => ({ thickness:symbol('t_plade') });
   const diameterKeys = s => Object.keys(SHAPES[s.type].inputs).filter(key=>key==='D'||key==='d');
@@ -7295,6 +7510,10 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   function references(expr, model) {
     if (expr.kind === 'ref') return [expr.target];
     if (expr.kind === 'formula') return Object.values(expr.args).flatMap(e => references(e, model));
+    if (expr.kind === 'fillHeight') {
+      const ids=component(model,expr.shapeId);
+      return [...references(expr.volume,model),...model.shapes.filter(s=>ids.includes(s.id)).flatMap(s=>[`shape:${s.id}:volume`,...Object.keys(SHAPES[s.type].inputs).map(key=>geometricInput(s,key))])];
+    }
     if (expr.kind === 'assembly') return model.shapes.filter(s => s.include).map(s => `shape:${s.id}:${assemblyOutput(expr)}`);
     return [];
   }
@@ -7331,6 +7550,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   }
   function expressionKey(ast) {
     ast=unwrap(ast);
+    if(ast.type==='fillHeight')return JSON.stringify(ast);
+    if(ast.type==='derived')return JSON.stringify(['derived',ast.symbol]);
     if(ast.type==='symbol')return JSON.stringify(['symbol',Units.key(ast),ast.reference||'',ast.unit||'']);
     if(ast.type==='constant')return JSON.stringify(['constant',ast.value]);
     const keys=ast.children.map(expressionKey);
@@ -7403,7 +7624,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     return children.length?operation('add',children):constant(0);
   }
   function simplify(ast) {
-    if(!ast.children||ast.unitConversion)return ast;
+    if(!ast.children||ast.unitConversion||ast.type==='fillHeight')return ast;
     if(ast.type==='add'&&!ast.assemblyParts)return simplifySum(ast);
     const children=ast.children.map(simplify);
     if(ast.type==='group')return group(children[0]);
@@ -7449,6 +7670,12 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           return Units.convert(variable,unit);
         }
         return expandRaw(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);
+      }
+      if(expr.kind==='fillHeight'){
+        if(dimension!=='length')throw new Error('Hx er en højde og skal bruges som en længde.');
+        // Always expand the geometry: choosing the active layer needs the actual
+        // input quantities even when the surrounding expression is in Kort.
+        return FillHeight.create(model,expr,SHAPES,geometricInput,(e,d)=>Units.reduce(simplify(expandRaw(e,d,'expanded',stack,budget,depth+1,d==='volume'?'Produktets volumen':''))));
       }
       if (expr.kind === 'assembly') {
         if (!['volume', 'area'].includes(dimension) || expr.dimension !== dimension) throw new Error('Figursummen passer ikke til størrelsen.');
@@ -7520,7 +7747,12 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const base=greek[b]||(/^[A-Za-z]+$/.test(b)?b:'\\mathrm{'+b+'}');
     return (s.length?base+'_{'+s.join('_').replace(/[^\p{L}\p{N}]/gu,'')+'}':base)+(ast.unit?'\\,[\\text{'+ast.unit.replace(/%/g,'\\%')+'}]':'');
   }
+  function resolveFillAst(ast){
+    if(ast.type==='fillHeight')return resolveFillAst(simplify(FillHeight.presentation(ast,evaluate)));
+    return ast.children?{...ast,children:ast.children.map(resolveFillAst)}:ast;
+  }
   function displayAst(ast){
+    if(ast.type==='fillHeight')return displayAst(resolveFillAst(ast));
     if(ast.convertedInput){
       const c=ast.convertedInput;
       return {...c.variable,inputValue:ast.percentInput?percentToDecimal(c.variable.inputValue):c.value,valueUnit:c.unit,approximate:c.approximate};
@@ -7532,6 +7764,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     return node.children?{...node,children:node.children.map(symbolicAst)}:node;
   }
   function renderExpression(ast,format,symbolText,display='both') {
+    ast=resolveFillAst(ast);
     if(!['values','units','both'].includes(display))display='both';
     if(display!=='units'&&(!symbolText||display==='values'))ast=displayAst(ast);
     else ast=Units.reduce(symbolicAst(ast));
@@ -7548,7 +7781,9 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       }
       let body;
       const annotated=!symbolText&&node.type==='symbol'&&display==='both'&&node.inputValue!==undefined;
-      if(node.type==='symbol'){
+      if(node.type==='derived'){
+        body=linear?node.symbol:markup?mathSymbol(node.symbol):texSymbol(node);
+      }else if(node.type==='symbol'){
         if(linear&&symbolText)body=symbolText(node);
         else if(display==='units'){
           if(linear)body=node.symbol;
@@ -7581,6 +7816,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
           }else body='\\frac{'+c[0]+'}{'+c[1]+'}';
         }
         else if(node.type==='pow')body=linear?c[0]+'^'+c[1]:markup?`<msup>${c[0]}${c[1]}</msup>`:'{'+c[0]+'}^{'+c[1]+'}';
+        else if(node.type==='acos')body=linear?'acos('+c[0]+')':markup?'<mrow><mi>acos</mi><mo>(</mo>'+c[0]+'<mo>)</mo></mrow>':'\\arccos\\left('+c[0]+'\\right)';
         else if(node.type==='sqrt')body=linear?'√('+c[0]+')':markup?`<msqrt>${c[0]}</msqrt>`:'\\sqrt{'+c[0]+'}';
         else{
           const operator={mul:'·',add:'+',sub:'−'}[node.type];
@@ -7621,7 +7857,11 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     function visit(node,depth=0){
       if(++count>20000||depth>160)throw new Error('Udtrykket er for stort til at beregne');
       let value;
-      if(node.type==='symbol'){
+      if(node.type==='fillHeight'){
+        const state=FillHeight.analyze(node,child=>({status:'ready',value:visit(child,depth+1)}));
+        if(state.status!=='ready')throw new Error(state.error||'Udfyld produktvolumen og tankens indvendige mål.');
+        value=state.value;
+      }else if(node.type==='symbol'){
         const text=parseInputValue(node.inputValue);
         if(text===null||text==='')throw new Error('En indtastet værdi er ikke et gyldigt tal');
         value=Number(text);
@@ -7641,6 +7881,9 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         }else if(node.type==='sqrt'&&c.length===1){
           if(c[0]<0)throw new Error('Kvadratroden kræver et tal, der er mindst 0');
           value=Math.sqrt(c[0]);
+        }else if(node.type==='acos'&&c.length===1){
+          if(c[0]<-1||c[0]>1)throw new Error('acos kræver en værdi mellem −1 og 1');
+          value=Math.acos(c[0]);
         }else if(node.type==='pow'&&c.length===2){
           if(c[0]===0&&c[1]<=0)throw new Error('Denne potens med 0 er ikke defineret');
           // The catalogue uses 1/3 for cube roots; Math.cbrt also handles
@@ -7683,6 +7926,10 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       if (e.kind === 'symbol') { if (!validSymbol(e.symbol)) fail('ugyldigt symbol.'); return symbol(e.symbol); }
       if (e.kind === 'zero') { if(!['area','volume'].includes(dimension)||e.dimension!==dimension)fail('ugyldigt nulareal eller nulrumfang.');return {kind:'zero',dimension}; }
       if (e.kind === 'ref') { if (!str(e.target,160)) fail('ugyldig reference.'); return ref(e.target); }
+      if(e.kind==='fillHeight'){
+        if(dimension!=='length'||typeof e.shapeId!=='string'||e.shapeId.length>64||(e.shapeId&&!/^[a-zA-Z0-9_-]+$/.test(e.shapeId))||(e.inverted!==undefined&&typeof e.inverted!=='boolean'))fail('ugyldig Hx-tank.');
+        return fillHeight(e.shapeId,cleanExpr(e.volume,'volume',depth+1),!!e.inverted);
+      }
       if (e.kind === 'assembly') { if (!['volume','area'].includes(dimension) || e.dimension !== dimension || (e.property!==undefined&&(e.property!=='materialVolume'||dimension!=='volume'))) fail('ugyldig figursum.'); return assembly(dimension,e.property); }
       const f = own(FORMULAS,e.formula) && FORMULAS[e.formula];
       if (e.kind !== 'formula' || !f || f.dimension !== dimension) fail('formlen passer ikke til størrelsen.');
@@ -7781,6 +8028,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const map = new Map(descriptors(model).map(d=>[d.target,d]));
     function check(e,dimension) {
       if (e.kind === 'ref' && map.has(e.target) && map.get(e.target).dimension !== dimension) fail('en reference har forkert størrelse.');
+      if(e.kind==='fillHeight')check(e.volume,'volume');
       if (e.kind === 'formula') for (const [k,a] of Object.entries(FORMULAS[e.formula].args)) check(e.args[k],a.dimension);
     }
     for (const d of map.values()) check(d.expression,d.dimension);
@@ -7796,6 +8044,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         for(const field of ['inputUnits','inputValues'])if(old[field]&&own(old[field],legacy))model[field][key]=old[field][legacy];
       }
       function migrateExpression(expr,dimension,scope){
+        if(expr.kind==='fillHeight')migrateExpression(expr.volume,'volume',scope);
         if(expr.kind==='symbol')migrateSymbol(expr.symbol,dimension,scope);
         if(expr.kind==='formula')for(const [key,arg]of Object.entries(FORMULAS[expr.formula].args))migrateExpression(expr.args[key],arg.dimension,scope);
       }
@@ -7820,7 +8069,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
 
 </script>
@@ -7939,6 +8188,9 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   function create(ctx,target,mode='expanded'){
     const result=ctx.safe(target,mode,true);
     if(!result.ok||(mode==='compact'&&!ctx.safe(target).ok))return null;
+    // Hx has a conditional branch and a dedicated plan with physical volumes.
+    // Splitting the opaque node would sever its geometry from its child indices.
+    if(E.FillHeight.find(result.ast).length)return null;
     const descriptor=ctx.map.get(target),size=estimate(result.ast);
     if(!size.recommend)return {estimate:size,plan:null,mode};
     const candidates=[];
@@ -8437,7 +8689,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     }).join('');
   }
   function renderGoal() {
-    $('#goal-select').innerHTML = (model.formulas.length ? E.formulaSections(model).filter(g=>g.formulas.length).map(g=>`<optgroup label="${esc(model.formulaGroups?.length?g.name:'Mine formler')}">` + g.formulas.map(f => `<option value="saved:${esc(f.id)}" ${f.id === activeId ? 'selected' : ''}>${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>').join('') : '<option value="" selected>Vælg en formel…</option>') + '<optgroup label="Tilføj en ny formel">' + Object.entries(E.BASE_FORMULAS).map(([id,f]) => `<option value="new:${id}">${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>';
+    $('#goal-select').innerHTML = (model.formulas.length ? E.formulaSections(model).filter(g=>g.formulas.length).map(g=>`<optgroup label="${esc(model.formulaGroups?.length?g.name:'Mine formler')}">` + g.formulas.map(f => `<option value="saved:${esc(f.id)}" ${f.id === activeId ? 'selected' : ''}>${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>').join('') : '<option value="" selected>Vælg en formel…</option>') + '<optgroup label="Tilføj en ny formel"><option value="new:fillHeight">Produkthøjde i tank · Hx</option>' + Object.entries(E.BASE_FORMULAS).map(([id,f]) => `<option value="new:${id}">${esc(formulaTitle(f))} · ${esc(pretty(f.symbol))}</option>`).join('') + '</optgroup>';
   }
   function refreshOrganization(action,id,part){
     save();render(true);
@@ -8492,12 +8744,44 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const source=schoolRef(definition);
     let note=definition?.note||'';
     if (f.expression.kind === 'assembly') note = f.dimension === 'volume' ? 'Geometrisk rumfang af de valgte dele. Åbne sider ændrer ikke rumfanget; delene må ikke overlappe.' : 'Åbne flader og endeflader i samlinger er automatisk udeladt.';
-    $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div>${rearrangeControl(f)}${valueDisplayControl()}<div class="formula-display">${r.ok ? displayMath(r.ast,f.symbol,E.resultUnit(f).label) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${renderResult(ctx,f)}${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}${source?`<p class="formula-source">Skolens formelsamling · ${esc(source)}</p>`:''}`;
+    $('#formula-preview').innerHTML = `<div class="preview-header"><div><span class="eyebrow">DIN FORMEL</span><h2>${esc(f.name)}</h2></div><div class="segmented" role="group" aria-label="Udfoldning af formlen"><button data-action="expansion" data-expanded="false" aria-pressed="${!expanded}">Kort</button><button data-action="expansion" data-expanded="true" aria-pressed="${expanded}">Udfoldet</button></div></div>${rearrangeControl(f)}${valueDisplayControl()}<div class="formula-display">${r.ok ? displayMath(r.ast,f.symbol,E.resultUnit(f).label) : `<div class="error-box">${esc(r.error)}</div>`}</div><div class="preview-footer"><span>${expanded ? 'Formlerne er sat ind i hinanden' : 'Referencer vises som symboler'}</span><button class="text-button copy-button" data-action="copy-formula" ${r.ok ? '' : 'disabled'}>${icon('copy')} Kopiér formel</button></div>${renderResult(ctx,f)}${full.ok?fillHeightGuide(full.ast):''}${note ? `<p class="formula-assumption">${esc(note)}</p>` : ''}${source?`<p class="formula-source">Skolens formelsamling · ${esc(source)}</p>`:''}`;
     let steps;
     try { steps = ctx.steps(`formula:${f.id}`); } catch (_) { steps = []; }
     $('#formula-chain').innerHTML = steps.length ? `<details class="chain-details" data-detail-key="chain-${esc(f.id)}"><summary><span>Se formelkæden</span><span class="chain-count">${steps.length} ${steps.length === 1 ? 'formel' : 'formler'}</span></summary><ol class="chain-list">${steps.map(d => `<li><div class="chain-step-heading"><span>${esc(d.name)}</span><button class="text-button" data-action="inspect-reference" data-target="${esc(d.target)}">Tilpas</button></div><div class="chain-math">${formulaSummary(d.expression,d.dimension,ctx,d.symbol,d.target)}</div></li>`).join('')}</ol></details>` : '';
     if (!full.ok) { $('#symbol-guide').innerHTML = ''; return; }
     renderUnitGuide(full.ast,f);
+  }
+  function fillHeightGuide(ast){
+    const nodes=E.FillHeight.find(ast);
+    if(!nodes.length)return '';
+    return nodes.map((node,n)=>{
+      const state=E.FillHeight.analyze(node,E.evaluate);
+      const short=node.parts.map((p,i)=>E.FillHeight.shortBranch(node,i,state.parts?.[i]?.d));
+      const equation=(tree,symbol,unit)=>`<div class="fill-equation">${displayMath(tree,symbol,unit)}</div>`;
+      const steps=b=>`${equation(b.remaining,'V_rest','m³')}${equation(b.offset,'H_fyldt','m')}${b.local?equation(b.local,'h_del','m'):`<p>Find h_del mellem 0 og ${esc('H_del'+(node.parts.indexOf(b.part)+1))}, så denne ligning passer:</p>${equation(b.equation,'V_rest','m³')}<p class="field-note">Prøv en højde, beregn rumfanget, og justér højden op eller ned. Halvér intervallet mellem for lav og for høj, indtil højden er præcis nok.${b.part.type==='halfCylinder'?' Brug acos (cos⁻¹) i <strong>radianer</strong>, dvs. RAD på TI-30.':''}</p>`}${equation(b.ast,'H_x','m')}`;
+      const active=state.status==='ready'?short[state.active]:null;
+      const rows=short.map((b,i)=>`<li class="fill-part ${state.status==='ready'&&i===state.active?'fill-active':''}"><div class="fill-part-heading"><strong>${i+1}. ${esc(b.part.name)}</strong><span>${state.status==='ready'?(i<state.active?'Helt fyldt':i===state.active?(state.remaining===state.parts[i].capacity?'Fyldt til kanten':state.remaining===0?'Tom · start her':'Her ligger væskeoverfladen'):'Endnu tom'):'Del '+(i+1)}</span></div>${equation(b.capacity,'V_del'+(i+1),'m³')}${equation(b.h,'H_del'+(i+1),'m')}<details data-detail-key="fill-branch-${n}-${b.part.id}"><summary>Delvis fyldning af denne del</summary><p>Brug denne gren, når alle dele nedenunder er fulde, og restvolumen er mellem 0 og V_del${i+1}.</p>${steps(b)}</details></li>`).join('');
+      const warning=state.status==='error'?`<p class="error-box" role="status">${esc(state.error)}</p>`:state.status==='incomplete'?'<p class="fill-status" role="status">Angiv produktets volumen og tankens indvendige mål under <strong>Størrelserne i formlen</strong>. Så markeres den del, hvor væskeoverfladen ligger. Indtil da kan du bruge grenene nedenfor.</p>':`<p class="fill-status" role="status">${state.volume===0?'Tanken er tom.':state.volume>=state.total?'Tanken er helt fyldt.':'Væskeoverfladen ligger i del '+(state.active+1)+': '+esc(active.part.name)+'.'}</p>`;
+      return `<section class="fill-height-guide" aria-label="Hx · fyldning fra bunden"><h3>Hx · fra bunden og op</h3><p>Højden måles fra tankens laveste indvendige punkt. Fyld de nederste dele først, træk deres rumfang fra produktvolumen, og læg deres højder til højden i den næste del.</p><p class="field-note">${node.inverted?'I denne Hx-formel er tanken vendt på hovedet i forhold til figurvisningen.':'Rækkefølgen følger den lodrette samling i figurvisningen.'} Hx bruger netop denne samling; separate tanke tælles ikke med.</p>${warning}<ol class="fill-parts">${rows}</ol>${active?`<div class="fill-current"><h4>Delberegninger for den aktuelle fyldning</h4>${steps(active)}</div>`:''}<p class="field-note">TI-30: Beregn V_del og H_del for hver relevant del separat. Brug derefter V_rest, H_fyldt og h_del ovenfor. Formlerne kan blive for lange i én indtastning; brug hukommelsesvariable og afrund først det endelige svar. Alle deltrin her bruger m³ og m; resultatets enhed vælges nedenfor.</p><p class="field-note">Hx er geometrisk: tanken skal stå lodret og kunne holde på produktet. Åbne sider eller bunde begrænser ikke automatisk rumfanget. Indvendige skilleplader, hældning, rørforbindelser mellem separate tanke og overløb indgår ikke.</p></section>`;
+    }).join('');
+  }
+  function fillHeightCopy(ast){
+    return E.FillHeight.find(ast).map(node=>{
+      const state=E.FillHeight.analyze(node,E.evaluate);
+      const lines=['Hx: delene står i rækkefølge fra bunden. Alle deltrin bruger m og m³.'];
+      if(state.status==='error')lines.push(state.error);
+      node.parts.forEach((part,i)=>{
+        const b=E.FillHeight.shortBranch(node,i,state.parts?.[i]?.d);
+        lines.push(`${i+1}. ${part.name}`,`V_del${i+1} = ${E.plain(b.capacity,null,valueDisplay)}`,`H_del${i+1} = ${E.plain(b.h,null,valueDisplay)}`);
+        if(state.status!=='ready'||state.active===i){
+          lines.push('Når denne del fyldes (0 ≤ V_rest ≤ V_del'+(i+1)+'):', 'V_rest = '+E.plain(b.remaining,null,valueDisplay),'H_fyldt = '+E.plain(b.offset,null,valueDisplay));
+          if(b.local)lines.push('h_del = '+E.plain(b.local,null,valueDisplay));
+          else lines.push('Find 0 ≤ h_del ≤ H_del'+(i+1)+' fra: V_rest = '+E.plain(b.equation,null,valueDisplay),'Løs ved intervalhalvering; acos bruger radianer.');
+          lines.push('Hx [m] = '+E.plain(b.ast,null,valueDisplay));
+        }
+      });
+      return lines.join('\n');
+    }).join('\n\n');
   }
   function valueDisplayControl(){
     return `<div class="value-display-control"><span>Vis i formlen</span><div class="segmented" role="group" aria-label="Vis værdier, enheder eller begge">${Object.entries(VALUE_DISPLAYS).map(([mode,choice])=>`<button data-action="value-display" data-id="${mode}" aria-pressed="${valueDisplay===mode}" aria-describedby="value-display-hint">${choice.label}</button>`).join('')}</div><p id="value-display-hint">${VALUE_DISPLAYS[valueDisplay].hint}</p></div>`;
@@ -8574,10 +8858,11 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   }
   function expressionEditor(expr, dimension, path, defaultSymbol, ctx, depth = 0) {
     if (depth > 12) return '<div class="error-box">Formlen er for dyb til at blive vist.</div>';
-    const current = expr.kind === 'symbol' ? 'symbol' : expr.kind === 'assembly' ? (expr.property==='materialVolume'?'material':'assembly') : expr.kind === 'zero' ? 'zero' : expr.kind + ':' + (expr.formula || expr.target);
+    const current = expr.kind === 'symbol' ? 'symbol' : expr.kind === 'assembly' ? (expr.property==='materialVolume'?'material':'assembly') : expr.kind === 'fillHeight' ? 'fillHeight' : expr.kind === 'zero' ? 'zero' : expr.kind + ':' + (expr.formula || expr.target);
     const owner = ownerTarget(path);
     const targets = ctx.list.filter(d => d.dimension === dimension && d.target !== owner && !E.dependsOn(model,d.target,owner));
     let options = `<option value="symbol">${dimension==='countPerLength'?'Kendt antal kopper pr. længdeenhed':'Kendt størrelse'} · ${esc(pretty(defaultSymbol))}</option>`;
+    if(dimension==='length')options+='<option value="fillHeight">Hx · produkthøjde i en valgt tank</option>';
     if(dimension==='countPerLength')options+='<option value="formula:bucketCountFromSpacing">Afstand mellem kopper · N = 1 / s</option>';
     if(expr.kind==='zero')options+='<option value="zero">Ingen valgte flader · 0</option>';
     if (['volume','area'].includes(dimension)) options += `<option value="assembly">Fra beholderdelene · samlet ${dimension === 'volume' ? 'rumfang' : 'areal'}</option>`;
@@ -8593,6 +8878,10 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     else if (expr.kind === 'ref') {
       const source = ctx.map.get(expr.target);
       html += `<div class="reference-preview">${source ? formulaSummary(source.expression,source.dimension,ctx,source.symbol,source.target) : '<p class="inline-error">Vælg en ny reference.</p>'}</div>${source ? `<div class="reference-actions"><button class="text-button" data-action="inspect-reference" data-target="${esc(source.target)}">Tilpas kilde</button>${source.expression.kind !== 'symbol' ? `<button class="text-button" data-action="inline" data-path="${pathAttr(path)}" title="Indsætter en kopi af kildens formel, som du kan tilpasse her">Indsæt formlen her</button>` : ''}</div>` : ''}`;
+    } else if(expr.kind==='fillHeight'){
+      const tanks=E.components(model).map(ids=>({ids,parts:model.shapes.filter(s=>ids.includes(s.id))}));
+      const tankOptions=tanks.map(t=>`<option value="${esc(t.ids.includes(expr.shapeId)?expr.shapeId:t.ids[0])}" ${t.ids.includes(expr.shapeId)?'selected':''}>${esc(t.parts.map(s=>s.name+' ('+s.ordinal+')').join(' + '))}</option>`).join('');
+      html+=`<label class="field-label fill-tank-choice">Tank til Hx<select class="source-select" data-action="fill-tank" data-path="${pathAttr(path)}" aria-label="Vælg samlet tank til Hx"><option value="" ${expr.shapeId?'':'selected'}>Vælg en figur eller samling…</option>${expr.shapeId&&!model.shapes.some(s=>s.id===expr.shapeId)?'<option value="'+esc(expr.shapeId)+'" selected>Manglende figur · vælg en ny tank</option>':''}${tankOptions}</select></label><p class="field-note">Alle sammenføjede dele følger med. Sæt delene sammen under Figurer; separate figurer er separate tanke.</p><label class="field-label">Tankens retning<select class="source-select" data-action="fill-orientation" data-path="${pathAttr(path)}" aria-label="Tankens retning til Hx"><option value="normal" ${expr.inverted?'':'selected'}>Som i figurvisningen</option><option value="inverted" ${expr.inverted?'selected':''}>Vend hele tanken på hovedet</option></select></label><div class="input-group"><div class="input-label">${symbolHtml('V_produkt')}<span>Produktets volumen</span></div>${expressionEditor(expr.volume,'volume',[...path,'volume'],'V_produkt',ctx,depth+1)}</div><p class="field-note">Brug produktets faktiske volumen, fx fra Qᵥ · tid eller masse / densitet. Tankens samlede rumfang giver Hx for en helt fyldt tank.</p>`;
     } else if (expr.kind === 'assembly') {
       html += `<div class="reference-preview">${formulaSummary(expr,dimension,ctx,undefined,owner)}</div><p class="field-note">Følger de figurer, der er valgt som beholderdele.${dimension === 'area'||expr.property==='materialVolume' ? ' Åbne flader og endeflader i samlinger udelades automatisk.' : ''}</p>`;
     } else {
@@ -8667,7 +8956,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       return words.every(word=>/^t\d+$/.test(word)?f.source?.triangles.some(t=>t.toLowerCase()===word):haystack.includes(word));
     });
     const groups=[...new Set(formulas.map(([,f])=>f.group))];
-    $('.library-results').innerHTML=`<p class="search-count" role="status">${formulas.length} formler${query?' fundet':''}</p>`+(formulas.length?groups.map(group=>`<section class="formula-group"><h3>${esc(group)}</h3><div class="formula-grid">${formulas.filter(([,f])=>f.group===group).map(([id,f])=>`<button class="formula-card" data-action="use-formula" data-formula="${id}"><h4>${esc(f.name)}</h4>${schoolRef(f)?`<span class="school-reference">${esc(schoolRef(f))}</span>`:''}<div class="library-equation">${E.math(E.formulaAst(id),f.symbol)}</div>${f.note?`<p>${esc(f.note)}</p>`:''}<div class="formula-card-foot"><span>${esc(E.DIMENSIONS[f.dimension].name)}</span><span>Brug formel +</span></div></button>`).join('')}</div></section>`).join(''):'<p class="empty-search">Ingen formler matcher. Prøv fx T9, masse eller tryk.</p>');
+    const showHx=words.every(word=>normalize('Hx produkthøjde væskehøjde fyldehøjde højde volumen tank beholder cylinder kegle kasse firkant sammensat').includes(word));
+    $('.library-results').innerHTML=`<p class="search-count" role="status">${formulas.length+(showHx?1:0)} formler${query?' fundet':''}</p>`+(showHx?'<section class="formula-group"><h3>Fyldning af tanke</h3><div class="formula-grid"><button class="formula-card" data-action="use-formula" data-formula="fillHeight"><h4>Produkthøjde i tank (Hx)</h4><div class="library-equation">Hx = højde af fyldte dele + delvis højde</div><p>Vælg din samlede tank og produktets volumen. Finder rækkefølgen fra bunden og bruger restvolumen i næste del.</p><div class="formula-card-foot"><span>Længde</span><span>Brug formel +</span></div></button></div></section>':'')+(formulas.length?groups.map(group=>`<section class="formula-group"><h3>${esc(group)}</h3><div class="formula-grid">${formulas.filter(([,f])=>f.group===group).map(([id,f])=>`<button class="formula-card" data-action="use-formula" data-formula="${id}"><h4>${esc(f.name)}</h4>${schoolRef(f)?`<span class="school-reference">${esc(schoolRef(f))}</span>`:''}<div class="library-equation">${E.math(E.formulaAst(id),f.symbol)}</div>${f.note?`<p>${esc(f.note)}</p>`:''}<div class="formula-card-foot"><span>${esc(E.DIMENSIONS[f.dimension].name)}</span><span>Brug formel +</span></div></button>`).join('')}</div></section>`).join(''):showHx?'':'<p class="empty-search">Ingen formler matcher. Prøv fx T9, masse eller tryk.</p>');
   }
   function render(keepFocus = false) {
     const el = document.activeElement;
@@ -8757,12 +9047,12 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   }
   function formulaPicker(groupId=active()?.groupId||'') {
     const groups=[...new Set(Object.values(E.BASE_FORMULAS).map(f=>f.group))];
-    openDialog('Hvad vil du finde?','<p>Vælg en grundformel. Under Isolér en størrelse kan du bagefter vælge en anden ukendt.</p><div class="dialog-formula-list">'+groups.map(group=>`<h3>${esc(group)}</h3>${Object.entries(E.BASE_FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="dialog-formula-item" data-action="use-formula" data-formula="${id}" data-group="${esc(groupId)}"><span>${esc(formulaTitle(f))}</span><span>${esc(f.equation)}</span></button>`).join('')}`).join('')+'</div>');
+    openDialog('Hvad vil du finde?','<p>Vælg en grundformel. Under Isolér en størrelse kan du bagefter vælge en anden ukendt.</p><div class="dialog-formula-list"><button class="dialog-formula-item" data-action="use-formula" data-formula="fillHeight" data-group="'+esc(groupId)+'"><span>Produkthøjde i tank (Hx)</span><span>Fyld sammensatte figurer fra bunden</span></button>'+groups.map(group=>`<h3>${esc(group)}</h3>${Object.entries(E.BASE_FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="dialog-formula-item" data-action="use-formula" data-formula="${id}" data-group="${esc(groupId)}"><span>${esc(formulaTitle(f))}</span><span>${esc(f.equation)}</span></button>`).join('')}`).join('')+'</div>');
   }
   function addFormula(id,groupId=active()?.groupId||'') {
     if (model.formulas.length>=40) {notify('Der kan højst være 40 formler i én opsætning.');return;}
     const key=newId('formula');
-    const f=['tankMass','tankMassSurfaces'].includes(id)?E.newTankMass(model,key,id==='tankMassSurfaces'):id==='filledTankMass'?E.newFilledTankMass(model,key):E.newFormula(key,id);
+    const f=id==='fillHeight'?E.newFillHeight(key,E.components(model).length===1?model.shapes[0]?.id||'':''):['tankMass','tankMassSurfaces'].includes(id)?E.newTankMass(model,key,id==='tankMassSurfaces'):id==='filledTankMass'?E.newFilledTankMass(model,key):E.newFormula(key,id);
     if(model.formulas.some(other=>other.symbol===f.symbol)){
       const base=f.symbol.replace(/_/g,'');let n=2;
       while(model.formulas.some(other=>other.symbol===base+'_'+n))n++;
@@ -8798,7 +9088,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const f=active();if(!f)return;
     const ctx=E.context(model),r=ctx.safe('formula:'+f.id,expanded?'expanded':'compact',true);if(!r.ok)return;
     const quantities=E.variables(r.ast).map(v=>v.symbol+(quantityOwner(v)?' ('+quantityOwner(v)+')':'')+': '+(valueDisplay!=='units'&&v.inputValue!==undefined?v.inputValue.replace('.',',')+' ':'')+(v.reference?E.resultUnit(ctx.map.get(v.reference)):E.inputUnit(model,v)).label);
-    const text=f.symbol+' ['+E.resultUnit(f).label+'] = '+E.plain(r.ast,null,valueDisplay)+(quantities.length&&valueDisplay==='both'?'\n\nStørrelser og enheder:\n'+quantities.join('\n'):'');
+    const text=f.symbol+' ['+E.resultUnit(f).label+'] = '+E.plain(r.ast,null,valueDisplay)+(E.FillHeight.find(r.ast).length?'\n\n'+fillHeightCopy(r.ast):'')+(quantities.length&&valueDisplay==='both'?'\n\nStørrelser og enheder:\n'+quantities.join('\n'):'');
     try { if(!navigator.clipboard?.writeText)throw new Error('Unavailable');await navigator.clipboard.writeText(text);notify('Formlen er kopieret.'); }
     catch(_) {
       const area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();let success=false;
@@ -8821,7 +9111,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     {section:'SAMLINGER', title:'Vælg figur, ende og endestykke', target:'.join-fields', scene:'join', focus:'cylinder', body:'<p>Vælg først <strong>Cylinder</strong>, derefter <strong>Bund</strong> og til sidst <strong>Keglebund · Plan endeflade</strong>. Tryk normalt <strong>Sæt sammen</strong> for at forbinde dem.</p><p>Menuen tilbyder både eksisterende figurer og nye endestykker, fx <strong>Ny halvkugle</strong>. Kun passende, ledige samleflader kan vælges. Vi viser resultatet på næste trin.</p>'},
     {section:'SAMLINGER', title:'Se den samlede figur i 3D', target:'.solid-viewer', body:'<p>Nu sidder keglen på cylinderens bund. Træk i <strong>3D-visningen</strong> for at dreje den; brug scroll eller +/− til zoom. <strong>Skitse</strong> viser et snit med fladernes navne.</p><p>Visningen følger samlinger og åbne/lukkede flader. Den er skematisk og uden målestok.</p>'},
     {section:'SAMLINGER', title:'Fælles flader og samlede formler', target:'.assembly-totals', detail:'assembly-totals', body:'<p>Her finder du det samlede <strong>rumfang</strong> og <strong>pladeareal</strong>. Åbne flader og de to endeflader i en samling udelades automatisk fra pladearealet. <strong>Brug formel</strong> føjer summen til Mine formler.</p><p><strong>Skil ad</strong> under visningen løsner samlingen. Delene får deres egne mål og fladevalg tilbage. Sum af rumfang forudsætter, at delene ikke overlapper.</p>'},
-    {section:'FORMLER', title:'Vælg, hvad du vil finde', target:'.goal-row', body:'<p>Her vælger du hovedformlen. I eksemplet vil vi finde <strong>Fyldetid</strong>: t = V / Qᵥ.</p><p>Menuen viser både dine egne formler og muligheden for at tilføje en ny. Figurerne leverer fx rumfanget V, mens en anden formel kan levere volumenflowet Qᵥ.</p>'},
+    {section:'FORMLER', title:'Vælg, hvad du vil finde', target:'.goal-row', body:'<p>Her vælger du hovedformlen. I eksemplet vil vi finde <strong>Fyldetid</strong>: t = V / Qᵥ.</p><p>Menuen viser både dine egne formler og muligheden for at tilføje en ny. Figurerne leverer fx rumfanget V, mens en anden formel kan levere volumenflowet Qᵥ.</p><p>Vælg <strong>Produkthøjde i tank (Hx)</strong>, når du kender produktvolumen. Vælg den samlede tank i højre side. Hx følger delene fra bunden, bruger restvolumen i den næste del og viser delberegningerne.</p>'},
     {section:'FIGURER', title:'Særskilt tykkelse for sider og bund', target:'.plate-settings', scene:'parts', focus:'cylinder', detail:'plates-cylinder', body:'<p>Under <strong>Pladetykkelser</strong> vælger du en fælles sidetykkelse og eventuelt en anden tykkelse for bund, top eller en bestemt flade. Vælg <strong>Kendt størrelse</strong> for at bruge fx t_side og t_bund.</p><p>Brug <strong>Tankmasse med separate pladetykkelser</strong> i formelsamlingen. Den summerer areal gange tykkelse for de lukkede flader. Åbne og sammenføjede flader tæller ikke med.</p>'},
     {section:'OVERBLIK', title:'Sæt formlerne i rækkefølge og grupper', target:'#saved-formulas', scene:'organize', body:'<p>Brug <strong>↑ og ↓</strong> under en formel for at flytte den i sin gruppe. Dropdown-menuen flytter formlen til en anden gruppe eller <strong>Uden gruppe</strong>.</p><p><strong>Opret gruppe</strong> giver en ny gruppe. Gruppen har også flytteknapper, og overskriften folder indholdet sammen. <strong>Redigér</strong> ændrer navnet eller fjerner gruppen; formlerne bliver bevaret. Rækkefølge og grupper gemmes med opsætningen.</p>'},
     {section:'FORMLER', title:'Find formler fra formelsamlingen', target:'.formula-search', scene:'library', body:'<p>Fanen <strong>Formelsamling</strong> samler formlerne fra jeres materiale. Søg på et navn, symbol eller T-nummer, fx <strong>Pvirk</strong>, <strong>eta</strong> eller <strong>T9</strong>.</p><p>Kortene viser formlen, forudsætninger og henvisning til siden i jeres samling. Tryk <strong>Brug formel</strong> for at arbejde videre med den.</p>'},
@@ -9020,11 +9310,17 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       }catch(error){render(true);notify(error.message);}
     }else if(a==='source'){
       const path=JSON.parse(el.dataset.path),old=getAt(path);
-      const next=el.value==='symbol'?E.symbol(el.dataset.symbol):el.value==='zero'?{kind:'zero',dimension:el.dataset.dimension}:el.value==='material'?E.assembly('volume','materialVolume'):el.value==='assembly'?E.assembly(el.dataset.dimension):el.value.startsWith('formula:')?E.newExpression(el.value.slice(8)):E.ref(el.value.slice(4));
+      const next=el.value==='fillHeight'?E.fillHeight(E.components(model).length===1?model.shapes[0]?.id||'':''):el.value==='symbol'?E.symbol(el.dataset.symbol):el.value==='zero'?{kind:'zero',dimension:el.dataset.dimension}:el.value==='material'?E.assembly('volume','materialVolume'):el.value==='assembly'?E.assembly(el.dataset.dimension):el.value.startsWith('formula:')?E.newExpression(el.value.slice(8)):E.ref(el.value.slice(4));
       if(path[0]==='shapes'&&path[2]==='plateThickness'&&path.length===4){
         try{model=E.setPlateThickness(model,model.shapes[path[1]].id,path[3],next);save();render(true);}catch(error){render(true);notify(error.message);}return;
       }
       setAt(path,next);try{E.validateModel(model);save();render(true);}catch(_){setAt(path,old);render(true);notify('Formlen bliver for dyb. Tilføj en separat formel og brug en reference.');}
+    }else if(a==='fill-tank'||a==='fill-orientation'){
+      const expr=getAt(JSON.parse(el.dataset.path));
+      if(expr?.kind==='fillHeight'){
+        if(a==='fill-tank')expr.shapeId=el.value;else expr.inverted=el.value==='inverted';
+        save();render(true);
+      }
     }else if(a==='diameter-basis'){
       try{model=E.setDiameterBasis(model,el.dataset.id,el.value);save();render(true);}catch(error){render(true);notify(error.message);}
     }else if(a==='include'){E.setIncluded(model,el.dataset.id,el.checked);save();render(true);}

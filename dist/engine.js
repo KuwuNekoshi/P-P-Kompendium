@@ -1,8 +1,8 @@
 /* Symbolic composition, numeric annotations and expression evaluation. */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'));
-  else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units, Rearrange) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'),require('./fill-height.js'));
+  else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange,root.PPFillHeight);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units, Rearrange, FillHeight) {
   'use strict';
   const { SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE } = catalog;
   const BASE_FORMULAS=catalog.FORMULAS;
@@ -12,6 +12,8 @@
   const ref = target => ({ kind: 'ref', target });
   const form = (formula, args) => ({ kind: 'formula', formula, args });
   const assembly = (dimension,property) => ({ kind: 'assembly', dimension,...(property?{property}:{}) });
+  const fillHeight = (shapeId='',volume=symbol('V_produkt'),inverted=false) => ({kind:'fillHeight',shapeId,volume,inverted});
+  const newFillHeight = (id,shapeId='') => ({id,name:'Produkthøjde i tank (Hx)',symbol:'H_x',dimension:'length',expression:fillHeight(shapeId)});
   const assemblyOutput = expr => expr.property==='materialVolume'?'materialVolume':expr.dimension==='volume'?'volume':'area';
   const defaultTank = () => ({ thickness:symbol('t_plade') });
   const diameterKeys = s => Object.keys(SHAPES[s.type].inputs).filter(key=>key==='D'||key==='d');
@@ -383,6 +385,10 @@
   function references(expr, model) {
     if (expr.kind === 'ref') return [expr.target];
     if (expr.kind === 'formula') return Object.values(expr.args).flatMap(e => references(e, model));
+    if (expr.kind === 'fillHeight') {
+      const ids=component(model,expr.shapeId);
+      return [...references(expr.volume,model),...model.shapes.filter(s=>ids.includes(s.id)).flatMap(s=>[`shape:${s.id}:volume`,...Object.keys(SHAPES[s.type].inputs).map(key=>geometricInput(s,key))])];
+    }
     if (expr.kind === 'assembly') return model.shapes.filter(s => s.include).map(s => `shape:${s.id}:${assemblyOutput(expr)}`);
     return [];
   }
@@ -419,6 +425,8 @@
   }
   function expressionKey(ast) {
     ast=unwrap(ast);
+    if(ast.type==='fillHeight')return JSON.stringify(ast);
+    if(ast.type==='derived')return JSON.stringify(['derived',ast.symbol]);
     if(ast.type==='symbol')return JSON.stringify(['symbol',Units.key(ast),ast.reference||'',ast.unit||'']);
     if(ast.type==='constant')return JSON.stringify(['constant',ast.value]);
     const keys=ast.children.map(expressionKey);
@@ -491,7 +499,7 @@
     return children.length?operation('add',children):constant(0);
   }
   function simplify(ast) {
-    if(!ast.children||ast.unitConversion)return ast;
+    if(!ast.children||ast.unitConversion||ast.type==='fillHeight')return ast;
     if(ast.type==='add'&&!ast.assemblyParts)return simplifySum(ast);
     const children=ast.children.map(simplify);
     if(ast.type==='group')return group(children[0]);
@@ -537,6 +545,12 @@
           return Units.convert(variable,unit);
         }
         return expandRaw(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);
+      }
+      if(expr.kind==='fillHeight'){
+        if(dimension!=='length')throw new Error('Hx er en højde og skal bruges som en længde.');
+        // Always expand the geometry: choosing the active layer needs the actual
+        // input quantities even when the surrounding expression is in Kort.
+        return FillHeight.create(model,expr,SHAPES,geometricInput,(e,d)=>Units.reduce(simplify(expandRaw(e,d,'expanded',stack,budget,depth+1,d==='volume'?'Produktets volumen':''))));
       }
       if (expr.kind === 'assembly') {
         if (!['volume', 'area'].includes(dimension) || expr.dimension !== dimension) throw new Error('Figursummen passer ikke til størrelsen.');
@@ -608,7 +622,12 @@
     const base=greek[b]||(/^[A-Za-z]+$/.test(b)?b:'\\mathrm{'+b+'}');
     return (s.length?base+'_{'+s.join('_').replace(/[^\p{L}\p{N}]/gu,'')+'}':base)+(ast.unit?'\\,[\\text{'+ast.unit.replace(/%/g,'\\%')+'}]':'');
   }
+  function resolveFillAst(ast){
+    if(ast.type==='fillHeight')return resolveFillAst(simplify(FillHeight.presentation(ast,evaluate)));
+    return ast.children?{...ast,children:ast.children.map(resolveFillAst)}:ast;
+  }
   function displayAst(ast){
+    if(ast.type==='fillHeight')return displayAst(resolveFillAst(ast));
     if(ast.convertedInput){
       const c=ast.convertedInput;
       return {...c.variable,inputValue:ast.percentInput?percentToDecimal(c.variable.inputValue):c.value,valueUnit:c.unit,approximate:c.approximate};
@@ -620,6 +639,7 @@
     return node.children?{...node,children:node.children.map(symbolicAst)}:node;
   }
   function renderExpression(ast,format,symbolText,display='both') {
+    ast=resolveFillAst(ast);
     if(!['values','units','both'].includes(display))display='both';
     if(display!=='units'&&(!symbolText||display==='values'))ast=displayAst(ast);
     else ast=Units.reduce(symbolicAst(ast));
@@ -636,7 +656,9 @@
       }
       let body;
       const annotated=!symbolText&&node.type==='symbol'&&display==='both'&&node.inputValue!==undefined;
-      if(node.type==='symbol'){
+      if(node.type==='derived'){
+        body=linear?node.symbol:markup?mathSymbol(node.symbol):texSymbol(node);
+      }else if(node.type==='symbol'){
         if(linear&&symbolText)body=symbolText(node);
         else if(display==='units'){
           if(linear)body=node.symbol;
@@ -669,6 +691,7 @@
           }else body='\\frac{'+c[0]+'}{'+c[1]+'}';
         }
         else if(node.type==='pow')body=linear?c[0]+'^'+c[1]:markup?`<msup>${c[0]}${c[1]}</msup>`:'{'+c[0]+'}^{'+c[1]+'}';
+        else if(node.type==='acos')body=linear?'acos('+c[0]+')':markup?'<mrow><mi>acos</mi><mo>(</mo>'+c[0]+'<mo>)</mo></mrow>':'\\arccos\\left('+c[0]+'\\right)';
         else if(node.type==='sqrt')body=linear?'√('+c[0]+')':markup?`<msqrt>${c[0]}</msqrt>`:'\\sqrt{'+c[0]+'}';
         else{
           const operator={mul:'·',add:'+',sub:'−'}[node.type];
@@ -709,7 +732,11 @@
     function visit(node,depth=0){
       if(++count>20000||depth>160)throw new Error('Udtrykket er for stort til at beregne');
       let value;
-      if(node.type==='symbol'){
+      if(node.type==='fillHeight'){
+        const state=FillHeight.analyze(node,child=>({status:'ready',value:visit(child,depth+1)}));
+        if(state.status!=='ready')throw new Error(state.error||'Udfyld produktvolumen og tankens indvendige mål.');
+        value=state.value;
+      }else if(node.type==='symbol'){
         const text=parseInputValue(node.inputValue);
         if(text===null||text==='')throw new Error('En indtastet værdi er ikke et gyldigt tal');
         value=Number(text);
@@ -729,6 +756,9 @@
         }else if(node.type==='sqrt'&&c.length===1){
           if(c[0]<0)throw new Error('Kvadratroden kræver et tal, der er mindst 0');
           value=Math.sqrt(c[0]);
+        }else if(node.type==='acos'&&c.length===1){
+          if(c[0]<-1||c[0]>1)throw new Error('acos kræver en værdi mellem −1 og 1');
+          value=Math.acos(c[0]);
         }else if(node.type==='pow'&&c.length===2){
           if(c[0]===0&&c[1]<=0)throw new Error('Denne potens med 0 er ikke defineret');
           // The catalogue uses 1/3 for cube roots; Math.cbrt also handles
@@ -771,6 +801,10 @@
       if (e.kind === 'symbol') { if (!validSymbol(e.symbol)) fail('ugyldigt symbol.'); return symbol(e.symbol); }
       if (e.kind === 'zero') { if(!['area','volume'].includes(dimension)||e.dimension!==dimension)fail('ugyldigt nulareal eller nulrumfang.');return {kind:'zero',dimension}; }
       if (e.kind === 'ref') { if (!str(e.target,160)) fail('ugyldig reference.'); return ref(e.target); }
+      if(e.kind==='fillHeight'){
+        if(dimension!=='length'||typeof e.shapeId!=='string'||e.shapeId.length>64||(e.shapeId&&!/^[a-zA-Z0-9_-]+$/.test(e.shapeId))||(e.inverted!==undefined&&typeof e.inverted!=='boolean'))fail('ugyldig Hx-tank.');
+        return fillHeight(e.shapeId,cleanExpr(e.volume,'volume',depth+1),!!e.inverted);
+      }
       if (e.kind === 'assembly') { if (!['volume','area'].includes(dimension) || e.dimension !== dimension || (e.property!==undefined&&(e.property!=='materialVolume'||dimension!=='volume'))) fail('ugyldig figursum.'); return assembly(dimension,e.property); }
       const f = own(FORMULAS,e.formula) && FORMULAS[e.formula];
       if (e.kind !== 'formula' || !f || f.dimension !== dimension) fail('formlen passer ikke til størrelsen.');
@@ -869,6 +903,7 @@
     const map = new Map(descriptors(model).map(d=>[d.target,d]));
     function check(e,dimension) {
       if (e.kind === 'ref' && map.has(e.target) && map.get(e.target).dimension !== dimension) fail('en reference har forkert størrelse.');
+      if(e.kind==='fillHeight')check(e.volume,'volume');
       if (e.kind === 'formula') for (const [k,a] of Object.entries(FORMULAS[e.formula].args)) check(e.args[k],a.dimension);
     }
     for (const d of map.values()) check(d.expression,d.dimension);
@@ -884,6 +919,7 @@
         for(const field of ['inputUnits','inputValues'])if(old[field]&&own(old[field],legacy))model[field][key]=old[field][legacy];
       }
       function migrateExpression(expr,dimension,scope){
+        if(expr.kind==='fillHeight')migrateExpression(expr.volume,'volume',scope);
         if(expr.kind==='symbol')migrateSymbol(expr.symbol,dimension,scope);
         if(expr.kind==='formula')for(const [key,arg]of Object.entries(FORMULAS[expr.formula].args))migrateExpression(expr.args[key],arg.dimension,scope);
       }
@@ -908,5 +944,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });

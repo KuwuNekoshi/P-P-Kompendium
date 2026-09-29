@@ -40,6 +40,28 @@ Formlerne viser **kun nødvendige parenteser**, både i MathML-visningen, kopier
 
 Regnerækkefølgen bestemmer, hvor parenteserne bevares: `a − (b + c)`, `a / (b · c)` og `(D − 2 · t)^2` beholder dem. En brøkstreg eller rodstreg afgrænser allerede sit indhold på skærmen og i LaTeX, så der vises ingen ekstra parenteser omkring hele tælleren, nævneren eller rodudtrykket. Den kopierede tekst bruger de parenteser, der er nødvendige ved lineær indtastning. Figursummer og enhedsomregninger beholder deres betydning, og gemte opsætninger ændres ikke.
 
+### Produkthøjde i tank (Hx)
+
+Vælg **Produkthøjde i tank (Hx)** i formelvælgeren, eller søg efter **Hx** i formelsamlingen.
+
+1. Sæt tankens dele sammen under **Figurer**. Samlingen skal være lodret, som i figurvisningen.
+2. Vælg tanken i **Tank til Hx**. Valget omfatter alle sammenføjede dele; separate tanke holdes adskilt.
+3. Angiv **Produktets volumen**, enten som kendt størrelse, indsat formel eller reference — fx volumen fra flow og tid eller masse og densitet.
+4. Indtast produktvolumen og tankens mål under **Størrelserne i formlen**, og vælg opgavens enheder. Indvendig diameter bruges automatisk, også hvis opgaven angiver udvendig diameter og godstykkelse.
+5. Følg delberegningerne fra bunden: beregn delenes rumfang, træk de helt fyldte deles rumfang fra produktvolumen, find højden i den aktuelle del, og læg de fyldte deles højder til.
+
+Når alle nødvendige værdier er angivet, vælges den aktuelle del automatisk. Uden tal kan de enkelte grene stadig læses som symbolske formler. Delene nummereres nedefra i Hx-vejledningen; `V_del1` og `H_del1` er den nederste dels rumfang og højde. Deltrinene bruger m³ og m. Slutformlen følger **Resultatets enhed**. **Kopiér formel** medtager også delberegninger og definitionen af en eventuel ukendt delhøjde.
+
+Eksempel med en keglebund under en cylinder: Før keglen er fyldt, bruges `Hx = h_kegle · (V_produkt / V_kegle)^(1/3)`. Derefter bruges `Hx = h_kegle + (V_produkt − V_kegle) / A_cylinder`. Overskydende volumen bruges dermed kun i den næste del.
+
+Alle ti figurtyper har fyldeprofiler: cylinder, rør, kasse, kegle, keglestub, kugle, halvkugle, halvcylinder, V-bund og pyramide. **Vend hele tanken på hovedet** vender både rækkefølge og profiler i Hx-formlen; figurvisningen ændres ikke. En halvkugle følger også sin orientering som kuppel eller bund.
+
+Kugle, halvkugle og halvcylinder har en ligning for rumfang som funktion af delhøjden. Vejledningen viser denne ligning og intervalhalvering til TI-30. Halvcylinderens `acos` (cos⁻¹) skal bruge **RAD**, ikke grader. Beregn hver del separat, gem mellemresultater i hukommelsen, og afrund først det endelige svar. Formelvisningen og de gemte input ændres ikke af mellemregningernes afrunding.
+
+Hx måles fra tankens laveste indvendige punkt. Modellen forudsætter én lodret tank, som kan holde på produktet. Åbne sider/bunde, overløb, indvendige skilleplader, en hældende tank og rørforbundne separate tanke indgår ikke i fyldeprofilen. Negative produktvolumener, ugyldige mål og volumen over tankens samlede kapacitet giver en forklaring.
+
+De buede fyldeprofiler følger formlerne for [kuglekalot](https://mathworld.wolfram.com/SphericalCap.html) og [cirkelsegment](https://mathworld.wolfram.com/CircularSegment.html). Kildelinkene kræver internet; selve kompendiet bruger ingen netværksforbindelse.
+
 ### Rækkefølge og grupper
 
 Under **Mine formler** i venstre side kan du bruge **↑ og ↓** under hver formel til at flytte den op eller ned. Når formlen ligger i en gruppe, flytter pilene inden for den gruppe. Første og sidste plads har tydeligt deaktiverede pile.
@@ -290,6 +312,7 @@ npm run check
 - `dist/units.js`: enheder, eksakte omregningsfaktorer og symbolske temperaturforskydninger.
 - `dist/rearrange.js`: symbolske omskrivninger, rodvalg, geometriske specialtilfælde og fuld dækningsoversigt over grundformlernes størrelser.
 - `dist/engine.js`: referencegraf, substitution, omskrivning med bevarede enheder og input, MathML, tekstformat, LaTeX og validering.
+- `dist/fill-height.js`: bund-til-top-rækkefølge, delvise fyldeprofiler og Hx-grene.
 - `dist/calculator-guide.js`: vejledende TI-30XS-længdeskøn og symbolske delberegninger.
 - `dist/geometry.js`: placering af sammenføjede figurer og klikbare snitskitser.
 - `dist/solid-preview.js`: 3D-geometri, perspektiv, lys samt rotation og zoom på canvas.
@@ -314,3 +337,5 @@ Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler o
 GitHub-workflowen **Udgiv offline-kompendium** kører ved ændringer i `package.json` på `main` og kan også startes manuelt. Den kører testene, bygger offlinefilen og kontrollerer, at den matcher den indcheckede `index.html`. Versionsnummeret i `package.json` og den tilsvarende tekst i `releases/vX.Y.Z.md` bruges til en GitHub Release med `index.html` som asset. Udgivelsen peger på det præcise commit; allerede udgivne versioner ændres ikke.
 
 Kontroller for forhåndsomregning dækker alle enhedsfamilier, periodiske decimaler og forkortede TI-30-udtryk. Fladetykkelser testes med åbne/lukkede flader, samlinger, separate diametermål, alle ti figurer og gem/åbn. Ligevægt kontrolleres med blandede enheder og en samlet referencekæde for kassen og keglen fra opgaven.
+
+Hx-kontroller dækker alle ti profiler i begge retninger, overgange mellem dele, tom/fuld tank, små fyldninger, keglestubbens cylindertilfælde, delte mål, enheder, referencer, inputscopes, fejltilfælde, gem/åbn og de nye brugerfladekontroller.

@@ -150,3 +150,14 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .ungrouped-heading{font-size:.75rem;font-weight:500;color:var(--muted);margin:9px 5px 5px}
 .group-delete{color:var(--error);margin-top:12px}
 @media(max-width:640px){.catalog .section-label{display:flex;margin-top:20px}.catalog .section-label h2{margin-bottom:0}.saved-formulas{display:flex;max-height:340px;overflow-y:auto;padding:3px}.formula-order-controls select{font-size:.8rem}.order-button{min-height:34px;flex-basis:34px}.saved-group{flex-shrink:0}.create-formula-group{margin-bottom:9px}}
+
+/* Hx is a sequence of physical fill layers, with short reusable SI steps. */
+.fill-height-guide{border-top:1px solid var(--border);padding:24px;line-height:1.7;font-size:.875rem;min-width:0}
+.fill-height-guide h3{font-size:1.05rem;margin:0 0 12px}.fill-height-guide h4{font-size:.95rem;margin:0 0 12px}
+.fill-height-guide p{margin:10px 0}.fill-status{padding:12px 15px;background:var(--soft);border-radius:7px}
+.fill-parts{list-style:none;padding:0;margin:18px 0;display:grid;gap:12px}.fill-part{border:1px solid var(--border);border-radius:8px;padding:16px;min-width:0}
+.fill-part.fill-active{border-color:var(--blue);background:var(--blue-soft)}.fill-part-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.fill-part-heading span{font-size:.75rem;color:var(--muted)}
+.fill-equation{max-width:100%;overflow-x:auto;padding:12px 3px}.fill-equation math{font-size:1.1rem;min-width:min-content}
+.fill-part summary{cursor:pointer;margin-top:10px;font-size:.8rem;color:var(--blue-ink)}.fill-current{padding:18px;border:1px solid var(--border);border-radius:8px;margin:20px 0;background:var(--soft)}
+.fill-tank-choice{margin-top:18px}.fill-height-guide .field-note{font-size:.78rem}
+@media(max-width:650px){.fill-height-guide{padding:16px}.fill-part,.fill-current{padding:12px}.fill-equation math{font-size:1rem}}
