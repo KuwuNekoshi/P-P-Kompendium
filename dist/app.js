@@ -200,19 +200,27 @@
     else if(result.status==='error')body=`<p class="inline-error">${esc(result.error)}</p>`;
     else{
       const number=formatResultValue(result.value);
-      body=`<output class="result-value">${symbolHtml(f.symbol)}<span>=</span><strong>${esc(number)}</strong><span>${esc(E.resultUnit(f).label)}</span></output><p class="result-note">3 decimaler · meget små tal vises med ekstra decimaler · følg formlens forudsætninger</p>`;
+      body=`<output class="result-value">${symbolHtml(f.symbol)}<span>=</span><strong>${esc(number)}</strong><span>${esc(E.resultUnit(f).label)}</span></output><p class="result-note">3 cifre fra første ikke-nul efter kommaet · kun resultatet afrundes · følg formlens forudsætninger</p>`;
     }
     return `<section class="result-panel" aria-label="Beregnet resultat"><div class="result-heading"><span>Resultat</span><button class="text-button" data-action="hide-result">Skjul</button></div>${body}</section>`;
   }
   function formatResultValue(value){
-    if(value!==0&&Math.abs(value)<.001){
-      // Keep four significant digits for tiny values, but expand the exponent
-      // so the decimal is readable and a nonzero volume never becomes zero.
-      const [coefficient,exponent]=Math.abs(value).toExponential(3).split('e');
-      const digits=coefficient.replace('.',''),fraction='0'.repeat(-Number(exponent)-1)+digits;
-      return (value<0?'-':'')+'0,'+fraction.replace(/0+$/,'');
-    }
-    return new Intl.NumberFormat('da-DK',{minimumFractionDigits:3,maximumFractionDigits:3,useGrouping:false,notation:'standard'}).format(value);
+    // The requested precision counts three digits in the fractional part,
+    // starting at its first nonzero digit: 2.003234 -> 2.00323. Expand the
+    // shortest decimal representation before rounding, avoiding binary scaling,
+    // exponent notation and the fraction-digit limits of Intl/toFixed.
+    const [coefficient,exponent='0']=Math.abs(value).toString().split('e');
+    const [whole,tail='']=coefficient.split('.'),digits=whole+tail,point=whole.length+Number(exponent);
+    const integer=point<=0?'0':digits.slice(0,point)+'0'.repeat(Math.max(0,point-digits.length));
+    const fraction=point<=0?'0'.repeat(-point)+digits:digits.slice(point);
+    const places=Math.max(0,fraction.search(/[1-9]/))+3;
+    let rounded=BigInt(integer+fraction.slice(0,places).padEnd(places,'0'));
+    if(fraction[places]>='5')rounded+=1n;
+    const text=rounded.toString().padStart(places+1,'0');
+    const resultWhole=text.slice(0,-places),resultFraction=text.slice(-places);
+    // A carry can move the first nonzero digit left (0.009999 -> 0.0100).
+    const resultPlaces=Math.max(0,resultFraction.search(/[1-9]/))+3;
+    return (value<0?'-':'')+resultWhole+','+resultFraction.slice(0,resultPlaces);
   }
   function renderCalculatorGuide(ctx,f){
     const host=$('#calculator-guide'),G=window.PPCalculatorGuide;

@@ -49,17 +49,17 @@ test('wrong order, repeats, input fields, composition, shortcuts, dialogs and tu
   h.sequence();assert.equal(h.scope.resultVisible,true);
 });
 
-test('result panel expands references, uses the selected unit and rounds only the final display to three decimals',()=>{
+test('result panel expands references, uses the selected unit and rounds only the final display from the first nonzero fractional digit',()=>{
   const h=harness(),m={version:5,inputUnits:{},inputValues:{'D:length':'500','n:rotationRate':'120'},title:'Visning',tank:E.defaultTank(),shapes:[],connections:[],formulas:[E.newFormula('speed','beltSpeed')]};
   m.inputUnits={'D:length':'mm','n:rotationRate':'rpm'};m.formulas[0].resultUnit='m_min';
   assert.equal(h.scope.renderResult(E.context(m),m.formulas[0]),'');
   h.sequence();const output=h.scope.renderResult(E.context(m),m.formulas[0]);
   assert.match(output,/<strong>188,496<\/strong>/);assert.match(output,/>m\/min<\/span>/);
-  assert.match(output,/3 decimaler/);
+  assert.match(output,/3 cifre fra første ikke-nul efter kommaet/);
   const fake={safe:(target,mode,asResult)=>{assert.equal(mode,'expanded');assert.equal(asResult,true);return {ok:true,ast:{type:'constant',value:'50'}};}};
   assert.match(h.scope.renderResult(fake,m.formulas[0]),/<strong>50,000<\/strong>/);
   fake.safe=()=>({ok:true,ast:{type:'constant',value:'0.000000123456'}});
-  assert.match(h.scope.renderResult(fake,m.formulas[0]),/<strong>0,0000001235<\/strong>/);
+  assert.match(h.scope.renderResult(fake,m.formulas[0]),/<strong>0,000000123<\/strong>/);
 });
 
 test('missing values, invalid operations and broken references replace the previous output',()=>{
@@ -73,7 +73,36 @@ test('missing values, invalid operations and broken references replace the previ
 test('ordinary decimal result formatting keeps tiny volumes visible without E notation',()=>{
   const {scope}=harness();
   const example=.15*.07*.05+(Math.PI/8)*.07**2*.15;
-  for(const [value,expected]of [[example,'0,0008136'],[-example,'-0,0008136'],[0,'0,000'],[50,'50,000'],[188.495559,'188,496'],[.00099999,'0,001'],[1e-24,'0,'+'0'.repeat(23)+'1'],[1e21,'1000000000000000000000,000']]){
+  for(const [value,expected]of [[example,'0,000814'],[-example,'-0,000814'],[0,'0,000'],[50,'50,000'],[188.495559,'188,496'],[.00099999,'0,00100'],[1e-24,'0,'+'0'.repeat(23)+'100'],[1e21,'1000000000000000000000,000']]){
     const text=scope.formatResultValue(value);assert.equal(text,expected);assert(!/[eE]/.test(text));
   }
+});
+
+
+test('result precision skips leading fractional zeros, counts interior zeros and handles carries',()=>{
+  const {scope}=harness();
+  for(const [value,expected]of [
+    [2.003234,'2,00323'],[2.003235,'2,00324'],[-2.003234,'-2,00323'],
+    [0.000123456,'0,000123'],[0.000123556,'0,000124'],
+    [2.0300234,'2,0300'],[2.1000234,'2,100'],[2.00010049,'2,000100'],
+    [2.00099999,'2,00100'],[2.09999,'2,100'],[0.0099999,'0,0100'],
+    [1.9995,'2,000'],[-1.9995,'-2,000'],[0.9995,'1,000'],[-0,'0,000'],
+    [999.9995,'1000,000'],[Number.MIN_VALUE,'0,'+'0'.repeat(323)+'500']
+  ])assert.equal(scope.formatResultValue(value),expected,String(value));
+  const large=scope.formatResultValue(Number.MAX_VALUE);assert(!/[eE]/.test(large));assert(large.endsWith(',000'));
+});
+
+test('display rounding never alters formula values or later reference calculations',()=>{
+  const h=harness();h.sequence();
+  const m={version:6,title:'Precision',inputUnits:{},inputValues:{'formula:source:x:length':'2.003234','formula:next:L:length':'1000'},tank:E.defaultTank(),shapes:[],connections:[],formulas:[
+    {id:'source',name:'Source',symbol:'B',dimension:'length',expression:E.symbol('x')},
+    {...E.newFormula('next','rectangleArea'),expression:E.form('rectangleArea',{B:E.ref('formula:source'),L:E.symbol('L')})}
+  ]};
+  const before=JSON.stringify(m),ctx=E.context(m),source=ctx.target('formula:source');
+  assert.match(h.scope.renderResult(ctx,m.formulas[0]),/<strong>2,00323<\/strong>/);
+  assert.equal(E.plain(source,null,'values'),'2,003234');
+  assert.equal(E.evaluate(source).value,2.003234);
+  assert(Math.abs(E.evaluate(ctx.target('formula:next')).value-2003.234)<1e-10);
+  assert.match(h.scope.renderResult(ctx,m.formulas[1]),/<strong>2003,234<\/strong>/);
+  assert.equal(JSON.stringify(m),before);
 });
