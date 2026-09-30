@@ -16,6 +16,19 @@ Du kan også hente hele projektet:
 
 **Gem opsætning** henter en `.pp.json`-fil med dine figurer og valg. Brug **Åbn opsætning** til at åbne den igen. Opsætningen huskes også lokalt i browseren, når browseren tillader det. Gem som fil, før du flytter til en anden computer eller rydder browserdata.
 
+## Standardenheder
+
+Nye størrelser og resultater starter med disse enheder:
+
+| Størrelse | Standard |
+| --- | --- |
+| Længde, diameter, højde og tykkelse | mm |
+| Omdrejningstal | omdr./min |
+| Volumenflow, Qv | m³/h |
+| Masseflow, Qm | ton/h (t/h) |
+
+Du kan altid ændre enhederne i dropdown-menuerne. Valgene gælder også nye figurer, indsatte underformler og egne formler. Beregningernes SI-grundlag er uændret; omregninger håndteres automatisk. Eksisterende opsætninger beholder deres enheder, også når en tidligere standardenhed ikke var gemt udtrykkeligt, så gamle tal ikke ændrer betydning.
+
 ## Egne formler og beregning af delmål
 
 Vælg **Tilføj formel → Egen formel**. Under **Redigér udtryk og resultat** vælger du resultatets symbol og størrelse og skriver højresiden, fx:

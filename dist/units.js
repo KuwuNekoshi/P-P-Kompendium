@@ -66,6 +66,9 @@
     return units[dimension];
   }
   const base=dimension=>choices(dimension)[0];
+  // Entry/display preferences are separate from the SI basis of the equations.
+  const defaults=Object.freeze({length:'mm',rotationRate:'rpm',flow:'m3_h',massFlow:'ton_h'});
+  const preferred=dimension=>get(dimension,defaults[dimension]||base(dimension).id);
   function get(dimension,id){
     const unit=choices(dimension).find(u=>u.id===id);
     if(!unit)throw new Error('Enheden passer ikke til denne størrelse.');
@@ -194,5 +197,5 @@
     if(!inverse&&unit.offset!=='0')parts.push('+ '+format(unit.offset));
     return parts.join(' · derefter ')||'Samme tal';
   }
-  return {choices,base,get,ratio,combine,withPart,key,convert,convertedValue,reduce,hint};
+  return {choices,base,preferred,get,ratio,combine,withPart,key,convert,convertedValue,reduce,hint};
 });

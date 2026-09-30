@@ -13,7 +13,7 @@
   const $ = selector => document.querySelector(selector);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const pathAttr = p => esc(JSON.stringify(p));
-  let model = E.example(), activeId = 'time', selected = { type:'formula', id:'time' };
+  let model = E.initializeUnitChoices(E.example()), activeId = 'time', selected = { type:'formula', id:'time' };
   let view = 'builder', expanded = true, uid = 0, toastTimer, pending = null, dialogOrigin = null, notice = '', joinDraft = null;
   let geometryView='3d',preview3D=null,previewPose=null;
   let tutorial = null;
@@ -22,7 +22,7 @@
   let valueDrafts = new Map();
   try {
     const saved = localStorage.getItem(STORAGE);
-    if (saved) { model = E.validateModel(JSON.parse(saved)); activeId = model.formulas.at(-1)?.id || null; selected = activeId ? { type:'formula',id:activeId } : null; }
+    if (saved) { model = E.initializeUnitChoices(E.validateModel(JSON.parse(saved)),false); activeId = model.formulas.at(-1)?.id || null; selected = activeId ? { type:'formula',id:activeId } : null; }
   } catch (_) { notice = 'Den gemte opsætning kunne ikke åbnes. Bassin-eksemplet er indlæst.'; }
   let theme = 'light';
   try { theme = localStorage.getItem(THEME) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (_) { /* Storage is optional. */ }
@@ -66,6 +66,7 @@
   }
   function save() {
     if (tutorial) return;
+    E.initializeUnitChoices(model);
     try { localStorage.setItem(STORAGE,JSON.stringify(model)); $('#save-status').textContent = 'Gemt på denne computer'; }
     catch (_) { $('#save-status').textContent = 'Gem opsætningen som fil'; }
   }
@@ -273,7 +274,7 @@
       const value=valueDrafts.get(key)??E.inputValue(model,v),invalid=E.parseInputValue(value)===null;
       const converted=E.Units.convertedValue(value,unit);
       return `<div><dt>${symbolHtml(v.symbol)}<span>${esc(v.label||E.DIMENSIONS[v.dimension].name)}</span>${owner?`<small class="quantity-owner">${esc(owner)}</small>`:''}</dt><dd><div class="value-entry"><label class="value-field"><span>Tal (valgfrit)</span><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="32" data-action="input-value" data-id="${esc(key)}" value="${esc(value)}" placeholder="${esc(pretty(v.symbol))}" aria-label="${esc('Tal for '+v.symbol+' i '+unit.label+' (valgfrit)'+(owner?' · '+owner:''))}" aria-invalid="${invalid}" aria-describedby="value-input-help value-error-${i}"></label><button class="text-button clear-value" data-action="clear-value" data-id="${esc(key)}" aria-label="${esc('Ryd tallet for '+v.symbol+' og vis symbolet igen')}" ${value===''?'disabled':''}>Ryd</button></div><p class="value-error" id="value-error-${i}" ${invalid?'':'hidden'}>Skriv ét tal med komma eller punktum, fx −2,5. Ufuldstændige tal indsættes ikke.</p><div class="unit-pair">${unitSelector(v.dimension,unit,'input-unit',key,v.symbol,owner)}<span class="unit-target"><span aria-hidden="true">→</span> SI: ${esc(expected.label)}</span></div><span class="unit-operation">${converted?'I formlen: '+esc(value)+' '+esc(unit.label)+' → '+(converted.approximate?'≈ ':'')+esc((unit.id==='percent'?E.percentToDecimal(value):converted.value).replace('.',','))+' '+esc(expected.label):'SI-reference: '+esc(E.Units.hint(unit))}</span></dd></div>`;
-    }).join('')}</dl><div class="result-unit-row"><div><label for="result-unit">Resultatets enhed</label><p>${symbolHtml(f.symbol)}<span>Vælg enheden for svaret</span></p></div><div><div class="unit-pair"><span class="unit-target">SI: ${esc(base.label)} <span aria-hidden="true">→</span></span>${unitSelector(f.dimension,output,'result-unit',f.id)}</div><span class="unit-operation">SI-reference: ${esc(E.Units.hint(output,'fromBase'))}</span></div></div><p class="unit-footnote">De små enheds- og symbolmærker forklarer tallet og skal ikke tastes på lommeregneren. Følg den viste formel uden ekstra omregning. Periodiske decimaltal vises med op til 16 betydende cifre og markeres med ≈ i omregningslinjen; den oprindelige værdi og præcise omregningsfaktor bevares. Resultatenhedens omregning står fortsat sidst i formlen. Hver selvstændig formel og figur har egne tal og inputenheder. Indsatte underformler deler værdier inden for samme formel; referencer følger deres kilde. Skifter du enhed, beholdes det indtastede tal. Tal og enhedsvalg gemmes med opsætningen.</p>`;
+    }).join('')}</dl><div class="result-unit-row"><div><label for="result-unit">Resultatets enhed</label><p>${symbolHtml(f.symbol)}<span>Vælg enheden for svaret</span></p></div><div><div class="unit-pair"><span class="unit-target">SI: ${esc(base.label)} <span aria-hidden="true">→</span></span>${unitSelector(f.dimension,output,'result-unit',f.id)}</div><span class="unit-operation">SI-reference: ${esc(E.Units.hint(output,'fromBase'))}</span></div></div><p class="unit-footnote">Nye størrelser starter i mm, omdr./min, m³/h og ton/h, hvor det passer. Du kan altid vælge en anden enhed. De små enheds- og symbolmærker forklarer tallet og skal ikke tastes på lommeregneren. Følg den viste formel uden ekstra omregning. Periodiske decimaltal vises med op til 16 betydende cifre og markeres med ≈ i omregningslinjen; den oprindelige værdi og præcise omregningsfaktor bevares. Resultatenhedens omregning står fortsat sidst i formlen. Hver selvstændig formel og figur har egne tal og inputenheder. Indsatte underformler deler værdier inden for samme formel; referencer følger deres kilde. Skifter du enhed, beholdes det indtastede tal. Tal og enhedsvalg gemmes med opsætningen.</p>`;
   }
   function expressionEditor(expr, dimension, path, defaultSymbol, ctx, depth = 0) {
     if (depth > 12) return '<div class="error-box">Formlen er for dyb til at blive vist.</div>';
@@ -608,12 +609,13 @@
     }
     activeId = 'time';
     if(step.scene==='numbers'){
-      model={version:6,inputUnits:{},inputValues:{'formula:area:B:length':'50','formula:area:L:length':'30'},title:'Introduktion · tal i formlen',tank:E.defaultTank(),shapes:[],connections:[],formulas:[E.newFormula('area','rectangleArea')]};
+      model={version:6,inputUnits:{'formula:area:B:length':'m','formula:area:L:length':'m'},inputValues:{'formula:area:B:length':'50','formula:area:L:length':'30'},title:'Introduktion · tal i formlen',tank:E.defaultTank(),shapes:[],connections:[],formulas:[E.newFormula('area','rectangleArea')]};
       activeId='area';
     }
     if(step.scene==='custom'){
       const f=E.newCustomFormula('own');f.expression=E.customExpression('h_cylinder + h_kegle','length',{h_cylinder:{dimension:'length',expression:E.ref('shape:cylinder:input:h')},h_kegle:{dimension:'length',expression:E.ref('shape:cone:input:h')}});model.formulas.push(f);activeId='own';
     }
+    E.initializeUnitChoices(model);
     selected = step.focus ? {type:'shape',id:step.focus} : {type:'formula',id:activeId};
     expanded = true; geometryView = '3d'; libraryQuery = step.scene === 'library' ? 'Pvirk' : '';
     changeView(step.scene === 'library' ? 'library' : 'builder');
@@ -763,7 +765,7 @@
       const key=el.dataset.id,variable={symbol:el.dataset.symbol,dimension:el.dataset.dimension,scope:key.split(':').slice(0,-2).join(':')};
       const unit=a==='input-unit-part'?E.Units.withPart(variable.dimension,E.inputUnit(model,variable).id,el.dataset.part,el.value):E.Units.get(variable.dimension,el.value);
       model.inputUnits||={};
-      if(unit.id===E.Units.base(variable.dimension).id)delete model.inputUnits[key];else model.inputUnits[key]=unit.id;
+      model.inputUnits[key]=unit.id;
       expanded=true;save();render(true);
     }else if(a==='result-unit'||a==='result-unit-part'){
       const f=model.formulas.find(f=>f.id===el.dataset.id);
@@ -841,7 +843,7 @@
   $('#file-input').addEventListener('change',async event=>{
     const file=event.target.files[0];event.target.value='';if(!file)return;
     if(file.size>1000000){notify('Filen er for stor. Maksimum er 1 MB.');return;}
-    try{const candidate=E.validateModel(JSON.parse(await file.text()));replaceSetup(candidate,'Åbn '+candidate.title+'?');}
+    try{const candidate=E.initializeUnitChoices(E.validateModel(JSON.parse(await file.text())),false);replaceSetup(candidate,'Åbn '+candidate.title+'?');}
     catch(error){openDialog('Opsætningen kunne ikke åbnes',`<p>${esc(error instanceof SyntaxError?'Filen er ikke gyldig JSON. Vælg en fil gemt fra kompendiet.':error.message)}</p>`);}
   });
   $('#app-dialog').addEventListener('cancel',()=>{pending=null;joinDraft=null;});

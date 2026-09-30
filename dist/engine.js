@@ -53,6 +53,40 @@
       if(!own(model[field],next))model[field][next]=value;
     }
   }
+  // Materialize the choices on quantities rather than changing the SI
+  // fallback. Imported setups freeze their old implicit SI units first, so
+  // existing numbers and reference results retain their original meaning.
+  function initializeUnitChoices(model,useDefaults=true){
+    model.inputUnits||={};
+    const choose=dimension=>useDefaults?Units.preferred(dimension):Units.base(dimension);
+    function visit(expr,dimension,scope){
+      if(expr.kind==='symbol'){
+        if(Units.preferred(dimension).id===Units.base(dimension).id)return;
+        const key=Units.key({symbol:expr.symbol,dimension,scope});
+        if(!own(model.inputUnits,key))model.inputUnits[key]=choose(dimension).id;
+      }else if(expr.kind==='formula'){
+        for(const [name,arg]of Object.entries(FORMULAS[expr.formula].args))visit(expr.args[name],arg.dimension,scope);
+      }else if(expr.kind==='custom'){
+        for(const arg of Object.values(expr.args))visit(arg.expression,arg.dimension,scope);
+      }else if(expr.kind==='isolatedMeasure'){
+        visit(expr.source,expr.sourceDimension,scope);visit(expr.given,expr.sourceDimension,scope);
+      }else if(expr.kind==='fillHeight')visit(expr.volume,'volume',scope);
+      // References and assemblies keep the source owner's explicitly stored
+      // units. Walk each owner separately, including currently hidden inputs.
+    }
+    visit(model.tank.thickness,'length','tank:tank');
+    for(const s of model.shapes){
+      const scope='shape:'+s.id;
+      for(const [key,arg]of Object.entries(SHAPES[s.type].inputs))visit(s.inputs[key],arg.dimension,scope);
+      if(s.diameter)visit(s.diameter.thickness,'length',scope);
+      for(const expr of Object.values(s.plateThickness||{}))visit(expr,'length',scope);
+    }
+    for(const f of model.formulas){
+      visit(f.expression,f.dimension,'formula:'+f.id);
+      if(f.resultUnit===undefined&&Units.preferred(f.dimension).id!==Units.base(f.dimension).id)f.resultUnit=choose(f.dimension).id;
+    }
+    return model;
+  }
   const resultUnit = formula => Units.get(formula.dimension,formula.resultUnit || Units.base(formula.dimension).id);
   const esc = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
@@ -1066,5 +1100,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { initializeUnitChoices, CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
