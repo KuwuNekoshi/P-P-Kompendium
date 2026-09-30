@@ -62,6 +62,30 @@ Hx måles fra tankens laveste indvendige punkt. Modellen forudsætter én lodret
 
 De buede fyldeprofiler følger formlerne for [kuglekalot](https://mathworld.wolfram.com/SphericalCap.html) og [cirkelsegment](https://mathworld.wolfram.com/CircularSegment.html). Kildelinkene kræver internet; selve kompendiet bruger ingen netværksforbindelse.
 
+### Isolér et mål i en samlet figur
+
+Tryk **Isolér højde, bredde eller længde** under figurvisningen, eller vælg **Mål i samlet figur** i formelvælgeren. Funktionen findes også ved at søge på fx **isolér bredde** i formelsamlingen.
+
+1. Vælg, om det kendte totalmål er **samlet rumfang** eller **samlet pladeareal**.
+2. Under **Hvilke figurer?** vælger du én sammenføjet figur eller alle valgte beholderdele. Separate figurer holdes uden for en specifikt valgt samling.
+3. Vælg det ukendte mål, fx kassens højde, længde, bredde eller en diameter. Navnet viser, hvilken del målet tilhører. Mål, der deles via en samling, står kun én gang.
+4. Angiv det kendte samlede rumfang eller areal som symbol, formel eller reference. Det skal være oplyst uafhængigt af det mål, du vil finde.
+5. Skriv totalmålet og de øvrige kendte mål under **Størrelserne i formlen**, og vælg deres enheder. Den søgte størrelse vises ikke som input; et tidligere indtastet tal for den bruges ikke i løsningen.
+
+På en gemt rumfangs- eller arealformel kan du også bruge **Isolér et mål i figurerne** over formlen. Der oprettes en ny formel i samme gruppe. Den oprindelige figurformel bevares som kilde, og de øvrige mål bliver ved med at følge deres referencer. Resultatet kan bruges i andre formler. Den isolerede formel skriver ikke et mål tilbage på sin egen kildefigur.
+
+Eksempel: En kasse med længde L, bredde B og kassehøjde h har en halvcylinderbund med diameter B og samme længde L. Da gælder:
+
+`V_total = L · B · h + (π / 8) · B² · L`
+
+Længden bliver `L = V_total / (B · h + (π / 8) · B²)`. Kassehøjden bliver `h = (V_total − (π / 8) · B² · L) / (L · B)`. Bredden indgår begge steder og kræver en andengradsligning; den isoleres også automatisk. Højden h er kassens højde i dette eksempel, og den samlede tankhøjde er h + B / 2.
+
+Kun én uafhængig ukendt kan bestemmes fra én ligning. De øvrige mål skal være kendt, mens fælles mål i en samling tæller som samme ukendte. Hvis et ønsket mål allerede er bestemt af en formel eller ekstern reference, kan du først vælge **Kendt størrelse** for målet på figuren, så det bliver frit at isolere.
+
+Omskrivningen understøtter lineære og kvadratiske sammenhænge samt rødder, der kan isoleres direkte. Der vælges den ikke-negative rod for fysiske mål. Nogle samlinger giver mere komplicerede ligninger, fx fælles diameter i cylinder + halvkugle eller gentagne ukendte i skrå rodudtryk. De muligheder er deaktiveret med en forklaring. Ikke-positive løsninger, brudte referencer og brud på rodkrav giver en fejlbesked. Et kendt totalmål, der selv afhænger af den ukendte, afvises.
+
+Ved pladeareal følger omskrivningen de aktuelle åbne/lukkede flader og samlinger. Ved diametre bevares valget af indre/ydre diameter og godstykkelse. Enheder omregnes fortsat før visning; det søgte mål beregnes i SI, og resultatets enhed kan vælges frit. Valg og referencer følger med i gemte opsætninger.
+
 ### Rækkefølge og grupper
 
 Under **Mine formler** i venstre side kan du bruge **↑ og ↓** under hver formel til at flytte den op eller ned. Når formlen ligger i en gruppe, flytter pilene inden for den gruppe. Første og sidste plads har tydeligt deaktiverede pile.

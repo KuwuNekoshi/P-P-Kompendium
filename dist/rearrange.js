@@ -124,5 +124,10 @@
     }
     return {formulas,options};
   }
-  return {build};
+  function solve(template,key,given='given'){
+    const state={negative:false,root:false,constraints:[]};
+    const result=isolate(template,key,given,state);
+    return {template:result,...state};
+  }
+  return {build,solve};
 });

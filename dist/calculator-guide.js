@@ -10,7 +10,7 @@
     nesting:'https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_Home.HTML',
     memory:'https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_MemVar.HTML'
   };
-  const unwrap=ast=>ast.type==='group'?unwrap(ast.children[0]):ast;
+  const unwrap=ast=>['group','positiveLength'].includes(ast.type)?unwrap(ast.children[0]):ast;
   function estimate(ast){
     ast=E.displayAst(ast);
     // Use the same linear notation as copied text: only necessary parentheses

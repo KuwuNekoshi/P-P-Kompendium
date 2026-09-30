@@ -11,7 +11,9 @@
   const symbol = name => ({ kind: 'symbol', symbol: name });
   const ref = target => ({ kind: 'ref', target });
   const form = (formula, args) => ({ kind: 'formula', formula, args });
-  const assembly = (dimension,property) => ({ kind: 'assembly', dimension,...(property?{property}:{}) });
+  const assembly = (dimension,property,shapeId) => ({ kind: 'assembly', dimension,...(property?{property}:{}),...(shapeId?{shapeId}:{}) });
+  const isolatedMeasure = (source,sourceDimension,unknown='',given=symbol(sourceDimension==='area'?'A_total':'V_total')) => ({kind:'isolatedMeasure',source,sourceDimension,unknown,given});
+  const assemblyShapes = (model,expr) => expr.shapeId?model.shapes.filter(s=>component(model,expr.shapeId).includes(s.id)):model.shapes.filter(s=>s.include);
   const fillHeight = (shapeId='',volume=symbol('V_produkt'),inverted=false) => ({kind:'fillHeight',shapeId,volume,inverted});
   const newFillHeight = (id,shapeId='') => ({id,name:'Produkthøjde i tank (Hx)',symbol:'H_x',dimension:'length',expression:fillHeight(shapeId)});
   const assemblyOutput = expr => expr.property==='materialVolume'?'materialVolume':expr.dimension==='volume'?'volume':'area';
@@ -389,7 +391,8 @@
       const ids=component(model,expr.shapeId);
       return [...references(expr.volume,model),...model.shapes.filter(s=>ids.includes(s.id)).flatMap(s=>[`shape:${s.id}:volume`,...Object.keys(SHAPES[s.type].inputs).map(key=>geometricInput(s,key))])];
     }
-    if (expr.kind === 'assembly') return model.shapes.filter(s => s.include).map(s => `shape:${s.id}:${assemblyOutput(expr)}`);
+    if(expr.kind==='isolatedMeasure')return [...references(expr.source,model),...references(expr.given,model)];
+    if (expr.kind === 'assembly') return assemblyShapes(model,expr).map(s => `shape:${s.id}:${assemblyOutput(expr)}`);
     return [];
   }
   function dependsOn(model, source, target) {
@@ -520,6 +523,60 @@
     }
     return {...ast,children};
   }
+  function isolateGeometry(ast,unknown,given){
+    const matches=node=>node.type==='symbol'&&Units.key(node)===unknown;
+    const contains=node=>matches(node)||(node.children||[]).some(contains);
+    if(!contains(ast))throw new Error('Det valgte mål findes ikke længere i figurformlen. Vælg målet igen.');
+    if(variables(given).some(v=>Units.key(v)===unknown))throw new Error('Det kendte rumfang eller areal må ikke selv afhænge af det mål, du vil finde.');
+    const args={given},tokens=new Map();let next=0;
+    function encode(node){
+      if(matches(node))return 'unknown';
+      if(!contains(node)){
+        // Preserve complete known subexpressions, including the annotations
+        // that preconvert input units for display. Never freeze numeric inputs.
+        if(node.type==='constant')return node.value;
+        const key=expressionKey(node);if(tokens.has(key))return tokens.get(key);
+        const token='known'+(++next);tokens.set(key,token);args[token]=node;return token;
+      }
+      if(!['group','add','sub','mul','div','pow','sqrt'].includes(node.type))throw new Error('Denne figurformel kan ikke isoleres med en enkel algebraisk omskrivning.');
+      return [node.type,...node.children.map(encode)];
+    }
+    let solved;
+    try{solved=Rearrange.solve(encode(ast),'unknown');}
+    catch(error){throw new Error('Målet kan ikke isoleres med en enkel formel her. '+error.message+' Brug et ekstra kendt mål eller en anden formel.');}
+    const answer=Units.reduce(simplify(instantiate(solved.template,args)));
+    return {type:'positiveLength',children:[answer,...solved.constraints.map(t=>Units.reduce(simplify(instantiate(t,args))))]};
+  }
+  function figureMeasureOptions(model,source,dimension,owner=''){
+    const ctx=context(model);
+    let ast;try{ast=ctx.expand(source,dimension,'expanded',owner?[owner]:[]);}catch(error){return {options:[],error:error.message};}
+    const options=variables(ast).filter(v=>v.dimension==='length'&&v.scope?.startsWith('shape:')).map(v=>{
+      const key=Units.key(v),shape=model.shapes.find(s=>'shape:'+s.id===v.scope);
+      const option={key,symbol:v.symbol,label:v.label||'Mål',name:shape?.name||'',unit:inputUnit(model,v).id};
+      try{ctx.expand(isolatedMeasure(source,dimension,key),'length','expanded',owner?[owner]:[]);return {...option,available:true};}
+      catch(error){return {...option,available:false,reason:error.message};}
+    });
+    return {options,error:options.length?'':'Figurformlen indeholder ingen kendte længdemål at isolere. Vælg rumfang eller areal fra dine figurer.'};
+  }
+  function newFigureMeasure(model,id){
+    const shapeId=components(model).length===1?model.shapes[0]?.id:undefined;
+    return {id,name:'Mål i samlet figur',symbol:'x',dimension:'length',expression:isolatedMeasure(assembly('volume',undefined,shapeId),'volume')};
+  }
+  function isolateFigureFormula(model,sourceId,unknown,id){
+    const next=validateModel(model),source=next.formulas.find(f=>f.id===sourceId);
+    if(!source||!['volume','area'].includes(source.dimension))throw new Error('Vælg først figurens rumfang eller areal.');
+    if(next.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
+    const expression=ref('formula:'+sourceId),option=figureMeasureOptions(next,expression,source.dimension).options.find(o=>o.key===unknown);
+    if(!option?.available)throw new Error(option?.reason||'Vælg et mål fra figuren.');
+    const f={id,name:(source.name+' → '+option.symbol).slice(0,120),symbol:option.symbol,dimension:'length',resultUnit:option.unit,expression:isolatedMeasure(expression,source.dimension,unknown,symbol(source.symbol)),...(source.groupId?{groupId:source.groupId}:{})};
+    if(next.formulas.some(other=>other.symbol===f.symbol)){
+      const stem=f.symbol.replace(/_/g,'').slice(0,19);let n=2;
+      while(next.formulas.some(other=>other.symbol===stem+'_'+n))n++;
+      f.symbol=stem+'_'+n;
+    }
+    next.inputUnits[Units.key({symbol:source.symbol,dimension:source.dimension,scope:'formula:'+id})]=resultUnit(source).id;
+    next.formulas.push(f);return validateModel(next);
+  }
   function context(model) {
     const list = descriptors(model), map = new Map(list.map(d => [d.target, d]));
     const grouped=(ast,depth)=>depth>0&&!['symbol','constant','group'].includes(ast.type)?{type:'group',children:[ast]}:ast;
@@ -527,6 +584,9 @@
       if (++budget.nodes > 1200 || depth > 48 || stack.length > 80) throw new Error('Formelkæden er for stor. Behold nogle dele som symboler.');
       if (expr.kind === 'symbol') {
         const variable={...leaf(expr.symbol,dimension,label),scope:inputScope(map.get(stack.at(-1)))},unit=inputUnit(model,variable),value=inputValue(model,variable);
+        // A sought dimension is algebraically represented in SI. Its old input
+        // value and input unit cannot become part of its own inverse formula.
+        if(budget.isolate?.has(Units.key(variable)))return variable;
         if(value!==''){variable.inputValue=value;variable.valueUnit=unit.label;}
         return Units.convert(variable,unit);
       }
@@ -546,6 +606,15 @@
         }
         return expandRaw(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);
       }
+      if(expr.kind==='isolatedMeasure'){
+        if(dimension!=='length'||!['volume','area'].includes(expr.sourceDimension))throw new Error('Vælg et længdemål fra rumfang eller areal.');
+        if(!expr.unknown)throw new Error('Vælg den højde, bredde, længde eller diameter, du vil finde.');
+        const previous=budget.isolate;let source;
+        try{budget.isolate=new Set([...(previous||[]),expr.unknown]);source=expandRaw(expr.source,expr.sourceDimension,'expanded',stack,budget,depth+1);}
+        finally{budget.isolate=previous;}
+        const given=expandRaw(expr.given,expr.sourceDimension,'expanded',stack,budget,depth+1,'Kendt samlet '+(expr.sourceDimension==='area'?'areal':'rumfang'));
+        return isolateGeometry(source,expr.unknown,given);
+      }
       if(expr.kind==='fillHeight'){
         if(dimension!=='length')throw new Error('Hx er en højde og skal bruges som en længde.');
         // Always expand the geometry: choosing the active layer needs the actual
@@ -554,7 +623,8 @@
       }
       if (expr.kind === 'assembly') {
         if (!['volume', 'area'].includes(dimension) || expr.dimension !== dimension) throw new Error('Figursummen passer ikke til størrelsen.');
-        const selected = model.shapes.filter(s => s.include);
+        if(expr.shapeId&&!model.shapes.some(s=>s.id===expr.shapeId))throw new Error('Den valgte samling mangler. Vælg en ny figur.');
+        const selected = assemblyShapes(model,expr);
         if (!selected.length) throw new Error('Vælg mindst én figur, der indgår i beholderen.');
         const children = selected.map(s => expandRaw(ref(`shape:${s.id}:${assemblyOutput(expr)}`), dimension, mode, stack, budget, depth + 1));
         return grouped(children.length === 1 ? children[0] : { type: 'add', children, assemblyParts:true },depth);
@@ -627,6 +697,7 @@
     return ast.children?{...ast,children:ast.children.map(resolveFillAst)}:ast;
   }
   function displayAst(ast){
+    if(ast.type==='positiveLength')return displayAst(ast.children[0]);
     if(ast.type==='fillHeight')return displayAst(resolveFillAst(ast));
     if(ast.convertedInput){
       const c=ast.convertedInput;
@@ -646,6 +717,7 @@
     const linear=format==='plain',markup=format==='math';
     const containsFraction=node=>node.type==='div'||(node.children||[]).some(containsFraction);
     function render(node,parent=null,index=0) {
+      if(node.type==='positiveLength')return render(node.children[0],parent,index);
       if(node.type==='group'){
         if(node.percentInput&&display!=='units'&&(!symbolText||display==='values')){
           const quotient=node.children[0],variable=quotient.type==='div'?quotient.children[0]:null;
@@ -746,7 +818,11 @@
         else throw new Error('Udtrykket indeholder en ukendt konstant');
       }else{
         const c=(node.children||[]).map(child=>visit(child,depth+1));
-        if(node.type==='group'&&c.length===1)value=c[0];
+        if(node.type==='positiveLength'){
+          if(c[0]<=0)throw new Error('Det søgte mål skal være større end 0. Kontrollér det kendte rumfang/areal og de øvrige mål.');
+          if(c.slice(1).some(v=>v<0))throw new Error('Omskrivningens rodkrav er ikke opfyldt. Kontrollér det kendte rumfang eller areal.');
+          value=c[0];
+        }else if(node.type==='group'&&c.length===1)value=c[0];
         else if(node.type==='add'&&c.length)value=c.reduce((a,b)=>a+b,0);
         else if(node.type==='mul'&&c.length)value=c.reduce((a,b)=>a*b,1);
         else if(node.type==='sub'&&c.length===2)value=c[0]-c[1];
@@ -801,11 +877,15 @@
       if (e.kind === 'symbol') { if (!validSymbol(e.symbol)) fail('ugyldigt symbol.'); return symbol(e.symbol); }
       if (e.kind === 'zero') { if(!['area','volume'].includes(dimension)||e.dimension!==dimension)fail('ugyldigt nulareal eller nulrumfang.');return {kind:'zero',dimension}; }
       if (e.kind === 'ref') { if (!str(e.target,160)) fail('ugyldig reference.'); return ref(e.target); }
+      if(e.kind==='isolatedMeasure'){
+        if(dimension!=='length'||!['area','volume'].includes(e.sourceDimension)||typeof e.unknown!=='string'||e.unknown.length>200||(e.unknown&&(!e.unknown.startsWith('shape:')||inputDimension(e.unknown)!=='length')))fail('ugyldigt figurmål.');
+        return isolatedMeasure(cleanExpr(e.source,e.sourceDimension,depth+1),e.sourceDimension,e.unknown,cleanExpr(e.given,e.sourceDimension,depth+1));
+      }
       if(e.kind==='fillHeight'){
         if(dimension!=='length'||typeof e.shapeId!=='string'||e.shapeId.length>64||(e.shapeId&&!/^[a-zA-Z0-9_-]+$/.test(e.shapeId))||(e.inverted!==undefined&&typeof e.inverted!=='boolean'))fail('ugyldig Hx-tank.');
         return fillHeight(e.shapeId,cleanExpr(e.volume,'volume',depth+1),!!e.inverted);
       }
-      if (e.kind === 'assembly') { if (!['volume','area'].includes(dimension) || e.dimension !== dimension || (e.property!==undefined&&(e.property!=='materialVolume'||dimension!=='volume'))) fail('ugyldig figursum.'); return assembly(dimension,e.property); }
+      if (e.kind === 'assembly') { if (!['volume','area'].includes(dimension) || e.dimension !== dimension || (e.property!==undefined&&(e.property!=='materialVolume'||dimension!=='volume'))) fail('ugyldig figursum.'); if(e.shapeId!==undefined&&(!str(e.shapeId,64)||!/^[a-zA-Z0-9_-]+$/.test(e.shapeId)))fail('ugyldig figursamling.'); return assembly(dimension,e.property,e.shapeId); }
       const f = own(FORMULAS,e.formula) && FORMULAS[e.formula];
       if (e.kind !== 'formula' || !f || f.dimension !== dimension) fail('formlen passer ikke til størrelsen.');
       return form(e.formula,Object.fromEntries(Object.entries(f.args).map(([k,a]) => [k,cleanExpr(e.args?.[k],a.dimension,depth+1)])));
@@ -903,6 +983,7 @@
     const map = new Map(descriptors(model).map(d=>[d.target,d]));
     function check(e,dimension) {
       if (e.kind === 'ref' && map.has(e.target) && map.get(e.target).dimension !== dimension) fail('en reference har forkert størrelse.');
+      if(e.kind==='isolatedMeasure'){check(e.source,e.sourceDimension);check(e.given,e.sourceDimension);}
       if(e.kind==='fillHeight')check(e.volume,'volume');
       if (e.kind === 'formula') for (const [k,a] of Object.entries(FORMULAS[e.formula].args)) check(e.args[k],a.dimension);
     }
@@ -919,6 +1000,7 @@
         for(const field of ['inputUnits','inputValues'])if(old[field]&&own(old[field],legacy))model[field][key]=old[field][legacy];
       }
       function migrateExpression(expr,dimension,scope){
+        if(expr.kind==='isolatedMeasure'){migrateExpression(expr.source,expr.sourceDimension,scope);migrateExpression(expr.given,expr.sourceDimension,scope);}
         if(expr.kind==='fillHeight')migrateExpression(expr.volume,'volume',scope);
         if(expr.kind==='symbol')migrateSymbol(expr.symbol,dimension,scope);
         if(expr.kind==='formula')for(const [key,arg]of Object.entries(FORMULAS[expr.formula].args))migrateExpression(expr.args[key],arg.dimension,scope);
@@ -944,5 +1026,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
