@@ -16,11 +16,40 @@ Du kan også hente hele projektet:
 
 **Gem opsætning** henter en `.pp.json`-fil med dine figurer og valg. Brug **Åbn opsætning** til at åbne den igen. Opsætningen huskes også lokalt i browseren, når browseren tillader det. Gem som fil, før du flytter til en anden computer eller rydder browserdata.
 
+## Egne formler og beregning af delmål
+
+Vælg **Tilføj formel → Egen formel**. Under **Redigér udtryk og resultat** vælger du resultatets symbol og størrelse og skriver højresiden, fx:
+
+```text
+h_top + h_midte + h_bund
+```
+
+Vælg derefter **Størrelse** for hvert symbol, fx Længde, Rumfang eller Areal, og vælg dets kilde. Et symbol kan bruge en kendt værdi, et mål på en figur, en samlet figur eller en reference til en anden formel. Referencer opdaterer automatisk, når kilden ændres. Egne formler kan selv vælges som referencer i andre formler.
+
+Udtrykket kan bruge `+`, `-`, `*`, `/`, `^`, parenteser, `pi`/`π` og `sqrt(...)`. Skriv kun højresiden, uden `=`. Symboler kan have et indeks med `_`, fx `h_top`. Potenser bruger faste tal, fx `D^2` eller `V^(1/3)`. Brug `*` mellem faktorer. Faste tal i udtrykket er enhedsløse; mål med enheder skrives som symboler, hvis værdier og enheder vælges under **Størrelserne i formlen**. Enhedskontrollen forklarer, hvis et led eller resultat har forkert størrelse.
+
+Ved ændring af udtrykket bevares kilderne for symboler med samme navn. Nye symboler starter med samme størrelse som resultatet; ret dem efter behov. Hvis du ændrer et symbols størrelse, nulstilles dets kilde til en kendt størrelse, så du kan vælge en ny passende kilde. Ændring af resultatets størrelse kan kræve, at eksisterende referencer til formlen først ændres.
+
+### Eksempel: keglebund, cylindermidte og kegletop
+
+1. Sammensæt cylinder og to kegler. Angiv diameter og keglehøjder.
+2. Vælg **Isolér højde, bredde eller længde**, vælg denne samling og cylinderens højde som ukendt.
+3. Angiv det **kendte samlede rumfang**. Diameter og keglehøjder alene er ikke nok til at bestemme midterhøjden.
+4. Vælg **Tilføj samlet højde** ved den isolerede formel. Det opretter en egen formel med en reference til den fundne midterhøjde og til de to keglehøjder.
+
+Sammenhængen er `h_midte = (V_total − V_top − V_bund) / (π · D² / 4)` og derefter `H_total = h_top + h_midte + h_bund`. Kilderne følger hinanden med fuld præcision, også når input har forskellige enheder. Den tidligere indtastede midterhøjde bruges ikke i løsningen. Genvejen bruger de aktuelt sammenføjede dele og indvendige højder; den oprindelige figur ændres ikke af resultatet. Hvis delene senere bygges om, kan du redigere summen eller oprette den igen.
+
+## Vælg én samlet figur i opgaven
+
+Under figurvisningen har hver figur **Brug rumfang** og **Brug pladeareal**. Sammenføjede dele tæller som **én figur**; separate figurer får hver deres valg. Det opretter en formel for kun den valgte figur, som kan genbruges med referencer.
+
+Ved rumfangs- og arealinput kan du også vælge figuren direkte under **Fra én figur · sammenføjede dele tæller som én**. En kasse med halvcylinderbund vises fx som ét valg, mens en separat tank står for sig. Den valgte figursum følger dens nuværende sammenføjede dele. **Alle valgte beholderdele** er fortsat et særskilt valg, når opgaven skal summere på tværs af flere figurer. Pladematerialets rumfang kan også vælges pr. figur, og åbne/lukkede flader og tykkelser følger med.
+
 ## Fra opgave til formel
 
-**? øverst til højre** starter en guidet introduktion med 24 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
+**? øverst til højre** starter en guidet introduktion med 25 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
 
-Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, indsatte formler, formelkæden, omskrivning af formler, enheder, tal med små mærker og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
+Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, egne formler, indsatte formler, formelkæden, omskrivning af formler, enheder, tal med små mærker og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
 
 - Vælg, hvad du vil finde, fx fyldetid, volumenflow eller rumfang.
 - Indsæt cylinder, kegle, halvkugle, keglestub, kasse, kugle, rør, **halvcylinder**, **V-bund** eller **pyramide**.
@@ -336,6 +365,7 @@ npm run check
 - `dist/units.js`: enheder, eksakte omregningsfaktorer og symbolske temperaturforskydninger.
 - `dist/rearrange.js`: symbolske omskrivninger, rodvalg, geometriske specialtilfælde og fuld dækningsoversigt over grundformlernes størrelser.
 - `dist/engine.js`: referencegraf, substitution, omskrivning med bevarede enheder og input, MathML, tekstformat, LaTeX og validering.
+- `dist/custom-formula.js`: sikker parser og dimensionskontrol for egne udtryk.
 - `dist/fill-height.js`: bund-til-top-rækkefølge, delvise fyldeprofiler og Hx-grene.
 - `dist/calculator-guide.js`: vejledende TI-30XS-længdeskøn og symbolske delberegninger.
 - `dist/geometry.js`: placering af sammenføjede figurer og klikbare snitskitser.

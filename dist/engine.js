@@ -1,8 +1,8 @@
 /* Symbolic composition, numeric annotations and expression evaluation. */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'),require('./fill-height.js'));
-  else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange,root.PPFillHeight);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units, Rearrange, FillHeight) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalog.js'),require('./units.js'),require('./rearrange.js'),require('./fill-height.js'),require('./custom-formula.js'));
+  else root.PP = factory(root.PPCatalog,root.PPUnits,root.PPRearrange,root.PPFillHeight,root.PPCustomFormula);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (catalog, Units, Rearrange, FillHeight, CustomFormula) {
   'use strict';
   const { SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE } = catalog;
   const BASE_FORMULAS=catalog.FORMULAS;
@@ -62,6 +62,29 @@
     const args=Object.fromEntries(Object.entries(f.args).map(([k,a])=>[k,symbol(a.symbol)]));
     if(id==='bucketFlow')args.N=newExpression('bucketCountFromSpacing');
     return form(id,args);
+  }
+  function customExpression(text='a + b',dimension='length',previous={}) {
+    const parsed=CustomFormula.parse(text);
+    return {kind:'custom',text,args:Object.fromEntries(parsed.names.map(name=>[name,own(previous,name)?clone(previous[name]):{dimension,expression:symbol(name)}]))};
+  }
+  const newCustomFormula = id => ({id,name:'Egen formel',symbol:'H',dimension:'length',expression:customExpression('h_top + h_midte + h_bund')});
+  function measureHeightShape(model,f){
+    if(f?.expression.kind!=='isolatedMeasure')return null;
+    return model.shapes.find(s=>s.inputs.h?.kind==='symbol'&&Units.key({scope:'shape:'+s.id,symbol:s.inputs.h.symbol,dimension:'length'})===f.expression.unknown)||null;
+  }
+  function totalHeightFromMeasure(model,sourceId,id){
+    const source=model.formulas.find(f=>f.id===sourceId),part=measureHeightShape(model,source);
+    if(!part)throw new Error('Vælg først en isoleret højde på en figur.');
+    const ids=component(model,part.id),parts=model.shapes.filter(s=>ids.includes(s.id)),args={};
+    const terms=parts.map(s=>{
+      const name='h_'+s.ordinal,key=s.inputs.h?'h':'D';
+      args[name]={dimension:'length',expression:ref(s.id===part.id?'formula:'+sourceId:geometricInput(s,key))};
+      return ['hemisphere','halfCylinder'].includes(s.type)?'('+name+' / 2)':name;
+    });
+    const next=clone(model);let resultSymbol='H_total',n=2;
+    while(next.formulas.some(f=>f.symbol===resultSymbol))resultSymbol='H_total'+n++;
+    next.formulas.push({id,name:'Samlet højde',symbol:resultSymbol,dimension:'length',expression:customExpression(terms.join(' + '),'length',args),...(source.groupId?{groupId:source.groupId}:{})});
+    return validateModel(next);
   }
   function newShape(type, id, ordinal) {
     const s = SHAPES[type];
@@ -386,6 +409,7 @@
   }
   function references(expr, model) {
     if (expr.kind === 'ref') return [expr.target];
+    if (expr.kind === 'custom') return Object.values(expr.args).flatMap(a=>references(a.expression,model));
     if (expr.kind === 'formula') return Object.values(expr.args).flatMap(e => references(e, model));
     if (expr.kind === 'fillHeight') {
       const ids=component(model,expr.shapeId);
@@ -605,6 +629,11 @@
           return Units.convert(variable,unit);
         }
         return expandRaw(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);
+      }
+      if(expr.kind==='custom'){
+        const parsed=CustomFormula.check(CustomFormula.parse(expr.text),expr.args,dimension);
+        const args=Object.fromEntries(parsed.names.map(name=>{const a=expr.args[name];return [name,expandRaw(a.expression,a.dimension,mode,stack,budget,depth+1,name)];}));
+        return grouped(instantiate(parsed.template,args),depth);
       }
       if(expr.kind==='isolatedMeasure'){
         if(dimension!=='length'||!['volume','area'].includes(expr.sourceDimension))throw new Error('Vælg et længdemål fra rumfang eller areal.');
@@ -877,6 +906,15 @@
       if (e.kind === 'symbol') { if (!validSymbol(e.symbol)) fail('ugyldigt symbol.'); return symbol(e.symbol); }
       if (e.kind === 'zero') { if(!['area','volume'].includes(dimension)||e.dimension!==dimension)fail('ugyldigt nulareal eller nulrumfang.');return {kind:'zero',dimension}; }
       if (e.kind === 'ref') { if (!str(e.target,160)) fail('ugyldig reference.'); return ref(e.target); }
+      if(e.kind==='custom'){
+        let parsed;try{parsed=CustomFormula.parse(e.text);}catch(error){fail(error.message);}
+        const args=Object.fromEntries(parsed.names.map(name=>{
+          const a=own(e.args||{},name)&&e.args[name];
+          if(!a||!own(DIMENSIONS,a.dimension))fail('ugyldig størrelse i egen formel.');
+          return [name,{dimension:a.dimension,expression:cleanExpr(a.expression,a.dimension,depth+1)}];
+        }));
+        return {kind:'custom',text:e.text,args};
+      }
       if(e.kind==='isolatedMeasure'){
         if(dimension!=='length'||!['area','volume'].includes(e.sourceDimension)||typeof e.unknown!=='string'||e.unknown.length>200||(e.unknown&&(!e.unknown.startsWith('shape:')||inputDimension(e.unknown)!=='length')))fail('ugyldigt figurmål.');
         return isolatedMeasure(cleanExpr(e.source,e.sourceDimension,depth+1),e.sourceDimension,e.unknown,cleanExpr(e.given,e.sourceDimension,depth+1));
@@ -982,6 +1020,7 @@
     }
     const map = new Map(descriptors(model).map(d=>[d.target,d]));
     function check(e,dimension) {
+      if(e.kind==='custom')for(const a of Object.values(e.args))check(a.expression,a.dimension);
       if (e.kind === 'ref' && map.has(e.target) && map.get(e.target).dimension !== dimension) fail('en reference har forkert størrelse.');
       if(e.kind==='isolatedMeasure'){check(e.source,e.sourceDimension);check(e.given,e.sourceDimension);}
       if(e.kind==='fillHeight')check(e.volume,'volume');
@@ -1000,6 +1039,7 @@
         for(const field of ['inputUnits','inputValues'])if(old[field]&&own(old[field],legacy))model[field][key]=old[field][legacy];
       }
       function migrateExpression(expr,dimension,scope){
+        if(expr.kind==='custom')for(const a of Object.values(expr.args))migrateExpression(a.expression,a.dimension,scope);
         if(expr.kind==='isolatedMeasure'){migrateExpression(expr.source,expr.sourceDimension,scope);migrateExpression(expr.given,expr.sourceDimension,scope);}
         if(expr.kind==='fillHeight')migrateExpression(expr.volume,'volume',scope);
         if(expr.kind==='symbol')migrateSymbol(expr.symbol,dimension,scope);
@@ -1026,5 +1066,5 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
