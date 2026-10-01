@@ -27,12 +27,12 @@ test('figure inversions are searchable and the picker keeps the selected group',
  h.scope.formulaPicker('task');assert.match(h.scope.dialogBody,/data-formula="figureMeasure" data-group="task"/);
  h.scope.addFormula('figureMeasure','task');const f=h.scope.model.formulas.at(-1);assert.equal(f.expression.kind,'isolatedMeasure');assert.equal(f.groupId,'task');assert.equal(f.expression.source.shapeId,'s');
 });
-test('a saved assembly exposes its physical dimensions and the action creates a separate inverse',()=>{
+test('a saved assembly exposes its physical dimensions and the action replaces it in place',()=>{
  const m=model(),h=harness(m),control=h.scope.rearrangeControl(m.formulas[0]);
  assert.match(control,/data-action="isolate-figure-formula"/);assert.match(control,/shape:s:h_1:length/);assert(control.includes('&lt;b&gt;Min kasse&lt;/b&gt;'));assert(!control.includes('<b>Min kasse'));
  h.change('isolate-figure-formula','shape:s:h_1:length',[],{id:'total'});const f=h.scope.model.formulas.at(-1);
- assert.equal(f.expression.unknown,'shape:s:h_1:length');assert.equal(f.expression.source.target,'formula:total');assert.equal(h.scope.activeId,f.id);
- assert.equal(h.scope.model.formulas[0].expression.kind,'assembly');assert(h.saves()>0);
+ assert.equal(f.expression.unknown,'shape:s:h_1:length');assert.equal(f.expression.source.kind,'assembly');assert.equal(f.id,'total');assert.equal(h.scope.model.formulas.length,1);assert.equal(h.scope.activeId,f.id);
+ assert.equal(h.scope.model.formulas[0].expression.kind,'isolatedMeasure');assert(h.saves()>0);
 });
 test('the editor selects the unknown, renames the result and only shows the remaining inputs',()=>{
  const m=model();m.formulas.push(E.newFigureMeasure(m,'measure'));const h=harness(m),path=['formulas',1,'expression'];

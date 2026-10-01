@@ -7414,16 +7414,57 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const f=FORMULAS[formulaId];
     return f?REARRANGEMENTS[f.rearranged?.base||formulaId]:[];
   }
-  function rearrangeFormula(model,sourceId,formulaId,id) {
+  const quantityTarget=(id,family,key)=>`formula:${id}:quantity:${family}:${key}`;
+  function replaceFormula(model,source,replacement,previousQuantity){
+    model.formulas[model.formulas.findIndex(f=>f.id===source.id)]=replacement;
+    const oldTarget='formula:'+source.id;
+    function rewrite(expr,definition=false){
+      if(expr.kind==='ref'&&expr.target===oldTarget)expr.target=definition&&replacement.expression.kind==='isolatedMeasure'?quantityTarget(source.id,'figure','source'):previousQuantity;
+      else if(expr.kind==='formula')Object.values(expr.args).forEach(e=>rewrite(e,definition));
+      else if(expr.kind==='custom')Object.values(expr.args).forEach(a=>rewrite(a.expression,definition));
+      else if(expr.kind==='isolatedMeasure'){rewrite(expr.source,true);rewrite(expr.given);}
+      else if(expr.kind==='fillHeight')rewrite(expr.volume);
+    }
+    rewrite(model.tank.thickness);
+    for(const shape of model.shapes){
+      Object.values(shape.inputs).forEach(e=>rewrite(e));
+      if(shape.diameter)rewrite(shape.diameter.thickness);
+      Object.values(shape.plateThickness||{}).forEach(e=>rewrite(e));
+    }
+    model.formulas.forEach(f=>rewrite(f.expression));
+  }
+  // Stable references to a quantity in an equation. When that quantity moves
+  // from the left side to an input, existing consumers continue to use it.
+  // These descriptors are only exposed when a saved reference actually needs
+  // them; they are not extra formulas in the sidebar or a copy of the result.
+  function formulaQuantities(f){
+    const make=(family,key,info,expression,output=false)=>({target:quantityTarget(f.id,family,key),name:f.name+' · '+info.label,symbol:output?f.symbol:expression.kind==='symbol'?expression.symbol:info.symbol,dimension:info.dimension,expression,resultUnit:output?f.resultUnit:undefined,ownerType:'formula',ownerId:f.id,input:'quantity:'+key,quantity:true});
+    const catalogQuantities=(expr,result)=>{
+      const current=FORMULAS[expr.formula],family=current.rearranged?.base||expr.formula,base=BASE_FORMULAS[family],outputKey=current.rearranged?.key||'given';
+      const quantities={given:{symbol:base.symbol,label:base.name,dimension:base.dimension},...base.args};
+      return Object.entries(quantities).map(([key,info])=>make(family,key,info,key===outputKey?result:expr.args[key],key===outputKey&&f.expression.kind==='formula'));
+    };
+    if(f.expression.kind==='formula')return catalogQuantities(f.expression,ref('formula:'+f.id));
+    if(f.expression.kind==='isolatedMeasure'){
+      const e=f.expression,info={symbol:e.sourceDimension==='area'?'A_total':'V_total',label:'Kendt samlet '+(e.sourceDimension==='area'?'areal':'rumfang'),dimension:e.sourceDimension};
+      const out=[make('figure','given',info,e.given),make('figure','source',{...info,label:'Figurudtrykket før isolering'},e.source)];
+      if(e.source.kind==='formula')out.push(...catalogQuantities(e.source,e.given));
+      return out;
+    }
+    return [];
+  }
+  function rearrangeFormula(model,sourceId,formulaId,id=sourceId) {
     model=validateModel(model);
     const source=model.formulas.find(f=>f.id===sourceId);
     if(!source||source.expression.kind!=='formula')throw new Error('Vælg en grundformel at omskrive.');
-    if(model.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
+    const inPlace=id===sourceId;
+    if(!inPlace&&model.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
     const original=FORMULAS[source.expression.formula],target=FORMULAS[formulaId];
     if(!target||!rearrangements(source.expression.formula).some(o=>o.available&&o.id===formulaId))throw new Error('Denne omskrivning findes ikke.');
     const fromKey=original.rearranged?.key||'given',toKey=target.rearranged?.key||'given';
     const values={...clone(source.expression.args),[fromKey]:symbol(source.symbol)};
     const next=clone(model),f=newFormula(id,formulaId),known=values[toKey];
+    if(inPlace&&source.name!==original.name)f.name=source.name;
     if(source.groupId)f.groupId=source.groupId;
     if(known?.kind==='symbol')f.symbol=known.symbol;
     let unit=Units.base(f.dimension);
@@ -7433,9 +7474,9 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       if(d)unit=d.expression.kind==='symbol'?inputUnit(model,{symbol:d.expression.symbol,dimension:d.dimension,scope:inputScope(d)}):resultUnit(d);
     }
     f.resultUnit=unit.id;
-    if(model.formulas.some(other=>other.symbol===f.symbol)){
+    if(model.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===f.symbol)){
       const stem=f.symbol.replace(/_/g,'').slice(0,19);let n=2;
-      while(model.formulas.some(other=>other.symbol===stem+'_'+n))n++;
+      while(model.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===stem+'_'+n))n++;
       f.symbol=stem+'_'+n;
     }
     for(const key of Object.keys(target.args))f.expression.args[key]=clone(values[key]);
@@ -7443,7 +7484,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     next.inputUnits||={};
     const key=Units.key({symbol:source.symbol,dimension:source.dimension,scope:'formula:'+id});
     if(!own(next.inputUnits,key))next.inputUnits[key]=resultUnit(source).id;
-    next.formulas.push(f);
+    if(inPlace)replaceFormula(next,source,f,quantityTarget(sourceId,original.rearranged?.base||source.expression.formula,fromKey));
+    else next.formulas.push(f);
     return validateModel(next);
   }
   function newTankMass(model,id,separate=false) {
@@ -7666,6 +7708,12 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       if (type.crossSection) addOutput('crossSection', 'Tværsnitsareal', type.crossSection, 'A_t' + s.ordinal, type.crossSectionArgs);
     }
     for (const f of model.formulas) list.push({ target: `formula:${f.id}`, name: f.name, symbol: f.symbol, dimension: f.dimension, resultUnit:f.resultUnit, expression: f.expression, ownerType: 'formula', ownerId: f.id });
+    const quantities=new Map(model.formulas.flatMap(formulaQuantities).map(d=>[d.target,d]));
+    const pending=new Set(list.flatMap(d=>references(d.expression,model)));
+    for(const target of pending){
+      const d=quantities.get(target);if(!d)continue;
+      list.push(d);references(d.expression,model).forEach(r=>pending.add(r));
+    }
     return list;
   }
   function references(expr, model) {
@@ -7847,20 +7895,23 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     const shapeId=components(model).length===1?model.shapes[0]?.id:undefined;
     return {id,name:'Mål i samlet figur',symbol:'x',dimension:'length',expression:isolatedMeasure(assembly('volume',undefined,shapeId),'volume')};
   }
-  function isolateFigureFormula(model,sourceId,unknown,id){
+  function isolateFigureFormula(model,sourceId,unknown,id=sourceId){
     const next=validateModel(model),source=next.formulas.find(f=>f.id===sourceId);
     if(!source||!['volume','area'].includes(source.dimension))throw new Error('Vælg først figurens rumfang eller areal.');
-    if(next.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
+    const inPlace=id===sourceId;
+    if(!inPlace&&next.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
     const expression=ref('formula:'+sourceId),option=figureMeasureOptions(next,expression,source.dimension).options.find(o=>o.key===unknown);
     if(!option?.available)throw new Error(option?.reason||'Vælg et mål fra figuren.');
-    const f={id,name:(source.name+' → '+option.symbol).slice(0,120),symbol:option.symbol,dimension:'length',resultUnit:option.unit,expression:isolatedMeasure(expression,source.dimension,unknown,symbol(source.symbol)),...(source.groupId?{groupId:source.groupId}:{})};
-    if(next.formulas.some(other=>other.symbol===f.symbol)){
+    const f={id,name:(source.name+' → '+option.symbol).slice(0,120),symbol:option.symbol,dimension:'length',resultUnit:option.unit,expression:isolatedMeasure(inPlace?clone(source.expression):expression,source.dimension,unknown,symbol(source.symbol)),...(source.groupId?{groupId:source.groupId}:{})};
+    if(next.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===f.symbol)){
       const stem=f.symbol.replace(/_/g,'').slice(0,19);let n=2;
-      while(next.formulas.some(other=>other.symbol===stem+'_'+n))n++;
+      while(next.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===stem+'_'+n))n++;
       f.symbol=stem+'_'+n;
     }
     next.inputUnits[Units.key({symbol:source.symbol,dimension:source.dimension,scope:'formula:'+id})]=resultUnit(source).id;
-    next.formulas.push(f);return validateModel(next);
+    if(inPlace)replaceFormula(next,source,f,quantityTarget(sourceId,'figure','given'));
+    else next.formulas.push(f);
+    return validateModel(next);
   }
   function context(model) {
     const list = descriptors(model), map = new Map(list.map(d => [d.target, d]));
@@ -8989,11 +9040,11 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   function rearrangeControl(f) {
     if(E.measureHeightShape(model,f))return `<div class="rearrange-control"><button class="text-button" data-action="total-height" data-id="${esc(f.id)}">Tilføj samlet højde</button><p>Opretter en egen formel med reference til denne højde og højderne på de andre sammenføjede dele. Højderne er indvendige mål.</p></div>`;
     const figures=['volume','area'].includes(f.dimension)?E.figureMeasureOptions(model,E.ref('formula:'+f.id),f.dimension):{options:[]};
-    const figureControl=figures.options.length?`<div class="rearrange-control"><label>Isolér et mål i figurerne<select class="source-select" data-action="isolate-figure-formula" data-id="${esc(f.id)}" aria-label="Isolér højde, bredde, længde eller diameter i figurerne"><option value="">Vælg det ukendte mål…</option>${figures.options.map(o=>`<option value="${esc(o.key)}" ${o.available?'':'disabled'}>${esc(pretty(o.symbol)+' · '+o.label)}${o.available?'':' · kræver en anden metode'}</option>`).join('')}</select></label><p>Opretter en ny formel ud fra hele figurudtrykket. Fælles mål i samlingerne isoleres samlet. Angiv det kendte ${f.dimension==='area'?'areal':'rumfang'} i den nye formel.</p>${figures.options.some(o=>!o.available)?`<details><summary>Mål, der kræver en anden metode</summary>${figures.options.filter(o=>!o.available).map(o=>`<p>${esc(o.label+': '+o.reason)}</p>`).join('')}</details>`:''}</div>`:'';
+    const figureControl=figures.options.length?`<div class="rearrange-control"><label>Isolér et mål i figurerne<select class="source-select" data-action="isolate-figure-formula" data-id="${esc(f.id)}" aria-label="Isolér højde, bredde, længde eller diameter i figurerne"><option value="">Vælg det ukendte mål…</option>${figures.options.map(o=>`<option value="${esc(o.key)}" ${o.available?'':'disabled'}>${esc(pretty(o.symbol)+' · '+o.label)}${o.available?'':' · kræver en anden metode'}</option>`).join('')}</select></label><p>Omskriver denne formel ud fra hele figurudtrykket. Fælles mål i samlingerne isoleres samlet. Angiv det kendte ${f.dimension==='area'?'areal':'rumfang'} i formlen.</p>${figures.options.some(o=>!o.available)?`<details><summary>Mål, der kræver en anden metode</summary>${figures.options.filter(o=>!o.available).map(o=>`<p>${esc(o.label+': '+o.reason)}</p>`).join('')}</details>`:''}</div>`:'';
     if(f.expression.kind!=='formula')return figureControl;
     const options=E.rearrangements(f.expression.formula),blocked=options.filter(o=>!o.available);
     const choices=options.filter(o=>o.id!==f.expression.formula).map(o=>`<option value="${esc(o.id||'')}" ${o.available?'':'disabled'}>${esc(pretty(o.symbol)+' · '+o.label)}${o.available?'':' · se forklaring nedenfor'}</option>`).join('');
-    return `<div class="rearrange-control"><label for="isolate-quantity">Isolér en størrelse</label><select id="isolate-quantity" class="source-select" data-action="rearrange-formula" data-id="${esc(f.id)}"><option value="" selected>Vælg, hvad du vil finde…</option>${choices}</select><p>Opretter en ny formel med dine kendte størrelser og referencer. Den hidtidige venstreside bliver et kendt input.</p>${blocked.length?`<details><summary>Særligt om ${esc(blocked.map(o=>pretty(o.symbol)).join(' og '))}</summary><p>${esc(blocked[0].reason)}</p><button class="text-button" data-action="use-formula" data-formula="frustumMantleSlant">Brug kendt skrå højde</button></details>`:''}</div>`+figureControl;
+    return `<div class="rearrange-control"><label for="isolate-quantity">Isolér en størrelse</label><select id="isolate-quantity" class="source-select" data-action="rearrange-formula" data-id="${esc(f.id)}"><option value="" selected>Vælg, hvad du vil finde…</option>${choices}</select><p>Omskriver denne formel på samme plads i listen. Kendte størrelser og referencer følger med. Den hidtidige venstreside bliver et kendt input.</p>${blocked.length?`<details><summary>Særligt om ${esc(blocked.map(o=>pretty(o.symbol)).join(' og '))}</summary><p>${esc(blocked[0].reason)}</p><button class="text-button" data-action="use-formula" data-formula="frustumMantleSlant">Brug kendt skrå højde</button></details>`:''}</div>`+figureControl;
   }
   function renderPreview(ctx) {
     const f = active();
@@ -9133,7 +9184,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     if (depth > 12) return '<div class="error-box">Formlen er for dyb til at blive vist.</div>';
     const current = expr.kind === 'symbol' ? 'symbol' : expr.kind === 'custom' ? 'custom' : expr.kind === 'assembly' ? (expr.property==='materialVolume'?'material':'assembly')+(expr.shapeId?':'+expr.shapeId:'') : expr.kind === 'isolatedMeasure' ? 'isolatedMeasure' : expr.kind === 'fillHeight' ? 'fillHeight' : expr.kind === 'zero' ? 'zero' : expr.kind + ':' + (expr.formula || expr.target);
     const owner = ownerTarget(path);
-    const targets = ctx.list.filter(d => d.dimension === dimension && d.target !== owner && !E.dependsOn(model,d.target,owner));
+    const targets = ctx.list.filter(d => d.dimension === dimension && (!d.quantity||expr.target===d.target) && d.target !== owner && !E.dependsOn(model,d.target,owner));
     let options = `<option value="symbol">${dimension==='countPerLength'?'Kendt antal kopper pr. længdeenhed':'Kendt størrelse'} · ${esc(pretty(defaultSymbol))}</option>`;
     options+='<option value="custom">Egen formel · skriv et udtryk med referencer</option>';
     if(dimension==='length')options+='<option value="isolatedMeasure">Isolér et mål i en samlet figur</option><option value="fillHeight">Hx · produkthøjde i en valgt tank</option>';
@@ -9432,7 +9483,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     {section:'REFERENCER', title:'En reference følger sin kilde', target:'#inspector .formula-args > .input-group:nth-child(2)', body:'<p>Nu henter Qᵥ sin formel fra <strong>Volumenflow</strong> i Mine formler. Ændrer du kilden, følger fyldetiden automatisk med. <strong>Tilpas kilde</strong> åbner kildens indstillinger.</p><p>Volumenflowets A henviser videre til rørets tværsnit. På samme måde henter V bassindelenes samlede rumfang. Du kan altså bygge en kæde af referencer.</p>'},
     {section:'REFERENCER', title:'Indsæt en formel direkte', target:'#inspector .formula-args > .input-group:nth-child(2)', scene:'inline', body:'<p>Ved en reference vælger du <strong>Indsæt formlen her</strong>, hvis du vil have en kopi, som kan tilpasses på stedet. Her er Qᵥ = A · v nu indsat direkte under fyldetiden.</p><p>Kopien følger ikke længere selve Volumenflow-formlen. Dens underreferencer, fx A fra røret, følger stadig deres egne kilder. Du kan også vælge en formel direkte i dropdownen.</p>'},
     {section:'RESULTAT', title:'Se den færdige formel', target:'#formula-preview', body:'<p><strong>Kort</strong> viser referencer som symboler. <strong>Udfoldet</strong> sætter delformlerne ind i hinanden, som vist her. Unødige parenteser fjernes automatisk. Nødvendige parenteser bevares fx omkring en sum, der skal ganges, en samlet nævner i kopieret tekst eller et udtryk under en potens.</p><p><strong>Kopiér formel</strong> tager den viste formel og de valgte enheder med. Du kan indsætte opgavens tal under <strong>Størrelserne i formlen</strong> og derefter regne udtrykket på din egen lommeregner.</p>'},
-    {section:'OMSKRIVNING', title:'Find en anden størrelse', target:'.rearrange-control', body:'<p>Med <strong>Isolér en størrelse</strong> kan du vende grundformlen. Fra <strong>t = V / Qᵥ</strong> kan du fx vælge V eller Qᵥ. Ved <strong>v = π · D · n</strong> kan du vælge n og få <strong>n = v / (π · D)</strong>.</p><p>Omskrivningen oprettes som en ny formel, så dine eksisterende referencer bevares. Den tidligere venstreside bliver et kendt input. Kontrollér enheder og forudsætninger; enkelte ligninger har to rødder.</p>'},
+    {section:'OMSKRIVNING', title:'Find en anden størrelse', target:'.rearrange-control', body:'<p>Med <strong>Isolér en størrelse</strong> kan du vende grundformlen. Fra <strong>t = V / Qᵥ</strong> kan du fx vælge V eller Qᵥ. Ved <strong>v = π · D · n</strong> kan du vælge n og få <strong>n = v / (π · D)</strong>.</p><p>Omskrivningen ændrer den valgte formel på samme plads i listen og i samme gruppe. Den tidligere venstreside bliver et kendt input. Andre formler, der henviste til den, følger nu dette input, så de fortsat bruger den samme størrelse. Kontrollér enheder og forudsætninger; enkelte ligninger har to rødder.</p>'},
     {section:'RESULTAT', title:'Følg formlen hele vejen tilbage', target:'.chain-details', detail:'chain-time', body:'<p>Åbn <strong>Se formelkæden</strong> for at følge delformlerne bag resultatet: fra rørets tværsnit til volumenflow og videre til fyldetid.</p><p><strong>Tilpas</strong> ved et led åbner dets indstillinger. Det gør det nemt at finde det sted, hvor en størrelse eller reference skal ændres.</p>'},
     {section:'ENHEDER', title:'Vælg præcis de enheder, du har', target:'.unit-symbol-list > div:last-child', scene:'units', body:'<p>Under <strong>Størrelserne i formlen</strong> vælger du opgavens enhed for hvert symbol. Med tal i feltet bliver <strong>20 mm → 0,02 m</strong> omregnet, før tallet vises i formlen. Feltet beholder 20 mm. Tomme felter viser symbolet og den nødvendige omregning.</p><p>For brøkenheder vælger du <strong>tæller og nævner hver for sig</strong>, som L/min her. Det virker også for fx t/m³ og kg/h i de relevante formler. Fælles enhedsfaktorer forkortes automatisk, fx ÷60 og ×60 ved omdr./min til m/min. Følg den viste formel uden ekstra omregning.</p>'},
     {section:'TAL', title:'Skriv de tal, du har fra opgaven', target:'.unit-symbol-list', scene:'numbers', body:'<p>Feltet <strong>Tal (valgfrit)</strong> indsætter tallet direkte i formlen. Her er B = 50 og L = 30 med meter som enhed. Du kan bruge komma eller punktum, fx 2,5.</p><p>Et tomt felt beholder symbolet. <strong>Ryd</strong> fjerner tallet igen. Hver selvstændig formel og figur har egne tal og enheder. Indsatte underformler deler værdier inden for samme formel; referencer følger deres kilde. Skifter du enhed, beholdes det tal, du har skrevet.</p>'},
@@ -9625,7 +9676,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       if(f){f.resultUnit=(a==='result-unit-part'?E.Units.withPart(f.dimension,E.resultUnit(f).id,el.dataset.part,el.value):E.Units.get(f.dimension,el.value)).id;expanded=true;save();render(true);}
     }else if(a==='isolate-figure-formula'){
       if(!el.value)return;
-      try{const id=newId('formula');model=E.isolateFigureFormula(model,el.dataset.id,el.value,id);expanded=true;save();select('formula',id);notify('Målet er isoleret. Angiv det kendte samlede rumfang eller areal.');}
+      try{const id=el.dataset.id;model=E.isolateFigureFormula(model,id,el.value);expanded=true;save();select('formula',id);notify('Målet er isoleret. Angiv det kendte samlede rumfang eller areal.');}
       catch(error){render(true);notify(error.message);}
     }else if(a==='measure-unknown'||a==='measure-dimension'||a==='assembly-scope'){
       const path=JSON.parse(el.dataset.path),expr=getAt(path);
@@ -9646,8 +9697,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     }else if(a==='rearrange-formula'){
       if(!el.value)return;
       try{
-        const id=newId('formula');model=E.rearrangeFormula(model,el.dataset.id,el.value,id);
-        expanded=true;save();select('formula',id);notify('Omskrivningen er tilføjet. Vælg de kendte størrelser og deres enheder.');
+        const id=el.dataset.id;model=E.rearrangeFormula(model,id,el.value);
+        expanded=true;save();select('formula',id);notify('Formlen er omskrevet. Vælg de kendte størrelser og deres enheder.');
       }catch(error){render(true);notify(error.message);}
     }else if(a==='custom-dimension'){
       const path=JSON.parse(el.dataset.path),old=getAt(path);

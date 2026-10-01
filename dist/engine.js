@@ -187,16 +187,57 @@
     const f=FORMULAS[formulaId];
     return f?REARRANGEMENTS[f.rearranged?.base||formulaId]:[];
   }
-  function rearrangeFormula(model,sourceId,formulaId,id) {
+  const quantityTarget=(id,family,key)=>`formula:${id}:quantity:${family}:${key}`;
+  function replaceFormula(model,source,replacement,previousQuantity){
+    model.formulas[model.formulas.findIndex(f=>f.id===source.id)]=replacement;
+    const oldTarget='formula:'+source.id;
+    function rewrite(expr,definition=false){
+      if(expr.kind==='ref'&&expr.target===oldTarget)expr.target=definition&&replacement.expression.kind==='isolatedMeasure'?quantityTarget(source.id,'figure','source'):previousQuantity;
+      else if(expr.kind==='formula')Object.values(expr.args).forEach(e=>rewrite(e,definition));
+      else if(expr.kind==='custom')Object.values(expr.args).forEach(a=>rewrite(a.expression,definition));
+      else if(expr.kind==='isolatedMeasure'){rewrite(expr.source,true);rewrite(expr.given);}
+      else if(expr.kind==='fillHeight')rewrite(expr.volume);
+    }
+    rewrite(model.tank.thickness);
+    for(const shape of model.shapes){
+      Object.values(shape.inputs).forEach(e=>rewrite(e));
+      if(shape.diameter)rewrite(shape.diameter.thickness);
+      Object.values(shape.plateThickness||{}).forEach(e=>rewrite(e));
+    }
+    model.formulas.forEach(f=>rewrite(f.expression));
+  }
+  // Stable references to a quantity in an equation. When that quantity moves
+  // from the left side to an input, existing consumers continue to use it.
+  // These descriptors are only exposed when a saved reference actually needs
+  // them; they are not extra formulas in the sidebar or a copy of the result.
+  function formulaQuantities(f){
+    const make=(family,key,info,expression,output=false)=>({target:quantityTarget(f.id,family,key),name:f.name+' · '+info.label,symbol:output?f.symbol:expression.kind==='symbol'?expression.symbol:info.symbol,dimension:info.dimension,expression,resultUnit:output?f.resultUnit:undefined,ownerType:'formula',ownerId:f.id,input:'quantity:'+key,quantity:true});
+    const catalogQuantities=(expr,result)=>{
+      const current=FORMULAS[expr.formula],family=current.rearranged?.base||expr.formula,base=BASE_FORMULAS[family],outputKey=current.rearranged?.key||'given';
+      const quantities={given:{symbol:base.symbol,label:base.name,dimension:base.dimension},...base.args};
+      return Object.entries(quantities).map(([key,info])=>make(family,key,info,key===outputKey?result:expr.args[key],key===outputKey&&f.expression.kind==='formula'));
+    };
+    if(f.expression.kind==='formula')return catalogQuantities(f.expression,ref('formula:'+f.id));
+    if(f.expression.kind==='isolatedMeasure'){
+      const e=f.expression,info={symbol:e.sourceDimension==='area'?'A_total':'V_total',label:'Kendt samlet '+(e.sourceDimension==='area'?'areal':'rumfang'),dimension:e.sourceDimension};
+      const out=[make('figure','given',info,e.given),make('figure','source',{...info,label:'Figurudtrykket før isolering'},e.source)];
+      if(e.source.kind==='formula')out.push(...catalogQuantities(e.source,e.given));
+      return out;
+    }
+    return [];
+  }
+  function rearrangeFormula(model,sourceId,formulaId,id=sourceId) {
     model=validateModel(model);
     const source=model.formulas.find(f=>f.id===sourceId);
     if(!source||source.expression.kind!=='formula')throw new Error('Vælg en grundformel at omskrive.');
-    if(model.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
+    const inPlace=id===sourceId;
+    if(!inPlace&&model.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
     const original=FORMULAS[source.expression.formula],target=FORMULAS[formulaId];
     if(!target||!rearrangements(source.expression.formula).some(o=>o.available&&o.id===formulaId))throw new Error('Denne omskrivning findes ikke.');
     const fromKey=original.rearranged?.key||'given',toKey=target.rearranged?.key||'given';
     const values={...clone(source.expression.args),[fromKey]:symbol(source.symbol)};
     const next=clone(model),f=newFormula(id,formulaId),known=values[toKey];
+    if(inPlace&&source.name!==original.name)f.name=source.name;
     if(source.groupId)f.groupId=source.groupId;
     if(known?.kind==='symbol')f.symbol=known.symbol;
     let unit=Units.base(f.dimension);
@@ -206,9 +247,9 @@
       if(d)unit=d.expression.kind==='symbol'?inputUnit(model,{symbol:d.expression.symbol,dimension:d.dimension,scope:inputScope(d)}):resultUnit(d);
     }
     f.resultUnit=unit.id;
-    if(model.formulas.some(other=>other.symbol===f.symbol)){
+    if(model.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===f.symbol)){
       const stem=f.symbol.replace(/_/g,'').slice(0,19);let n=2;
-      while(model.formulas.some(other=>other.symbol===stem+'_'+n))n++;
+      while(model.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===stem+'_'+n))n++;
       f.symbol=stem+'_'+n;
     }
     for(const key of Object.keys(target.args))f.expression.args[key]=clone(values[key]);
@@ -216,7 +257,8 @@
     next.inputUnits||={};
     const key=Units.key({symbol:source.symbol,dimension:source.dimension,scope:'formula:'+id});
     if(!own(next.inputUnits,key))next.inputUnits[key]=resultUnit(source).id;
-    next.formulas.push(f);
+    if(inPlace)replaceFormula(next,source,f,quantityTarget(sourceId,original.rearranged?.base||source.expression.formula,fromKey));
+    else next.formulas.push(f);
     return validateModel(next);
   }
   function newTankMass(model,id,separate=false) {
@@ -439,6 +481,12 @@
       if (type.crossSection) addOutput('crossSection', 'Tværsnitsareal', type.crossSection, 'A_t' + s.ordinal, type.crossSectionArgs);
     }
     for (const f of model.formulas) list.push({ target: `formula:${f.id}`, name: f.name, symbol: f.symbol, dimension: f.dimension, resultUnit:f.resultUnit, expression: f.expression, ownerType: 'formula', ownerId: f.id });
+    const quantities=new Map(model.formulas.flatMap(formulaQuantities).map(d=>[d.target,d]));
+    const pending=new Set(list.flatMap(d=>references(d.expression,model)));
+    for(const target of pending){
+      const d=quantities.get(target);if(!d)continue;
+      list.push(d);references(d.expression,model).forEach(r=>pending.add(r));
+    }
     return list;
   }
   function references(expr, model) {
@@ -620,20 +668,23 @@
     const shapeId=components(model).length===1?model.shapes[0]?.id:undefined;
     return {id,name:'Mål i samlet figur',symbol:'x',dimension:'length',expression:isolatedMeasure(assembly('volume',undefined,shapeId),'volume')};
   }
-  function isolateFigureFormula(model,sourceId,unknown,id){
+  function isolateFigureFormula(model,sourceId,unknown,id=sourceId){
     const next=validateModel(model),source=next.formulas.find(f=>f.id===sourceId);
     if(!source||!['volume','area'].includes(source.dimension))throw new Error('Vælg først figurens rumfang eller areal.');
-    if(next.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
+    const inPlace=id===sourceId;
+    if(!inPlace&&next.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
     const expression=ref('formula:'+sourceId),option=figureMeasureOptions(next,expression,source.dimension).options.find(o=>o.key===unknown);
     if(!option?.available)throw new Error(option?.reason||'Vælg et mål fra figuren.');
-    const f={id,name:(source.name+' → '+option.symbol).slice(0,120),symbol:option.symbol,dimension:'length',resultUnit:option.unit,expression:isolatedMeasure(expression,source.dimension,unknown,symbol(source.symbol)),...(source.groupId?{groupId:source.groupId}:{})};
-    if(next.formulas.some(other=>other.symbol===f.symbol)){
+    const f={id,name:(source.name+' → '+option.symbol).slice(0,120),symbol:option.symbol,dimension:'length',resultUnit:option.unit,expression:isolatedMeasure(inPlace?clone(source.expression):expression,source.dimension,unknown,symbol(source.symbol)),...(source.groupId?{groupId:source.groupId}:{})};
+    if(next.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===f.symbol)){
       const stem=f.symbol.replace(/_/g,'').slice(0,19);let n=2;
-      while(next.formulas.some(other=>other.symbol===stem+'_'+n))n++;
+      while(next.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===stem+'_'+n))n++;
       f.symbol=stem+'_'+n;
     }
     next.inputUnits[Units.key({symbol:source.symbol,dimension:source.dimension,scope:'formula:'+id})]=resultUnit(source).id;
-    next.formulas.push(f);return validateModel(next);
+    if(inPlace)replaceFormula(next,source,f,quantityTarget(sourceId,'figure','given'));
+    else next.formulas.push(f);
+    return validateModel(next);
   }
   function context(model) {
     const list = descriptors(model), map = new Map(list.map(d => [d.target, d]));

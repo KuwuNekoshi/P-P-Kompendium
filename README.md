@@ -114,7 +114,7 @@ Tryk **Isolér højde, bredde eller længde** under figurvisningen, eller vælg 
 4. Angiv det kendte samlede rumfang eller areal som symbol, formel eller reference. Det skal være oplyst uafhængigt af det mål, du vil finde.
 5. Skriv totalmålet og de øvrige kendte mål under **Størrelserne i formlen**, og vælg deres enheder. Den søgte størrelse vises ikke som input; et tidligere indtastet tal for den bruges ikke i løsningen.
 
-På en gemt rumfangs- eller arealformel kan du også bruge **Isolér et mål i figurerne** over formlen. Der oprettes en ny formel i samme gruppe. Den oprindelige figurformel bevares som kilde, og de øvrige mål bliver ved med at følge deres referencer. Resultatet kan bruges i andre formler. Den isolerede formel skriver ikke et mål tilbage på sin egen kildefigur.
+På en gemt rumfangs- eller arealformel kan du også bruge **Isolér et mål i figurerne** over formlen. Den valgte formel ændres på samme plads og i samme gruppe; der efterlades ingen ekstra formel, som skal slettes. Figurudtrykket indgår i omskrivningen, og de øvrige mål følger fortsat deres referencer. Resultatet kan bruges i andre formler. Den isolerede formel skriver ikke et mål tilbage på sin egen kildefigur.
 
 Eksempel: En kasse med længde L, bredde B og kassehøjde h har en halvcylinderbund med diameter B og samme længde L. Da gælder:
 
@@ -181,7 +181,9 @@ Valget gælder også figursummer, formelkæden, tilpasningspanelet, delberegning
 
 Vælg en grundformel, og brug **Isolér en størrelse** over formelvisningen. Fx kan **v = π · D · n** omskrives til både **n = v / (π · D)** og **D = v / (π · n)**. v er båndhastighed; V bruges normalt til rumfang.
 
-Valget opretter en **ny formel**. Dine øvrige kendte størrelser, indsatte formler og referencer følger med. Lokale tal og enheder kopieres til den nye formel, så de bagefter kan ændres uafhængigt; referencer bliver ved med at følge deres kilder. Den hidtidige venstreside bliver et kendt input, så du fx kan angive v fra opgaven. Dens resultatenhed genbruges som inputenhed, medmindre samme symbol allerede har et inputenhedsvalg. Den nye ukendtes enhed følger dens tidligere input, når det er muligt. Kontrollér enhederne under formlen. Originalen og dens eksisterende referencer bevares.
+Valget **erstatter den aktuelle formel** på samme plads i listen og i samme gruppe. Du skal ikke bagefter slette den gamle manuelt. Kendte værdier, enheder, indsatte formler og referencer følger med. Den hidtidige venstreside bliver et kendt input, så du fx kan angive v fra opgaven. Dens resultatenhed genbruges som inputenhed, medmindre samme symbol allerede har et inputenhedsvalg. Den nye ukendtes enhed følger dens tidligere input, når det er muligt. Kontrollér enhederne under formlen.
+
+Hvis andre formler brugte det tidligere resultat, følger de den tilsvarende størrelse i den omskrevne formel. Når `t = V / Qv` ændres til `V = t · Qv`, bruger eksisterende referencer til tiden derfor det kendte t-input. De bliver ikke ændret til at bruge rumfanget.
 
 Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning, parentesregler og TI-30XS-vejledning gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
 
