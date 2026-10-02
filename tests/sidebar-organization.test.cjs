@@ -14,7 +14,7 @@ function harness(model){
  changeView:()=>{},closeDialog:()=>{dialog.open=false;},openDialog:(title,body,footer)=>{dialog.open=true;scope.dialogTitle=title;scope.dialogBody=body;scope.dialogFooter=footer;input.value=(body.match(/data-group-name[^>]*value="([^"]*)"/)||[])[1]||'';},
  document:{addEventListener:(type,fn)=>(handlers[type]||=[]).push(fn),querySelectorAll:()=>buttons(),querySelector:()=>({focus(){focused.push('new-group');}})},matchMedia:()=>({matches:false})});
  const excerpt=(start,end)=>app.slice(app.indexOf(start),app.indexOf(end));
- vm.runInContext(excerpt('  function renderSidebar(','  function renderFigures(')+excerpt('  function select(','  function inspectReference(')+excerpt('  function formulaPicker(','  function addShape(')+excerpt("  document.addEventListener('click',event=>{","  $('#file-input').addEventListener('change'"),scope);
+ vm.runInContext(excerpt('  function renderSidebar(','  function renderFigures(')+excerpt('  function select(','  function inspectReference(')+excerpt('  function formulaPicker(','  function addShape(')+excerpt("  document.addEventListener('click',event=>{","  $('#file-input')?.addEventListener('change'"),scope);
  scope.render=()=>{scope.renderSidebar();scope.renderGoal();};scope.render();
  function click(dataset){const b={dataset};for(const fn of handlers.click||[])fn({target:{closest:selector=>selector==='[data-action]'?b:null}});}
  const change=(value,dataset)=>{for(const fn of handlers.change||[])fn({target:{value,dataset}});};

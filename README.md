@@ -1,20 +1,25 @@
 # P&P Kompendium
 
-Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Kompendiet viser formlen; resultatet beregner du selv.
+Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
 ## Brug det offline
 
-Hent **index.html** direkte fra [seneste GitHub Release](https://github.com/KuwuNekoshi/P-P-Kompendium/releases/latest) under **Assets**, og åbn filen i din browser.
+Hent den ønskede HTML-fil fra [seneste GitHub Release](https://github.com/KuwuNekoshi/P-P-Kompendium/releases/latest) under **Assets**, og åbn den i din browser.
 
-Du kan også hente hele projektet:
+| Version | Fil | Opsætninger | Lommeregner ved opstart |
+| --- | --- | --- | --- |
+| Almindelig | `index.html` | Import, eksport og lokal genåbning | Fra |
+| Eksamen | `eksamen.html` | Altid tom; ingen import, eksport eller lagring af opgaven | Til |
 
-1. Vælg **Code → Download ZIP** her i GitHub, og pak mappen ud.
-2. Dobbeltklik på **index.html** i mappens rod.
-3. Vælg, hvad du vil finde, indsæt figurer, og tilpas formlens dele.
+Begge versioner har en synlig **Lommeregner**-toggle øverst til højre. Når den er slået til, vises resultatet under formlen; manglende tal eller fejl forklares samme sted. Resultatet følger den valgte enhed. Afrunding påvirker kun visningen, ikke referencer eller mellemregninger.
 
-`index.html` indeholder hele kompendiet. Den kan også kopieres alene til en anden computer. Der kræves hverken installation, internet, login, en lokal server eller AI. Alle scripts og al styling er indlejret. Der bruges ingen CDN'er, eksterne skrifttyper, analyseværktøjer eller netværkskald.
+I den **almindelige version** henter **Gem opsætning** en `.pp.json`-fil med figurer, formler, grupper, tal og enheder. **Åbn opsætning** importerer filen igen. Opsætningen huskes også lokalt, når browseren tillader det. Gem som fil, før du flytter til en anden computer eller rydder browserdata. Eksisterende opgavefiler kan stadig åbnes.
 
-**Gem opsætning** henter en `.pp.json`-fil med dine figurer og valg. Brug **Åbn opsætning** til at åbne den igen. Opsætningen huskes også lokalt i browseren, når browseren tillader det. Gem som fil, før du flytter til en anden computer eller rydder browserdata.
+**Eksamensversionen** starter tom, hver gang filen åbnes eller siden genindlæses, også ved tilbage-navigation fra browserens sidecache. Den hverken læser eller skriver gemte opgaver. Ændringer findes kun, mens siden er åben. Tema og valg af formelvisning kan stadig huskes. Introduktionen bruger et midlertidigt eksempel og vender bagefter tilbage til din egen opsætning.
+
+Hver HTML-fil indeholder hele kompendiet og kan kopieres alene til en anden computer. Der kræves hverken installation, internet, login, en lokal server eller AI. Scripts og styling er indlejret. Der bruges ingen CDN'er, eksterne skrifttyper, analyseværktøjer eller netværkskald.
+
+Du kan også vælge **Code → Download ZIP**, pakke projektet ud og åbne enten `index.html` eller `eksamen.html` i mappens rod.
 
 ## Standardenheder
 
@@ -60,7 +65,7 @@ Ved rumfangs- og arealinput kan du også vælge figuren direkte under **Fra én 
 
 ## Fra opgave til formel
 
-**? øverst til højre** starter en guidet introduktion med 25 trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
+**? øverst til højre** starter en guidet introduktion trin for trin. Hvert trin fremhæver det relevante område og ruller det ind i visningen, også i tilpasningspanelet med egen scroll. Brug **Næste** / **Forrige**, piletasterne eller Enter på trinnets overskrift. **×** eller **Esc** afslutter når som helst. Via **Læs hjælpen som tekst** kan du åbne den samlede vejledning.
 
 Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, egne formler, indsatte formler, formelkæden, omskrivning af formler, enheder, tal med små mærker og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
 
@@ -78,7 +83,7 @@ En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af ki
 
 Formlerne viser **kun nødvendige parenteser**, både i MathML-visningen, kopieret tekst og LaTeX. Fx bliver `((L · h) + (B · h))` til `L · h + B · h`, og `(D)^2` bliver til `D^2`. Skal hele summen ganges med 2, vises den som `2 · (L · h + B · h)`.
 
-**Brøker inde i brøker** får en lille indrykning og ekstra lodret luft for hvert niveau. Den ydre brøkstreg strækker sig lidt længere ud end de indre streger, både når en brøk står i tælleren og i nævneren. Det gør niveauerne lettere at skelne i alle tre visninger og begge temaer. Kopieret tekst, LaTeX og TI-30-længdeskøn bruger fortsat det samme matematiske udtryk.
+**Brøker inde i brøker** får en lille indrykning og ekstra lodret luft for hvert niveau. Den ydre brøkstreg strækker sig lidt længere ud end de indre streger, både når en brøk står i tælleren og i nævneren. Det gør niveauerne lettere at skelne i alle tre visninger og begge temaer. Kopieret tekst og LaTeX bruger fortsat det samme matematiske udtryk.
 
 Regnerækkefølgen bestemmer, hvor parenteserne bevares: `a − (b + c)`, `a / (b · c)` og `(D − 2 · t)^2` beholder dem. En brøkstreg eller rodstreg afgrænser allerede sit indhold på skærmen og i LaTeX, så der vises ingen ekstra parenteser omkring hele tælleren, nævneren eller rodudtrykket. Den kopierede tekst bruger de parenteser, der er nødvendige ved lineær indtastning. Figursummer og enhedsomregninger beholder deres betydning, og gemte opsætninger ændres ikke.
 
@@ -149,15 +154,15 @@ Under **Størrelserne i formlen** har hver kendt størrelse et felt **Tal (valgf
 - Indtastede tal omregnes før visning. **20 mm** vises som **0,02 m**, **8 g/cm³** som **8000 kg/m³**, og **87 %** som **0,87**. Enhedsmærket viser den omregnede enhed; inputfeltet beholder dit tal og din valgte enhed. Skifter du inputenhed, beholdes tallet i feltet.
 - Hver selvstændig formel og figur har egne tal og enheder. To formler kan fx have hver sin r. Indsatte underformler deler symboler inden for samme formel; en reference følger fortsat sin kilde. Når flere kilder bruger samme symbol, viser inputlisten, hvilken formel eller figur hvert felt tilhører. Udvidede referencer viser deres kendte tal. Beregnede referencer i **Kort** vises fortsat som mellemresultatets symbol.
 - Tallene følger med i gemte opsætninger, omskrivninger og kopieret tekst. Eksisterende opsætninger uden tal kan stadig åbnes. Negative tal får nødvendige parenteser, og en potens afgrænses tydeligt fra tallets små mærker.
-- Talindsættelse ændrer ikke den symbolske forenkling: B og L bevarer hver deres identitet, også hvis de har samme talværdi. TI-30-skønnet bruger tallets faktiske længde og udelader enheds- og symbolmærkerne.
+- Talindsættelse ændrer ikke den symbolske forenkling: B og L bevarer hver deres identitet, også hvis de har samme talværdi.
 
-Når inputenheden er **%**, bliver tallet vist som en decimalfaktor i **Værdier** og **Begge**: **87 % → 0,87**. Feltet beholder 87 og procentenheden; en linje under feltet viser omregningen. I **Enheder** og ved et tomt felt bevares den symbolske division med 100. Procentomregningen holdes adskilt fra andre enhedsfaktorer, så den ikke forsvinder ved fx omregning af kopafstand fra cm. Kopieret tekst og TI-30-skøn følger den viste decimalfaktor.
+Når inputenheden er **%**, bliver tallet vist som en decimalfaktor i **Værdier** og **Begge**: **87 % → 0,87**. Feltet beholder 87 og procentenheden; en linje under feltet viser omregningen. I **Enheder** og ved et tomt felt bevares den symbolske division med 100. Procentomregningen holdes adskilt fra andre enhedsfaktorer, så den ikke forsvinder ved fx omregning af kopafstand fra cm. Kopieret tekst følger den viste decimalfaktor.
 
 ### Omregn tal før visning
 
-Enhedsomregningen sker før tallet sættes ind i skærmformlen, kopieret tekst, LaTeX og TI-30-delberegninger. Fx bliver `B = 20 mm` til `0,02 m (B)`; omregningen `/ 1000` fylder ikke i regnestykket. Felter uden tal og visningen **Enheder** beholder den symbolske omregning. Resultatenhedens omregning gælder stadig hele udtrykket og vises sidst.
+Enhedsomregningen sker før tallet sættes ind i skærmformlen, kopieret tekst og LaTeX. Fx bliver `B = 20 mm` til `0,02 m (B)`; omregningen `/ 1000` fylder ikke i regnestykket. Felter uden tal og visningen **Enheder** beholder den symbolske omregning. Resultatenhedens omregning gælder stadig hele udtrykket og vises sidst.
 
-Decimaler, der kan skrives endeligt, omregnes eksakt. Periodiske decimaler vises med op til 16 betydende cifre og markeres med **≈** under feltet. Den oprindelige inputværdi og den præcise omregningsfaktor bevares. °C omregnes til K for absolutte temperaturer; temperaturforskelle ændrer ikke talværdi. TI-30-skønnet tæller de omregnede tal.
+Decimaler, der kan skrives endeligt, omregnes eksakt. Periodiske decimaler vises med op til 16 betydende cifre og markeres med **≈** under feltet. Den oprindelige inputværdi og den præcise omregningsfaktor bevares. °C omregnes til K for absolutte temperaturer; temperaturforskelle ændrer ikke talværdi.
 
 ### Kopelevator: kopafstand eller antal kopper
 
@@ -175,7 +180,7 @@ Den tredelte knap **Værdier · Enheder · Begge** ved formelvisningen skifter m
 
 Faste tal og potenser bevares. I Værdier og Begge er indtastede tal allerede omregnet; ubekendte og resultatets enhed beholder nødvendige omregningsfaktorer. Resultatets enhed står ved venstresiden i alle tre visninger. Visningsvalget ændrer ikke dine tal, enheder eller formler. Browseren husker valget; standarden er **Begge**.
 
-Valget gælder også figursummer, formelkæden, tilpasningspanelet, delberegninger og **Kopiér formel**. I Værdier og Enheder kopieres selve formlen uden inputlisten. Begge tager også listen over tal og inputenheder med. TI-30-skønnet bruger de indtastede tal uanset visning. Formelsamlingens grundformler beholder deres almindelige symboler.
+Valget gælder også figursummer, formelkæden, tilpasningspanelet, delberegninger og **Kopiér formel**. I Værdier og Enheder kopieres selve formlen uden inputlisten. Begge tager også listen over tal og inputenheder med. Formelsamlingens grundformler beholder deres almindelige symboler.
 
 ### Isolér en anden størrelse
 
@@ -185,7 +190,7 @@ Valget **erstatter den aktuelle formel** på samme plads i listen og i samme gru
 
 Hvis andre formler brugte det tidligere resultat, følger de den tilsvarende størrelse i den omskrevne formel. Når `t = V / Qv` ændres til `V = t · Qv`, bruger eksisterende referencer til tiden derfor det kendte t-input. De bliver ikke ændret til at bruge rumfanget.
 
-Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning, parentesregler og TI-30XS-vejledning gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
+Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning og parentesregler gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
 
 **Alle 133 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **337 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
 
@@ -206,23 +211,11 @@ Med motorens omdrejningstal i **omdr./min**, tromlediameteren i **m** og båndha
 
 Forkortningen bruger eksakte enhedsfaktorer i produkter, brøker og faste potenser. Den kan også følge fælles faktorer gennem en hel sum eller forskel og eksakte kvadratrødder. Forskellige faktorer i separate sumled forkortes ikke imod hinanden. Temperaturforskydninger som **+273,15** holdes adskilt fra multiplikationsfaktorer. Fx giver liter divideret med liter/min direkte minutter, uden en omvej gennem m³ og sekunder i den viste slutformel.
 
-Brug tallene direkte i de valgte inputenheder. Omregningerne under enhedsvalgene er mærket **SI-reference**; de skal ikke udføres oven i den viste formel. Nødvendige restfaktorer kan stå samlet ét sted. TI-30XS-skønnet og kopierede formler bruger det forkortede udtryk. Forslag til delberegninger bevarer de enkelte mellemresultaters enheder og forkorter hvert trin for sig.
-
-### Lange formler på TI-30XS
-
-Under den aktive formel vises et **vejledende længdeskøn** for indtastning på TI-30XS MultiView. TI angiver op til **80 tegn** i indtastningslinjen ([TI, løsning 15401](https://education.ti.com/en/customer-support/knowledge-base/scientific-elem-calculators/general-information/15401)). Andre TI-30-modeller kan have andre grænser.
-
-Skønnet tæller **de indtastede tals faktiske længde** og regner med **4–8 tegn for hvert endnu ukendt tal**, for hver forekomst. Operatorer, nødvendige parenteser og enhedsomregninger indgår; symbolnavne og enhedslabels gør ikke. Skønnet tæller kun parenteser, som selve regnestykket behøver; eventuelle ekstra parenteser omkring små forklarende mærker udelades. Det tager udgangspunkt i lineær indtastning med division. Decimaler, minustegn, lange tal, skabeloner og tastemetode påvirker pladsen, så det er ingen garanti for, at formlen passer. Fra et øvre skøn på 72 tegn anbefales delberegninger, så der er lidt plads op til grænsen. Det er kompendiets vejledende tærskel, ikke en ekstra TI-grænse.
-
-**Forslag: mellemresultater og en kort slutformel** viser de konkrete trin i rækkefølge. Fx beregnes `V_1` og `V_2` hver for sig, og bagefter bruges `V_1 + V_2`. Hvis slutresultatet ønskes i liter, bliver sluttrinnet `(V_1 + V_2) · 1000`, når delvolumenerne er i m³. Store delformler deles videre efter behov. Et rent mellemudtryk får et ledigt navn som `M_1`; dets værdi bruges direkte i det efterfølgende trin. Forslaget ændrer ikke opsætningen.
-
-Vurderingen følger **Kort/Udfoldet**, valgte enheder, referencer, figurer og åbne/lukkede flader. I Kort forudsættes referencernes værdier allerede beregnet. Deltrinene bevarer nødvendige parenteser, omregninger og rækkefølgen i subtraktion og division. Hvis et trin stadig er langt, står det ved forslaget. Afrund først til sidst.
-
-Der gives også besked ved mere end fire indlejrede brøker, rødder eller potenser, som kan ramme [MathPrint-grænsen på fire niveauer](https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_Home.HTML). TI-30XS har [syv hukommelsesvariable](https://education.ti.com/html/eguides/scientifics/TI-30XS-MultiView/EN/Content/EG_30XSMV/M_GetStart/GS_MemVar.HTML): x, y, z, t, a, b og c. De kan bruges til mellemresultater; genbrug først en variabel, når dens tidligere værdi er færdigbrugt. Hele vejledningen fungerer offline; kun kildehenvisningerne kræver internet.
+Brug tallene direkte i de valgte inputenheder. Omregningerne under enhedsvalgene er mærket **SI-reference**; de skal ikke udføres oven i den viste formel. Nødvendige restfaktorer kan stå samlet ét sted. Kopierede formler bruger det forkortede udtryk.
 
 ### Input- og resultatenheder
 
-Hver kendt størrelse har et enhedsvalg, fx **mm → m**, **L/min → m³/s** eller **% → tal**. Indtast eventuelt tallet fra opgaven i feltet ved symbolet. Omregningsfaktorerne er allerede med i formlen; selve resultatet beregner du på lommeregneren.
+Hver kendt størrelse har et enhedsvalg, fx **mm → m**, **L/min → m³/s** eller **% → tal**. Indtast eventuelt tallet fra opgaven i feltet ved symbolet. Omregningerne håndteres allerede i formlen. Slå **Lommeregner** til for også at se det beregnede resultat.
 
 Brøkenheder har **to uafhængige dropdowns** for tæller og nævner. Vælg fx **t (ton) / m³**, **kg / h**, **mg / min** eller **mL / h**, både for input og resultat. Skifter du tælleren, bevares nævneren, og omvendt. Alle kombinationer af de relevante enheder er tilgængelige; masseflow kombinerer masse og tid, mens densitet kombinerer masse og rumfang.
 
@@ -382,29 +375,30 @@ npm run check
 - `dist/engine.js`: referencegraf, substitution, omskrivning med bevarede enheder og input, MathML, tekstformat, LaTeX og validering.
 - `dist/custom-formula.js`: sikker parser og dimensionskontrol for egne udtryk.
 - `dist/fill-height.js`: bund-til-top-rækkefølge, delvise fyldeprofiler og Hx-grene.
-- `dist/calculator-guide.js`: vejledende TI-30XS-længdeskøn og symbolske delberegninger.
 - `dist/geometry.js`: placering af sammenføjede figurer og klikbare snitskitser.
 - `dist/solid-preview.js`: 3D-geometri, perspektiv, lys samt rotation og zoom på canvas.
 - `dist/tour.js`: guidet introduktion med fremhævning, placering, scroll og tastaturnavigation.
 - `dist/app.js`: dansk grænseflade, figurvalg, temaskift og lokale opsætninger.
 - `dist/styles.css`: responsivt design og begge temaer.
 - `dist/index.html`: indgangspunkt for kildefilerne; kan også åbnes direkte lokalt.
-- `index.html`: genereret, selvstændig offlineudgave. Byg igen efter ændringer i `dist/`.
+- `index.html` og `eksamen.html`: genererede, selvstændige offlineudgaver. Byg begge igen efter ændringer i `dist/`.
 
 Formlernes skabeloner består af faste matematiske operationer. Der bruges hverken `eval`, dynamisk kodegenerering eller en tjeneste til at behandle opsætninger. MathML vises af browseren.
 
-Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer den selvstændige HTML-fil, script-rækkefølge og offlinekrav.
+Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer begge selvstændige HTML-filer, script-rækkefølge og offlinekrav.
 
 Alle 337 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
 
-Talindsættelse kontrolleres på alle 133 grundformler og 337 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og TI-30-længdeskøn med de faktiske tal.
+Talindsættelse kontrolleres på alle 133 grundformler og 337 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og resultatvisning.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
 
 ### Udgivelser
 
-GitHub-workflowen **Udgiv offline-kompendium** kører ved ændringer i `package.json` på `main` og kan også startes manuelt. Den kører testene, bygger offlinefilen og kontrollerer, at den matcher den indcheckede `index.html`. Versionsnummeret i `package.json` og den tilsvarende tekst i `releases/vX.Y.Z.md` bruges til en GitHub Release med `index.html` som asset. Udgivelsen peger på det præcise commit; allerede udgivne versioner ændres ikke.
+GitHub-workflowen **Udgiv offline-kompendium** kører ved ændringer i `package.json` på `main` og kan også startes manuelt. Den kører testene, bygger begge offlinefiler og kontrollerer, at de matcher de indcheckede `index.html` og `eksamen.html`. Versionsnummeret i `package.json` og den tilsvarende tekst i `releases/vX.Y.Z.md` bruges til en GitHub Release med både `index.html` og `eksamen.html` som assets. Udgivelsen peger på det præcise commit; allerede udgivne versioner ændres ikke.
 
-Kontroller for forhåndsomregning dækker alle enhedsfamilier, periodiske decimaler og forkortede TI-30-udtryk. Fladetykkelser testes med åbne/lukkede flader, samlinger, separate diametermål, alle ti figurer og gem/åbn. Ligevægt kontrolleres med blandede enheder og en samlet referencekæde for kassen og keglen fra opgaven.
+Kontroller for forhåndsomregning dækker alle enhedsfamilier, periodiske decimaler og forkortede udtryk. Fladetykkelser testes med åbne/lukkede flader, samlinger, separate diametermål, alle ti figurer og gem/åbn. Ligevægt kontrolleres med blandede enheder og en samlet referencekæde for kassen og keglen fra opgaven.
 
 Hx-kontroller dækker alle ti profiler i begge retninger, overgange mellem dele, tom/fuld tank, små fyldninger, keglestubbens cylindertilfælde, delte mål, enheder, referencer, inputscopes, fejltilfælde, gem/åbn og de nye brugerfladekontroller.
+
+Versionstestene kører de faktiske scripts fra begge HTML-filer og kontrollerer opstart, import/eksport, lokal lagring, deaktiveret browserlagring, lommeregnerknappen, tilbage-navigation og introduktionens gendannelse af opsætningen.

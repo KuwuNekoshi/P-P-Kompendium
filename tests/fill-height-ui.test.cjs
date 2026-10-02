@@ -17,7 +17,7 @@ function harness(m){
   openDialog:(title,body)=>{scope.dialogBody=body;},document:{addEventListener:(type,fn)=>handlers[type]=fn,querySelectorAll:()=>[]}});
  scope.getAt=p=>p.reduce((a,k)=>a?.[k],scope.model);scope.setAt=(p,v)=>scope.getAt(p.slice(0,-1))[p.at(-1)]=v;
  const excerpt=(a,b)=>app.slice(app.indexOf(a),app.indexOf(b));
- vm.runInContext(excerpt('  function ownerTarget(','  function notify(')+excerpt('  function formulaSummary(','  function renderSidebar(')+excerpt('  function expressionEditor(','  function inspectorHeader(')+excerpt('  function renderPreview(','  function valueDisplayControl(')+excerpt('  function renderLibraryResults(','  function changeView(')+excerpt('  function formulaPicker(','  function addShape(')+excerpt("  document.addEventListener('click',event=>{","  $('#file-input').addEventListener('change'"),scope);
+ vm.runInContext(excerpt('  function ownerTarget(','  function notify(')+excerpt('  function formulaSummary(','  function renderSidebar(')+excerpt('  function expressionEditor(','  function inspectorHeader(')+excerpt('  function renderPreview(','  function valueDisplayControl(')+excerpt('  function renderLibraryResults(','  function changeView(')+excerpt('  function formulaPicker(','  function addShape(')+excerpt("  document.addEventListener('click',event=>{","  $('#file-input')?.addEventListener('change'"),scope);
  scope.render=()=>{};
  return {scope,get,saves:()=>saves,change:(action,value,path,extra={})=>handlers.change({target:{value,dataset:{action,path:JSON.stringify(path),...extra}}})};
 }

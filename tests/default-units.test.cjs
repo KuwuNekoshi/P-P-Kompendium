@@ -58,7 +58,7 @@ test('explicit selections, including SI units, survive initialization, copying a
  const saved=JSON.stringify(m);E.initializeUnitChoices(m);assert.equal(JSON.stringify(m),saved);
 });
 test('production save persists new defaults and changing back to metres stays selected',()=>{
- const m=setup('diameter'),handlers={},stored=new Map(),scope=vm.createContext({E,model:m,tutorial:null,expanded:false,STORAGE:'setup',localStorage:{setItem:(k,v)=>stored.set(k,v)},$:()=>({}),render:()=>{},notify:()=>{},document:{addEventListener:(name,fn)=>handlers[name]=fn}});
+ const m=setup('diameter'),handlers={},stored=new Map(),scope=vm.createContext({E,EXAM:false,model:m,tutorial:null,expanded:false,STORAGE:'setup',localStorage:{setItem:(k,v)=>stored.set(k,v)},$:()=>({}),render:()=>{},notify:()=>{},document:{addEventListener:(name,fn)=>handlers[name]=fn}});
  const excerpt=(a,b)=>app.slice(app.indexOf(a),app.indexOf(b));
  vm.runInContext(excerpt('  function save() {','  function setTheme() {')+excerpt("  document.addEventListener('change',event=>{","  document.addEventListener('input',event=>{"),scope);
  scope.save();assert.equal(JSON.parse(stored.get('setup')).inputUnits['formula:diameter:r:length'],'mm');

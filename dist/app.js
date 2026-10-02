@@ -1,6 +1,8 @@
 (function () {
   'use strict';
   const E = window.PP;
+  const EXAM = document.documentElement.dataset.edition === 'exam';
+  const emptySetup = () => ({version:6,inputUnits:{},title:'Ny opsætning',tank:E.defaultTank(),shapes:[],formulas:[],connections:[]});
   const STORAGE = 'pp-kompendium.symbolic.v2', THEME = 'pp-kompendium.theme', DISPLAY = 'pp-kompendium.formula-display';
   const VALUE_DISPLAYS={
     values:{label:'Værdier',hint:'Viser indtastede tal. Størrelser uden tal vises som symboler.'},
@@ -13,15 +15,15 @@
   const $ = selector => document.querySelector(selector);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const pathAttr = p => esc(JSON.stringify(p));
-  let model = E.initializeUnitChoices(E.example()), activeId = 'time', selected = { type:'formula', id:'time' };
+  let model = E.initializeUnitChoices(EXAM ? emptySetup() : E.example()), activeId = EXAM ? null : 'time', selected = EXAM ? null : { type:'formula', id:'time' };
   let view = 'builder', expanded = true, uid = 0, toastTimer, pending = null, dialogOrigin = null, notice = '', joinDraft = null;
   let geometryView='3d',preview3D=null,previewPose=null;
-  let tutorial = null;
-  let resultVisible=false,entryKeys=[];
+  let tutorial = null, tourController = null;
+  let resultVisible=EXAM;
   // Keep in-progress typing (e.g. "1," or "-") separate from saved numbers.
   let valueDrafts = new Map();
   try {
-    const saved = localStorage.getItem(STORAGE);
+    const saved = EXAM ? null : localStorage.getItem(STORAGE);
     if (saved) { model = E.initializeUnitChoices(E.validateModel(JSON.parse(saved)),false); activeId = model.formulas.at(-1)?.id || null; selected = activeId ? { type:'formula',id:activeId } : null; }
   } catch (_) { notice = 'Den gemte opsætning kunne ikke åbnes. Bassin-eksemplet er indlæst.'; }
   let theme = 'light';
@@ -67,6 +69,7 @@
   function save() {
     if (tutorial) return;
     E.initializeUnitChoices(model);
+    if (EXAM) { $('#save-status').textContent = 'Eksamensversion · gemmes ikke'; return; }
     try { localStorage.setItem(STORAGE,JSON.stringify(model)); $('#save-status').textContent = 'Gemt på denne computer'; }
     catch (_) { $('#save-status').textContent = 'Gem opsætningen som fil'; }
   }
@@ -146,11 +149,10 @@
     const f = active();
     if (!f) {
       $('#formula-preview').innerHTML = '<div class="empty-preview"><span class="large-function">ƒ</span><h2>Find din næste formel</h2><p>Vælg, hvad du vil finde. Tilpas derefter formlens dele til det, du kender fra opgaven.</p><button class="button primary" data-action="add-formula">Vælg en formel</button></div>';
-      $('#formula-chain').innerHTML = ''; $('#symbol-guide').innerHTML = ''; $('#calculator-guide').hidden=true; $('#calculator-guide').innerHTML=''; return;
+      $('#formula-chain').innerHTML = ''; $('#symbol-guide').innerHTML = ''; return;
     }
     const r = ctx.safe(`formula:${f.id}`,expanded ? 'expanded' : 'compact',true);
     const full = ctx.safe(`formula:${f.id}`);
-    renderCalculatorGuide(ctx,f);
     const definition=f.expression.kind==='formula'?E.FORMULAS[f.expression.formula]:null;
     const source=schoolRef(definition);
     let note=definition?.note||'';
@@ -170,7 +172,7 @@
       const state=E.FillHeight.analyze(node,E.evaluate);
       const short=node.parts.map((p,i)=>E.FillHeight.shortBranch(node,i,state.parts?.[i]?.d));
       const equation=(tree,symbol,unit)=>`<div class="fill-equation">${displayMath(tree,symbol,unit)}</div>`;
-      const steps=b=>`${equation(b.remaining,'V_rest','m³')}${equation(b.offset,'H_fyldt','m')}${b.local?equation(b.local,'h_del','m'):`<p>Find h_del mellem 0 og ${esc('H_del'+(node.parts.indexOf(b.part)+1))}, så denne ligning passer:</p>${equation(b.equation,'V_rest','m³')}<p class="field-note">Prøv en højde, beregn rumfanget, og justér højden op eller ned. Halvér intervallet mellem for lav og for høj, indtil højden er præcis nok.${b.part.type==='halfCylinder'?' Brug acos (cos⁻¹) i <strong>radianer</strong>, dvs. RAD på TI-30.':''}</p>`}${equation(b.ast,'H_x','m')}`;
+      const steps=b=>`${equation(b.remaining,'V_rest','m³')}${equation(b.offset,'H_fyldt','m')}${b.local?equation(b.local,'h_del','m'):`<p>Find h_del mellem 0 og ${esc('H_del'+(node.parts.indexOf(b.part)+1))}, så denne ligning passer:</p>${equation(b.equation,'V_rest','m³')}<p class="field-note">Prøv en højde, beregn rumfanget, og justér højden op eller ned. Halvér intervallet mellem for lav og for høj, indtil højden er præcis nok.${b.part.type==='halfCylinder'?' Brug acos (cos⁻¹) i <strong>radianer</strong>, dvs. RAD på':''}</p>`}${equation(b.ast,'H_x','m')}`;
       const active=state.status==='ready'?short[state.active]:null;
       const rows=short.map((b,i)=>`<li class="fill-part ${state.status==='ready'&&i===state.active?'fill-active':''}"><div class="fill-part-heading"><strong>${i+1}. ${esc(b.part.name)}</strong><span>${state.status==='ready'?(i<state.active?'Helt fyldt':i===state.active?(state.remaining===state.parts[i].capacity?'Fyldt til kanten':state.remaining===0?'Tom · start her':'Her ligger væskeoverfladen'):'Endnu tom'):'Del '+(i+1)}</span></div>${equation(b.capacity,'V_del'+(i+1),'m³')}${equation(b.h,'H_del'+(i+1),'m')}<details data-detail-key="fill-branch-${n}-${b.part.id}"><summary>Delvis fyldning af denne del</summary><p>Brug denne gren, når alle dele nedenunder er fulde, og restvolumen er mellem 0 og V_del${i+1}.</p>${steps(b)}</details></li>`).join('');
       const warning=state.status==='error'?`<p class="error-box" role="status">${esc(state.error)}</p>`:state.status==='incomplete'?'<p class="fill-status" role="status">Angiv produktets volumen og tankens indvendige mål under <strong>Størrelserne i formlen</strong>. Så markeres den del, hvor væskeoverfladen ligger. Indtil da kan du bruge grenene nedenfor.</p>':`<p class="fill-status" role="status">${state.volume===0?'Tanken er tom.':state.volume>=state.total?'Tanken er helt fyldt.':'Væskeoverfladen ligger i del '+(state.active+1)+': '+esc(active.part.name)+'.'}</p>`;
@@ -228,17 +230,6 @@
     // A carry can move the first nonzero digit left (0.009999 -> 0.0100).
     const resultPlaces=Math.max(0,resultFraction.search(/[1-9]/))+3;
     return (value<0?'-':'')+resultWhole+','+resultFraction.slice(0,resultPlaces);
-  }
-  function renderCalculatorGuide(ctx,f){
-    const host=$('#calculator-guide'),G=window.PPCalculatorGuide;
-    const guide=G.create(ctx,'formula:'+f.id,expanded?'expanded':'compact');
-    host.hidden=!guide;
-    if(!guide){host.innerHTML='';return;}
-    const size=guide.estimate,plan=guide.plan,range=s=>s.min===s.max?String(s.min):s.min+'–'+s.max;
-    host.classList.toggle('calculator-caution',size.recommend);
-    const heading=size.tooLong?'Formlen kan blive for lang til TI-30XS':size.deep?'Del de indlejrede udtryk op':size.recommend?'Overvej at dele formlen op':'TI-30XS · vejledende længdeskøn';
-    const rows=plan?.steps.map((step,i)=>`<li><div class="calculator-step-heading"><strong>${i+1}. ${esc(step.name)}</strong><span>Ca. ${range(step.estimate)} tegn</span></div><div class="calculator-math">${displayMath(step.ast,step.symbol,step.unit)}</div>${step.estimate.tooLong||step.estimate.deep?'<p class="calculator-step-note">Dette trin kan stadig kræve flere delberegninger.</p>':''}${!step.unit?'<p class="calculator-step-note">Brug dette mellemresultat direkte, hvor symbolet står i næste trin.</p>':''}</li>`).join('')||'';
-    host.innerHTML=`<div class="calculator-heading"><h3>${heading}</h3><span>Ca. ${range(size)} tegn</span></div><p class="calculator-intro">${expanded?'Den udfoldede formel':'Kortvisningen'} · indtastede tal tælles med deres faktiske længde; øvrige symboler skønnes til 4–8 tegn hver. TI-30XS MultiView har plads til op til 80 tegn i en indtastning.</p>${size.deep?'<p class="calculator-intro">Brøker, rødder og potenser ligger op til '+size.nesting+' niveauer inde i hinanden. MathPrint understøtter op til 4; delberegninger kan hjælpe.</p>':''}${rows?`<details class="calculator-plan" data-detail-key="calculator-plan-${esc(f.id)}"><summary>Forslag: ${plan.steps.length} ${plan.steps.length===1?'mellemresultat':'mellemresultater'} og en kort slutformel</summary><p>Beregn delene i rækkefølgen nedenfor. Brug enhederne ved hvert mellemresultat, og afrund først det endelige svar.</p><ol>${rows}<li class="calculator-final"><div class="calculator-step-heading"><strong>${plan.steps.length+1}. Saml resultatet</strong><span>Ca. ${range(plan.estimate)} tegn</span></div><div class="calculator-math">${displayMath(plan.final,f.symbol,E.resultUnit(f).label)}</div></li></ol>${plan.incomplete?'<p class="calculator-step-note">Forslaget forkorter formlen, men enkelte trin kan stadig være for lange med dine tal.</p>':''}<p>Gem gerne mellemresultaterne i ledige hukommelsesvariable, fx x og y. Brug de gemte variable i næste indtastning. Symbolerne her, fx V₁ og V₂, betegner dine mellemresultater.</p></details>`:''}<details class="calculator-method" data-detail-key="calculator-method"><summary>Sådan vurderes længden</summary><p>Skønnet tæller hver forekomst af et tal samt operatorer og nødvendige parenteser ved lineær indtastning med ÷. Dine indtastede tal tælles præcist, og manglende tal skønnes til 4–8 tegn pr. forekomst. Kun parenteser, der er nødvendige for selve regnestykket, tæller med. Symbolnavne og de små enhedslabels tæller ikke med. Decimaler, minustegn, lange tal, brøkskabeloner og din tastemetode kan ændre pladsbehovet; skønnet er ingen garanti for, at indtastningen passer.</p><p>I Kort skal de viste referencer allerede være beregnet. Forslaget ændrer ikke dine gemte formler. Hvert trin indeholder de nødvendige omregninger efter forkortning, og slutformlen giver resultatet i din valgte enhed. Andre TI-30-modeller kan have andre grænser.</p><p>TI-30XS har 7 hukommelsesvariable: x, y, z, t, a, b og c. Gem først nye værdier i en variabel, når dens tidligere værdi er færdigbrugt.</p><p class="calculator-sources">Kilder hos Texas Instruments (kræver internet): <a href="${G.SOURCES.length}" target="_blank" rel="noopener noreferrer">Indtastningsgrænse</a> · <a href="${G.SOURCES.nesting}" target="_blank" rel="noopener noreferrer">MathPrint</a> · <a href="${G.SOURCES.memory}" target="_blank" rel="noopener noreferrer">Hukommelse</a>.</p></details>`;
   }
   function unitOptions(dimension,selected) {
     return E.Units.choices(dimension).map(u=>`<option value="${esc(u.id)}" ${u.id===selected?'selected':''}>${esc(u.label)}</option>`).join('');
@@ -395,7 +386,15 @@
     const showHx=words.every(word=>normalize('Hx produkthøjde væskehøjde fyldehøjde højde volumen tank beholder cylinder kegle kasse firkant sammensat').includes(word));
     $('.library-results').innerHTML=`<p class="search-count" role="status">${formulas.length+(showHx?1:0)+(showMeasure?1:0)+(showCustom?1:0)} formler${query?' fundet':''}</p>`+(showCustom?'<section class="formula-group"><h3>Egne formler</h3><div class="formula-grid"><button class="formula-card" data-action="use-formula" data-formula="custom"><h4>Egen formel med referencer</h4><p>Skriv fx h_top + h_midte + h_bund. Vælg størrelserne og forbind dem til figurer eller andre formler.</p><div class="formula-card-foot"><span>Dit udtryk</span><span>Brug formel +</span></div></button></div></section>':'')+(showMeasure?'<section class="formula-group"><h3>Mål i samlede figurer</h3><div class="formula-grid"><button class="formula-card" data-action="use-formula" data-formula="figureMeasure"><h4>Isolér højde, bredde eller længde</h4><p>Vælg din samling, det ukendte mål og et kendt samlet rumfang eller pladeareal. Fælles mål isoleres på tværs af delene.</p><div class="formula-card-foot"><span>Længde</span><span>Brug formel +</span></div></button></div></section>':'')+(showHx?'<section class="formula-group"><h3>Fyldning af tanke</h3><div class="formula-grid"><button class="formula-card" data-action="use-formula" data-formula="fillHeight"><h4>Produkthøjde i tank (Hx)</h4><div class="library-equation">Hx = højde af fyldte dele + delvis højde</div><p>Vælg din samlede tank og produktets volumen. Finder rækkefølgen fra bunden og bruger restvolumen i næste del.</p><div class="formula-card-foot"><span>Længde</span><span>Brug formel +</span></div></button></div></section>':'')+(formulas.length?groups.map(group=>`<section class="formula-group"><h3>${esc(group)}</h3><div class="formula-grid">${formulas.filter(([,f])=>f.group===group).map(([id,f])=>`<button class="formula-card" data-action="use-formula" data-formula="${id}"><h4>${esc(f.name)}</h4>${schoolRef(f)?`<span class="school-reference">${esc(schoolRef(f))}</span>`:''}<div class="library-equation">${E.math(E.formulaAst(id),f.symbol)}</div>${f.note?`<p>${esc(f.note)}</p>`:''}<div class="formula-card-foot"><span>${esc(E.DIMENSIONS[f.dimension].name)}</span><span>Brug formel +</span></div></button>`).join('')}</div></section>`).join(''):(showHx||showMeasure||showCustom)?'':'<p class="empty-search">Ingen formler matcher. Prøv fx T9, masse eller tryk.</p>');
   }
+  function renderCalculatorToggle() {
+    const button = $('#calculator-toggle');
+    button.setAttribute('aria-pressed',String(resultVisible));
+    button.setAttribute('aria-label','Lommeregner: '+(resultVisible?'til':'fra'));
+    button.title = resultVisible ? 'Slå beregning af resultat fra' : 'Slå beregning af resultat til';
+    button.innerHTML = '<span class="toggle-track" aria-hidden="true"></span><span>Lommeregner <span class="toggle-state">'+(resultVisible?'Til':'Fra')+'</span></span>';
+  }
   function render(keepFocus = false) {
+    renderCalculatorToggle();
     const el = document.activeElement;
     const focus = keepFocus && el?.dataset.action ? { action:el.dataset.action,id:el.dataset.id,path:el.dataset.path,face:el.dataset.face,part:el.dataset.part,start:el.selectionStart,end:el.selectionEnd } : null;
     const open = [...document.querySelectorAll('details[open][data-detail-key]')].map(d=>d.dataset.detailKey);
@@ -480,7 +479,7 @@
   }
   function replaceSetup(candidate,title) {
     pending=()=>{model=candidate;valueDrafts=new Map();activeId=model.formulas.at(-1)?.id||null;selected=activeId?{type:'formula',id:activeId}:null;save();changeView('builder');render();};
-    openDialog(title,'<p>Din nuværende opsætning bliver erstattet. Gem den først, hvis du vil beholde den separat.</p>','<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="confirm">Erstat opsætning</button>');
+    openDialog(title,'<p>Din nuværende opsætning bliver erstattet.'+(EXAM?' Den kan ikke gendannes.':' Gem den først, hvis du vil beholde den separat.')+'</p>','<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="confirm">Erstat opsætning</button>');
   }
   function customFormulaDialog(path,dimension){
     const expr=getAt(path);if(expr?.kind!=='custom')return;
@@ -538,6 +537,7 @@
     openDialog('Fjern '+object.name+'?',users.length?`<p>Disse formler bruger elementet:</p><ul>${users.map(name=>`<li>${esc(name)}</li>`).join('')}</ul><p>Samlinger løsnes, og de resterende figurer beholder deres egne mål og fladevalg. Direkte referencer til det fjernede element markeres, så du kan vælge en ny kilde.</p>`:'<p>Elementet fjernes fra opsætningen.</p>','<button class="button outline" data-action="close-dialog">Annullér</button><button class="button danger" data-action="confirm">Fjern</button>');
   }
   function exportSetup() {
+    if (EXAM) return;
     const blob=new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download=(model.title.replace(/[^\p{L}\p{N}_-]+/gu,'-').replace(/^-|-$/g,'')||'opsaetning')+'.pp.json';
     document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);notify('Opsætningen er hentet som en fil.');
@@ -555,8 +555,13 @@
       else openDialog('Kopiér formlen',`<p>Markér teksten og tryk Ctrl+C:</p><textarea class="copy-fallback" readonly aria-label="Formel til kopiering">${esc(text)}</textarea>`);
     }
   }
+  function editionHelp() {
+    return EXAM
+      ? '<p><strong>Eksamensversion · eksamen.html</strong> starter med en tom opsætning, hver gang filen åbnes eller siden genindlæses. Opsætningen gemmes ikke, og import og eksport er ikke tilgængelig. Lommeregneren starter slået til.</p>'
+      : '<p><strong>Almindelig version · index.html</strong> husker opsætningen lokalt, når browseren tillader det. <strong>Gem opsætning</strong> eksporterer figurer, formler, tal og enheder som en fil. Brug <strong>Åbn opsætning</strong> til at importere den igen. Lommeregneren starter slået fra.</p>';
+  }
   function showHelp() {
-    openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Under <strong>Størrelserne i formlen</strong> kan du beholde symbolerne eller skrive opgavens tal.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Rækkefølge og grupper</h3><p>Brug ↑ og ↓ under en formel i venstremenuen for at flytte den op eller ned i sin gruppe. <strong>Opret gruppe</strong> laver en navngivet gruppe; dropdown-menuen under hver formel flytter den til en gruppe eller tilbage til <strong>Uden gruppe</strong>. Grupper har egne flytteknapper og kan foldes sammen med overskriften. <strong>Redigér</strong> omdøber eller fjerner en gruppe; formlerne bevares, når gruppen fjernes.</p><p>Nye formler oprettes i den aktive formels gruppe. <strong>Tilføj formel her</strong> vælger en bestemt gruppe. Grupper, rækkefølge og sammenfoldning følger med i gemte opsætninger. Referencer følger fortsat formlernes identitet.</p><h3>Omskriv en formel</h3><p>Vælg <strong>Isolér en størrelse</strong> over formelvisningen. Fx bliver v = π · D · n til n = v / (π · D). Der oprettes en ny formel med de øvrige input og referencer, og den hidtidige venstreside bliver et kendt input. Tjek de valgte enheder. Rodvalg og særlige forudsætninger står ved omskrivningen. Alle grundformler kan omskrives; enkelte størrelser kræver en anden metode, som forklares ved valget.</p><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Rundbund, V-bund eller pyramide under en kasse</h3><p>Vælg <strong>Sammensæt → Kasse → Bund</strong> og derefter <strong>Ny halvcylinder</strong>, <strong>Ny v-bund</strong> eller <strong>Ny pyramide</strong>. Halvcylinderen har to flade halvcirkelformede ender. V-bunden er et symmetrisk trekantet prisme med to flade trekantsender. Pyramiden har en rektangulær snitflade og fire sider til én spids under centrum.</p><p>Samlingen deler længde og bredde med kassen; halvcylinderens diameter er kassens indvendige bredde. Den fælles rektangulære flade udelades fra arealet. Vælg åbne/lukkede ender og eventuelle skrå plader på bundfiguren. Dybden er D / 2 for halvcylinderen; på V-bund og pyramide angiver h den lodrette dybde under kassen. Rumfang og pladeareal følger med i de samlede formler og T9.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Vælg visning</h3><p>Brug den tredelte knap <strong>Værdier · Enheder · Begge</strong> ved formlen. Værdier viser fx 30 · 50; Enheder viser L · B; Begge viser tal med små enheds- og symbolmærker. Tomme talfelter vises som symboler i Værdier. Faste tal og omregningsfaktorer bevares, og resultatets enhed står fortsat ved venstresiden.</p><p>Valget ændrer kun visningen og gælder også formelkæden, delberegninger og kopiering. Det huskes i browseren. TI-30-skønnet bruger dine indtastede tal i alle tre visninger.</p><h3>Indsæt tal i formlen</h3><p>Under <strong>Størrelserne i formlen</strong> kan du skrive et tal i feltet <strong>Tal (valgfrit)</strong>. Fx viser B = 50 og L = 30 tallene med <strong>m (B)</strong> og <strong>m (L)</strong> i mindre tekst. Mærkerne fortæller, hvad tallene betyder; de skal ikke tastes på lommeregneren. Tomme felter viser symbolerne. Brug <strong>Ryd</strong> til at fjerne et tal.</p><p>Du kan bruge komma eller punktum som decimaltegn, også med negative tal. Hver selvstændig formel og figur har egne tal og inputenheder. Indsatte underformler deler værdier inden for samme formel; referencer følger deres kilde. Skifter du enhed, beholdes det indtastede tal, og formlens omregning tilpasses. Tal følger med i referencer, kopieret tekst og gemte opsætninger. TI-30-skønnet bruger tallenes faktiske længde. Resultatet beregner du selv.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Brøkenheder har to dropdowns: vælg tæller og nævner hver for sig, fx <strong>t (ton) / m³</strong>, <strong>kg / h</strong> eller <strong>mg / min</strong>. Det gælder også resultatets enhed. Med indtastede tal vises fx <strong>20 mm → 0,02 m</strong> direkte i formlen. Tomme felter beholder symbolet og omregningen. Modgående enhedsfaktorer forkortes automatisk i den samlede formel: med omdrejningstal i omdr./min og båndhastighed i m/min forsvinder de to faktorer på 60. Brug tallet fra opgaven direkte, og tilføj ikke SI-referencens omregning en gang til. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med de nødvendige parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Enhedsvalg er lokale for hver formel og figur. Referencer bruger kildens enheder. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og gemte opsætninger</h3><p>Åbn <strong>index.html</strong> fra den downloadede mappe. Den indeholder hele kompendiet og virker uden installation, internet, login eller AI. Tal kan indsættes i formlen som hjælp til din egen indtastning på lommeregneren; standardvisningen viser formlen, så du kan regne videre på din lommeregner.</p><p><strong>Gem opsætning</strong> henter en fil med dine figurer og formelvalg. Åbn den igen med <strong>Åbn opsætning</strong>. Gem som fil, før du flytter til en anden computer; browserens lokale lagring er en ekstra bekvemmelighed.</p><p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
+    openDialog('Sådan bruger du kompendiet','<h3>Fra opgave til formel</h3><ol><li>Vælg, hvad du vil finde, fx fyldetid, rumfang eller flow.</li><li>Indsæt de figurer, opgaven består af. Vælg, hvilke der indgår i beholderen.</li><li>Ved hver størrelse vælger du <strong>Kendt størrelse</strong>, en <strong>formel</strong> eller en <strong>reference</strong>. Under <strong>Størrelserne i formlen</strong> kan du beholde symbolerne eller skrive opgavens tal.</li><li>Skift mellem <strong>Kort</strong> og <strong>Udfoldet</strong>, og se den samlede formel. Under <strong>Se formelkæden</strong> kan du følge de enkelte formler.</li></ol><h3>Rækkefølge og grupper</h3><p>Brug ↑ og ↓ under en formel i venstremenuen for at flytte den op eller ned i sin gruppe. <strong>Opret gruppe</strong> laver en navngivet gruppe; dropdown-menuen under hver formel flytter den til en gruppe eller tilbage til <strong>Uden gruppe</strong>. Grupper har egne flytteknapper og kan foldes sammen med overskriften. <strong>Redigér</strong> omdøber eller fjerner en gruppe; formlerne bevares, når gruppen fjernes.</p><p>Nye formler oprettes i den aktive formels gruppe. <strong>Tilføj formel her</strong> vælger en bestemt gruppe. Grupper, rækkefølge og sammenfoldning følger med i gemte opsætninger. Referencer følger fortsat formlernes identitet.</p><h3>Omskriv en formel</h3><p>Vælg <strong>Isolér en størrelse</strong> over formelvisningen. Fx bliver v = π · D · n til n = v / (π · D). Den valgte formel omskrives på samme plads i listen med de øvrige input og referencer, og den hidtidige venstreside bliver et kendt input. Tjek de valgte enheder. Rodvalg og særlige forudsætninger står ved omskrivningen. Alle grundformler kan omskrives; enkelte størrelser kræver en anden metode, som forklares ved valget.</p><h3>Eksempel: bassin med keglebund</h3><p>Fyldetiden bruger t = V / Qᵥ. Rumfanget hentes fra cylinder + keglebund. Flowet kan beholdes som Qᵥ, eller foldes ud til A · v, hvor A kommer fra rørets diameter. Klik på keglebunden for at se dens fælles diameter med cylinderen.</p><h3>Figurer og symboler</h3><p>Hver figur får et nummer. D₁ er diameteren på figur 1, h₂ er højden på figur 2. En reference følger kilden, når du ændrer den. <strong>Indsæt formlen her</strong> kopierer kildens aktuelle formel, så du kan tilpasse den herfra.</p><h3>Sammensæt og se figurerne</h3><p>Tryk <strong>Sammensæt</strong>, vælg en figur og en fri endeflade, og sæt en eksisterende eller ny figur på. Brug fx en <strong>halvkugle</strong> som kuglespids på en cylinder. Delene får fælles mål, og deres samleflader fjernes automatisk fra pladearealet. Hele samlingen indgår i beholderens sum, når den er valgt.</p><p>I <strong>3D</strong> kan du trække for at dreje og scrolle for at zoome. Du kan også bruge piletasterne samt + og −, når visningen har fokus. <strong>Skitse</strong> viser fladernes navne og status. Begge visninger er skematiske og uden målestok.</p><p>Vælg en figur for at sætte hver fri flade til <strong>Åben</strong> eller <strong>Lukket</strong>. Valget ændrer overfladeformlen, mens det geometriske rumfang er det samme. Brug <strong>Skil ad</strong> til at løsne en samling eller <strong>Fjern</strong> under figurens kort til at slette den. Samlede rumfang og arealer findes under visningen. Rumfang må kun summeres for dele, der ikke overlapper.</p><h3>Rundbund, V-bund eller pyramide under en kasse</h3><p>Vælg <strong>Sammensæt → Kasse → Bund</strong> og derefter <strong>Ny halvcylinder</strong>, <strong>Ny v-bund</strong> eller <strong>Ny pyramide</strong>. Halvcylinderen har to flade halvcirkelformede ender. V-bunden er et symmetrisk trekantet prisme med to flade trekantsender. Pyramiden har en rektangulær snitflade og fire sider til én spids under centrum.</p><p>Samlingen deler længde og bredde med kassen; halvcylinderens diameter er kassens indvendige bredde. Den fælles rektangulære flade udelades fra arealet. Vælg åbne/lukkede ender og eventuelle skrå plader på bundfiguren. Dybden er D / 2 for halvcylinderen; på V-bund og pyramide angiver h den lodrette dybde under kassen. Rumfang og pladeareal følger med i de samlede formler og T9.</p><h3>Indvendig eller udvendig diameter</h3><p>Vælg figuren og angiv, om diameteren er <strong>indvendig</strong> eller <strong>udvendig</strong>. Rumfang, flow og pladeareal bruger indvendige mål. En udvendig diameter omregnes som <strong>Dindre = (Dydre − 2 · tradial)</strong>. Højde og længde skal fortsat være indvendige mål. Samlede figurer deler den indvendige diameter, så godstykkelsen ikke trækkes fra to gange.</p><p>Cylinder, rør og kugledele bruger som standard samme pladetykkelse som T9. På kegler og keglestubbe angives radial godstykkelse ved endefladen særskilt; den er forskellig fra tykkelsen vinkelret på den skrå plade. T9 er fortsat skolens tyndplademodel med indvendigt pladeareal.</p><h3>Vælg visning</h3><p>Brug den tredelte knap <strong>Værdier · Enheder · Begge</strong> ved formlen. Værdier viser fx 30 · 50; Enheder viser L · B; Begge viser tal med små enheds- og symbolmærker. Tomme talfelter vises som symboler i Værdier. Faste tal og omregningsfaktorer bevares, og resultatets enhed står fortsat ved venstresiden.</p><p>Valget ændrer kun visningen og gælder også formelkæden, delberegninger og kopiering. Det huskes i browseren.</p><h3>Indsæt tal i formlen</h3><p>Under <strong>Størrelserne i formlen</strong> kan du skrive et tal i feltet <strong>Tal (valgfrit)</strong>. Fx viser B = 50 og L = 30 tallene med <strong>m (B)</strong> og <strong>m (L)</strong> i mindre tekst. Mærkerne fortæller, hvad tallene betyder; de skal ikke tastes på lommeregneren. Tomme felter viser symbolerne. Brug <strong>Ryd</strong> til at fjerne et tal.</p><p>Du kan bruge komma eller punktum som decimaltegn, også med negative tal. Hver selvstændig formel og figur har egne tal og inputenheder. Indsatte underformler deler værdier inden for samme formel; referencer følger deres kilde. Skifter du enhed, beholdes det indtastede tal, og formlens omregning tilpasses. Tal følger med i referencer, kopieret tekst og gemte opsætninger. Slå <strong>Lommeregner</strong> til øverst til højre for at se resultatet, når alle nødvendige tal er udfyldt.</p><h3>Enheder i opgaven og i resultatet</h3><p>Under <strong>Størrelserne i formlen</strong> vælger du den enhed, opgaven giver for hvert kendt symbol. Brøkenheder har to dropdowns: vælg tæller og nævner hver for sig, fx <strong>t (ton) / m³</strong>, <strong>kg / h</strong> eller <strong>mg / min</strong>. Det gælder også resultatets enhed. Med indtastede tal vises fx <strong>20 mm → 0,02 m</strong> direkte i formlen. Tomme felter beholder symbolet og omregningen. Modgående enhedsfaktorer forkortes automatisk i den samlede formel: med omdrejningstal i omdr./min og båndhastighed i m/min forsvinder de to faktorer på 60. Brug tallet fra opgaven direkte, og tilføj ikke SI-referencens omregning en gang til. Areal- og rumfangsenheder får deres egne faktorer.</p><p>Vælg <strong>Resultatets enhed</strong> nederst, fx liter, minutter, ton eller kW. Hele resultatet omregnes med de nødvendige parenteser. Procent kan vælges for forhold som virkningsgrad. °C omregnes til K for temperaturer; en temperaturforskel i °C har samme tal som i K.</p><p>Enhedsvalg er lokale for hver formel og figur. Referencer bruger kildens enheder. Hver formel har sin egen resultatenhed. Referencer omregnes én gang, og kopieret tekst viser de valgte enheder. Ændringer i enheder viser automatisk den udfoldede formel.</p><h3>Offline og opsætninger</h3>'+editionHelp()+'<p>Formlerne omfatter geometri, overflade, flow, tid, masse, tryk og pumpeeffekt. Følg opgavens forudsætninger og brug ensartede enheder.</p>');
   }
   const tutorialSteps = [
     {section:'OVERBLIK', title:'Velkommen til kompendiet', target:'.help-button', scene:'parts', body:'<p>Her får du en rundtur fra figurer til den færdige formel. Tryk <strong>Næste</strong> for at fortsætte; du behøver ikke betjene felterne undervejs.</p><p>Vi viser et midlertidigt bassin-eksempel. Når du afslutter, kommer din egen opsætning tilbage. Du kan altid starte igen med <strong>?</strong>.</p>'},
@@ -583,10 +588,11 @@
     {section:'RESULTAT', title:'Følg formlen hele vejen tilbage', target:'.chain-details', detail:'chain-time', body:'<p>Åbn <strong>Se formelkæden</strong> for at følge delformlerne bag resultatet: fra rørets tværsnit til volumenflow og videre til fyldetid.</p><p><strong>Tilpas</strong> ved et led åbner dets indstillinger. Det gør det nemt at finde det sted, hvor en størrelse eller reference skal ændres.</p>'},
     {section:'ENHEDER', title:'Vælg præcis de enheder, du har', target:'.unit-symbol-list > div:last-child', scene:'units', body:'<p>Under <strong>Størrelserne i formlen</strong> vælger du opgavens enhed for hvert symbol. Med tal i feltet bliver <strong>20 mm → 0,02 m</strong> omregnet, før tallet vises i formlen. Feltet beholder 20 mm. Tomme felter viser symbolet og den nødvendige omregning.</p><p>For brøkenheder vælger du <strong>tæller og nævner hver for sig</strong>, som L/min her. Det virker også for fx t/m³ og kg/h i de relevante formler. Fælles enhedsfaktorer forkortes automatisk, fx ÷60 og ×60 ved omdr./min til m/min. Følg den viste formel uden ekstra omregning.</p>'},
     {section:'TAL', title:'Skriv de tal, du har fra opgaven', target:'.unit-symbol-list', scene:'numbers', body:'<p>Feltet <strong>Tal (valgfrit)</strong> indsætter tallet direkte i formlen. Her er B = 50 og L = 30 med meter som enhed. Du kan bruge komma eller punktum, fx 2,5.</p><p>Et tomt felt beholder symbolet. <strong>Ryd</strong> fjerner tallet igen. Hver selvstændig formel og figur har egne tal og enheder. Indsatte underformler deler værdier inden for samme formel; referencer følger deres kilde. Skifter du enhed, beholdes det tal, du har skrevet.</p>'},
-    {section:'TAL', title:'Små mærker forklarer hvert tal', target:'#formula-preview', scene:'numbers', body:'<p>Efter 50 står <strong>m (B)</strong> med småt, og efter 30 står <strong>m (L)</strong>. Du kan dermed se både enheden og det oprindelige symbol. Mærkerne er forklaringer og skal ikke tastes på lommeregneren.</p><p>Standardvisningen viser udtrykket til indtastning på din lommeregner. Omregninger og nødvendige parenteser er med, også omkring negative tal. TI-30-længdeskønnet bruger dine tal og udelader de små mærker.</p>'},
-    {section:'TAL', title:'Skift mellem værdier og enheder', target:'.value-display-control', scene:'numbers', valueDisplay:'values', body:'<p>Den tredelte knap <strong>Værdier · Enheder · Begge</strong> bestemmer, hvordan inputtene vises. Værdier giver fx <strong>30 · 50</strong>; Enheder giver <strong>L · B</strong>; Begge viser tallene med de små mærker.</p><p>Dine tal og enhedsvalg bevares. Visningen gælder også formelkæden, delberegninger og kopiering. Faste tal og nødvendige omregninger for ubekendte og resultatet vises fortsat. TI-30-skønnet bruger altid dine indtastede tal. Browseren husker valget.</p>'},
-    {section:'ENHEDER', title:'Vælg enheden for svaret', target:'.result-unit-row', scene:'units', body:'<p><strong>Resultatets enhed</strong> bestemmer, hvordan det samlede udtryk skal omregnes. Her er fyldetiden valgt i <strong>minutter</strong>. Andre formler tilbyder fx liter, ton og kW.</p><p>Inputenheder følger symbolet i den formel eller figur, det tilhører. Referencer følger deres kilde. Hver formel har sin egen resultatenhed. Dine enhedsvalg kommer med, når du gemmer eller kopierer.</p>'},
-    {section:'GEM OG FORTSÆT', title:'Klar til din egen opgave', target:'.top-actions', body:'<p><strong>Gem opsætning</strong> henter en fil med dine figurer, formler, indtastede tal og enhedsvalg. Brug <strong>Åbn opsætning</strong> til at hente den ind igen, også på en anden computer. Sol/måne-knappen skifter mellem lyst og mørkt tema.</p><p>Hele kompendiet og denne guide virker offline. Tryk <strong>Afslut introduktion</strong> for at vende tilbage til din egen opsætning. <strong>?</strong> starter guiden igen.</p>'}
+    {section:'TAL', title:'Små mærker forklarer hvert tal', target:'#formula-preview', scene:'numbers', body:'<p>Efter 50 står <strong>m (B)</strong> med småt, og efter 30 står <strong>m (L)</strong>. Du kan dermed se både enheden og det oprindelige symbol. Mærkerne er forklaringer og skal ikke tastes på lommeregneren.</p><p>Standardvisningen viser udtrykket til indtastning på din lommeregner. Omregninger og nødvendige parenteser er med, også omkring negative tal.</p>'},
+    {section:'TAL', title:'Skift mellem værdier og enheder', target:'.value-display-control', scene:'numbers', valueDisplay:'values', body:'<p>Den tredelte knap <strong>Værdier · Enheder · Begge</strong> bestemmer, hvordan inputtene vises. Værdier giver fx <strong>30 · 50</strong>; Enheder giver <strong>L · B</strong>; Begge viser tallene med de små mærker.</p><p>Dine tal og enhedsvalg bevares. Visningen gælder også formelkæden, delberegninger og kopiering. Faste tal og nødvendige omregninger for ubekendte og resultatet vises fortsat. Browseren husker valget.</p>'},
+    {section:'RESULTAT', title:'Slå lommeregneren til eller fra', target:'#calculator-toggle', scene:'numbers', resultVisible:true, body:'<p>Knappen <strong>Lommeregner</strong> øverst til højre viser eller skjuler det beregnede resultat. Her er begge tal udfyldt, så arealet beregnes automatisk. Mangler et tal, får du vist, hvad der skal udfyldes.</p><p>Resultatet følger dine valgte enheder. Kun det viste slutresultat afrundes; referencer bruger den fulde præcision.</p>'},
+    {section:'ENHEDER', title:'Vælg enheden for svaret', target:'.result-unit-row', scene:'units', body:'<p><strong>Resultatets enhed</strong> bestemmer, hvordan det samlede udtryk skal omregnes. Her er fyldetiden valgt i <strong>minutter</strong>. Andre formler tilbyder fx liter, ton og kW.</p><p>Inputenheder følger symbolet i den formel eller figur, det tilhører. Referencer følger deres kilde. Hver formel har sin egen resultatenhed. Dine enhedsvalg bruges også i referencer og kopierede formler.</p>'},
+    {section:'FORTSÆT', title:'Klar til din egen opgave', target:'.top-actions', body:editionHelp()+'<p>Sol/måne-knappen skifter mellem lyst og mørkt tema.</p><p>Hele kompendiet og denne guide virker offline. Tryk <strong>Afslut introduktion</strong> for at vende tilbage til din egen opsætning. <strong>?</strong> starter guiden igen.</p>'}
   ];
   function prepareTutorialStep(step) {
     if ($('#app-dialog').open) closeDialog();
@@ -597,7 +603,7 @@
     }
     valueDrafts = new Map();
     valueDisplay = step.valueDisplay||'both';
-    resultVisible = false;entryKeys = [];
+    resultVisible = step.resultVisible ?? EXAM;
     model.title = 'Introduktion · bassin med keglebund';
     model.shapes.find(s=>s.id==='cylinder').faces.top = 'open';
     if (['parts','join'].includes(step.scene)) model.connections = [];
@@ -636,7 +642,7 @@
     if (!previous) return;
     if ($('#app-dialog').open) closeDialog();
     if (preview3D) {preview3D.destroy(); preview3D=null;}
-    tutorial = null;
+    tutorial = null; tourController = null;
     ({model,activeId,selected,expanded,geometryView,previewPose,libraryQuery,valueDrafts,valueDisplay,resultVisible} = previous);
     changeView(previous.view); render();
     for (const detail of document.querySelectorAll('details[data-detail-key]')) detail.open = previous.details.includes(detail.dataset.detailKey);
@@ -654,7 +660,7 @@
       saveStatus:$('#save-status').textContent,
       details:[...document.querySelectorAll('details[open][data-detail-key]')].map(d=>d.dataset.detailKey)};
     clearTimeout(toastTimer); $('#toast').hidden = true;
-    try { window.PPTour.start({steps:tutorialSteps,prepare:prepareTutorialStep,finish:finishTutorial,help:showHelp}); }
+    try { tourController = window.PPTour.start({steps:tutorialSteps,prepare:prepareTutorialStep,finish:finishTutorial,help:showHelp}); }
     catch (_) { finishTutorial(); notify('Introduktionen kunne ikke åbnes. Din opsætning er bevaret.'); }
   }
   document.addEventListener('click',event=>{
@@ -663,7 +669,8 @@
     const b=event.target.closest('[data-action]');if(!b)return;
     const a=b.dataset.action;
     if(a==='theme'){theme=theme==='dark'?'light':'dark';setTheme();try{localStorage.setItem(THEME,theme);}catch(_){}}
-    else if(a==='hide-result'){resultVisible=false;entryKeys=[];render();}
+    else if(a==='toggle-calculator'){resultVisible=!resultVisible;render();}
+    else if(a==='hide-result'){resultVisible=false;render();}
     else if(a==='clear-value'){
       valueDrafts.delete(b.dataset.id);if(model.inputValues)delete model.inputValues[b.dataset.id];
       save();render();
@@ -732,10 +739,10 @@
     }
     else if(a==='delete')remove(b.dataset.type,b.dataset.id);
     else if(a==='export')exportSetup();
-    else if(a==='import')$('#file-input').click();
+    else if(a==='import'&&!EXAM)$('#file-input')?.click();
     else if(a==='copy-formula')void copyFormula();
-    else if(a==='new')replaceSetup({version:6,inputUnits:{},title:'Ny opsætning',tank:E.defaultTank(),shapes:[],formulas:[],connections:[]},'Start en tom opsætning?');
-    else if(a==='example')replaceSetup(E.example(),'Indlæs bassin-eksemplet?');
+    else if(a==='new')replaceSetup(emptySetup(),'Start en tom opsætning?');
+    else if(a==='example'&&!EXAM)replaceSetup(E.example(),'Indlæs bassin-eksemplet?');
     else if(a==='tutorial')startTutorial();
     else if(a==='close-dialog')closeDialog();
     else if(a==='confirm'){const action=pending;closeDialog();if(action)action();}
@@ -840,7 +847,8 @@
     if(tutorial||event.key!=='Enter'||event.isComposing||!event.target.matches?.('[data-group-name]'))return;
     event.preventDefault();$('#app-dialog').querySelector('[data-action="save-formula-group"]').click();
   });
-  $('#file-input').addEventListener('change',async event=>{
+  $('#file-input')?.addEventListener('change',async event=>{
+    if (EXAM) return;
     const file=event.target.files[0];event.target.value='';if(!file)return;
     if(file.size>1000000){notify('Filen er for stor. Maksimum er 1 MB.');return;}
     try{const candidate=E.initializeUnitChoices(E.validateModel(JSON.parse(await file.text())),false);replaceSetup(candidate,'Åbn '+candidate.title+'?');}
@@ -852,23 +860,20 @@
       event.preventDefault();event.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));
     }
   });
-  document.addEventListener('keydown',event=>{
-    if(tutorial||$('#app-dialog').open||event.isComposing||event.altKey||event.ctrlKey||event.metaKey||event.target.isContentEditable||event.target.closest?.('input,textarea,select')){entryKeys=[];return;}
-    if(event.repeat)return;
-    const sequence=['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a','enter'];
-    entryKeys.push(event.key.toLowerCase());if(entryKeys.length>sequence.length)entryKeys.shift();
-    if(entryKeys.length===sequence.length&&sequence.every((key,i)=>key===entryKeys[i])){
-      event.preventDefault();event.stopPropagation();entryKeys=[];resultVisible=!resultVisible;
-      changeView('builder');render();
-      document.querySelector('.result-panel')?.scrollIntoView({block:'nearest',behavior:'instant'});
-    }
-  },true);
   $('#app-dialog').addEventListener('click',event=>{if(event.target===$('#app-dialog')){const r=event.target.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeDialog();}});
   $('.brand').addEventListener('click',event=>{event.preventDefault();changeView('builder');});
   $('.view-tabs').addEventListener('keydown',event=>{
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();
     const tabs=[...document.querySelectorAll('[data-view]')],i=tabs.indexOf(document.activeElement),n=event.key==='Home'?0:event.key==='End'?tabs.length-1:(i+1)%tabs.length;
     changeView(tabs[n].dataset.view);tabs[n].focus();
+  });
+  window.addEventListener('pageshow',event=>{
+    if (!EXAM || !event.persisted) return;
+    tourController?.close();
+    tutorial=null;pending=null;joinDraft=null;valueDrafts=new Map();
+    if ($('#app-dialog').open) closeDialog();
+    model=E.initializeUnitChoices(emptySetup());activeId=null;selected=null;resultVisible=true;
+    save();changeView('builder');render();
   });
   setTheme();render();if(notice)notify(notice);
   // Deliberately no network requests or AI integration.

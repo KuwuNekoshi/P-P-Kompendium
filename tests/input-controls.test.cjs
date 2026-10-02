@@ -15,7 +15,7 @@ function harness(model){
   const excerpt=(start,end)=>app.slice(app.indexOf(start),app.indexOf(end));
   vm.runInContext(excerpt('  function ownerTarget(','  function notify(')+excerpt('  function plateEditor(','  function renderTankInspector(')+excerpt('  function formulaSummary(','  function renderSidebar(')+
     excerpt('  function unitOptions(','  function inspectorHeader(')+
-    excerpt("  document.addEventListener('click',event=>{","  $('#file-input').addEventListener('change'"),scope);
+    excerpt("  document.addEventListener('click',event=>{","  $('#file-input')?.addEventListener('change'"),scope);
   const input=(key,value)=>handlers.input({target:{value,dataset:{action:'input-value',id:key}}});
   const change=element=>handlers.change({target:element});
   const clear=key=>{const button={dataset:{action:'clear-value',id:key}};handlers.click({target:{closest:selector=>selector==='[data-action]'?button:null}});};
