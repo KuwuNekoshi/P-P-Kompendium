@@ -34,3 +34,5 @@ for (const [edition, filename] of [['standard','index.html'],['exam','eksamen.ht
   fs.writeFileSync(path.join(root, filename), output);
   console.log('Built '+filename+' ('+Buffer.byteLength(output)+' bytes). No external assets.');
 }
+
+require('./build-sro.cjs').build();

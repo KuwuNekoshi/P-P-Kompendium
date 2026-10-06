@@ -1,6 +1,14 @@
-# P&P Kompendium
+# P&P & SRO Kompendium
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
+
+## Nyt: SRO-kompendium
+
+Åbn **`sro.html`** eller **`sro-eksamen.html`** fra en release. SRO har sin egen opgave og 46 formelfamilier med omskrivninger, enhedsvalg, referencer, grupper, egen formel og en trinvis introduktion.
+
+Byg et elektrisk kredsløb af modstande og ledninger, flyt/drej komponenter, og brug den samlede modstand som reference i fx Ohms lov. Ledningerne bestemmer forbindelserne; serie-, parallel-, blandede og brokoblede kredsløb understøttes. Der er også interaktive oversigter over motorer, transmittere, regulering, komponenter, IP-klasser, isolering og I/O.
+
+SRO-normalversionen gemmer/importerer/eksporterer `.sro.json`. Eksamensversionen starter altid tom med beregninger slået til, uden import, eksport eller lagring af opgaver. De to P&P-filer er fortsat med. Se [SRO.md](SRO.md) for vejledning, forudsætninger og udviklingskontrol.
 
 ## Brug det offline
 

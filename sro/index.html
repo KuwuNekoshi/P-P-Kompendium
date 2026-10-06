@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="da" data-edition="standard" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="color-scheme" content="light dark"><title>SRO — Almindelig version</title>
+<!-- STYLES -->
+</head>
+<body>
+<header class="topbar"><a class="brand" href="#" aria-label="SRO kompendium">S R O<span>INTERAKTIVT KOMPENDIUM</span></a><span class="edition">Almindelig · offline</span><div class="top-actions"><button id="calculator-toggle" data-action="calculator" aria-pressed="false">Lommeregner <b>Fra</b></button><button data-action="theme" id="theme-toggle" aria-label="Skift lyst og mørkt tema">◐</button><button data-action="tutorial" id="help-button" aria-label="Start introduktion">?</button></div></header>
+<div class="workspace">
+<aside class="task-panel" aria-label="Din opgave"><div class="overline">DIN ARBEJDSBOG</div><input id="task-title" aria-label="Opgavens navn" maxlength="120" data-action="title" value="Ny SRO-opgave"><p class="muted" id="save-status">Gemmes på denne computer</p><div class="task-actions"><button class="primary" data-action="library">+ Formel</button><button data-action="new-group">+ Gruppe</button></div><div id="task-list"></div><div class="task-bottom"><button data-action="custom">Egen formel</button><button data-action="new-task">Ny opgave</button><button data-action="export" data-standard-only>Eksportér</button><button data-action="import" data-standard-only>Importér</button><input type="file" id="file-input" accept=".json,.sro.json" hidden data-standard-only></div></aside>
+<main id="main"><nav class="tabs" aria-label="Arbejdsområde"><button data-action="tab" data-tab="formula" class="active">Formler</button><button data-action="tab" data-tab="circuit">Kredsløb</button><button data-action="tab" data-tab="tools">Motor & måling</button><button data-action="tab" data-tab="knowledge">Opslag & regulering</button></nav><section id="content"></section></main>
+<aside id="inspector" aria-label="Tilpas formlens dele"></aside>
+</div>
+<dialog id="app-dialog"><header class="dialog-head"><h2 id="dialog-title">Formler</h2><button data-action="close-dialog" aria-label="Luk">×</button></header><div id="dialog-body"></div></dialog>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<!-- SCRIPTS -->
+</body></html>

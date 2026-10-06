@@ -37,3 +37,5 @@ for (const [, id] of app.matchAll(/\$\('#([\w-]+)'\)/g)) assert(ids.includes(id)
 const config = JSON.parse(fs.readFileSync(path.join(root, '.openai/hosting.json'), 'utf8'));
 assert.equal(config.static.directory, 'dist');
 console.log('Static entry points, inline script order, JavaScript syntax, asset references and offline constraints passed.');
+
+require('./check-sro.cjs');

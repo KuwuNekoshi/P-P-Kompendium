@@ -26,12 +26,12 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Kontrollér og byg begge offlinefiler
+      - name: Kontrollér og byg alle fire offlinefiler
         run: |
           node --test tests/*.test.cjs
           node tools/build.cjs
           node tools/check.cjs
-          git diff --exit-code -- index.html eksamen.html
+          git diff --exit-code -- index.html eksamen.html sro.html sro-eksamen.html
       - name: Udgiv HTML som release-asset
         env:
           GH_TOKEN: ${{ github.token }}
@@ -43,7 +43,7 @@ jobs:
             exit 0
           fi
           test -f "releases/$release_tag.md"
-          gh release create "$release_tag" "index.html#P&P Kompendium – almindelig version" "eksamen.html#P&P Kompendium – eksamensversion" \
+          gh release create "$release_tag" "index.html#P&P Kompendium – almindelig version" "eksamen.html#P&P Kompendium – eksamensversion" "sro.html#SRO Kompendium – almindelig version" "sro-eksamen.html#SRO Kompendium – eksamensversion" \
             --target "$GITHUB_SHA" \
-            --title "P&P Kompendium $release_tag" \
+            --title "P&P & SRO Kompendium $release_tag" \
             --notes-file "releases/$release_tag.md"
