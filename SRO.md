@@ -6,6 +6,10 @@ Hent `sro.html` (almindelig) eller `sro-eksamen.html` (eksamen) fra GitHub Relea
 
 Normalversionen gemmer lokalt, hvis browseren tillader det, og kan eksportere/importere `.sro.json`. Eksportér før flytning til en anden computer. Eksamensversionen starter altid med en tom opgave, også ved tilbage-navigation fra sidecachen, og læser/skriver aldrig opgaver i browserlageret. Tema og formelvisning kan huskes. Den synlige lommeregner starter fra i normalversionen og til i eksamensversionen.
 
+## Tidsudregning
+
+Alle tidsfelter og tidsresultater tilbyder **TMS (tt:mm:ss)**, fx `02:47:00`. Vælg **Tid → Læg tider sammen** for at kombinere varigheder med hver sin enhed. `8 h + 12,34 h` vises som **20:20:24**. Der findes også en tidsforskel og en selvstændig tidsomregning. Tider over 24 timer, negative varigheder og decimaler i sekunder understøttes. Formler og referencer regner i sekunder med den oprindelige præcision; kun resultatvisningen afrundes.
+
 ## Kredsløbsbygger
 
 1. Vælg **Kredsløb → + Modstand**, eller start med en serie-, parallel-, blandet eller brokobling uden tal. En ideal spændingskilde og en resultatformel tilføjes automatisk.
@@ -22,7 +26,7 @@ Topologien bruger union-find til ideelle ledninger og serie-/parallelreduktion. 
 
 ## Formler og referencer
 
-De 46 synlige formelfamilier dækker elektricitet, motorer, måling, trykluft og PID. **Find / isolér** udskifter den aktuelle formel på stedet. Hvert felt kan være en kendt størrelse, en underformel eller en reference. Uafhængige formler har separate værdier. Referencer følger kildens værdier og enheder med fuld præcision. En indsat underformel deler symboler inden for sin overordnede formel.
+De 49 synlige formelfamilier dækker elektricitet, motorer, måling, trykluft og PID. **Find / isolér** udskifter den aktuelle formel på stedet. Hvert felt kan være en kendt størrelse, en underformel eller en reference. Uafhængige formler har separate værdier. Referencer følger kildens værdier og enheder med fuld præcision. En indsat underformel deler symboler inden for sin overordnede formel.
 
 **Egen formel** understøtter `+ - * / ^ sqrt(...) pi`, valgbare størrelser og referencer. Resultatets dimension kontrolleres. Brug et symbol for en værdi med enhed; faste tal i udtrykket er enhedsløse. En formel med dimensionsfejl vises med en forklaring.
 
@@ -84,3 +88,5 @@ PLAYWRIGHT_MODULE=/path/to/playwright CHROMIUM_PATH=/path/to/chromium npm run te
 ```
 
 Den afprøver tilslutninger, træk, rotation, slet/fortryd, referencer, omregning, omskrivning på stedet, import/eksport, alle introduktionstrin, mobilbredde og eksamensnulstilling. Netværkskald og browserfejl kontrolleres også. `SRO_SCREENSHOT_DIR` kan sættes til en eksisterende mappe for skærmbilleder.
+
+TMS-kontrollen i en rigtig browser kan køres med `npm run test:time:browser` og de samme `PLAYWRIGHT_MODULE`/`CHROMIUM_PATH`-variabler. Den åbner alle fire HTML-filer via `file://` og kontrollerer blandede tidsformater, afrunding, fejlindtastning, mobilenheder, lagring, eksamensnulstilling og fravær af netværkskald.

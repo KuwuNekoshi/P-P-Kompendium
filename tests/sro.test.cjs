@@ -5,8 +5,8 @@ const near=(x,y)=>assert.ok(Number.isFinite(x)&&Math.abs(x-y)<1e-7*Math.max(1,Ma
 function result(t,f){const r=S.context(t).safe('formula:'+f.id,'expanded',false);assert.equal(r.ok,true,r.error);const n=E.evaluate(r.ast);assert.equal(n.status,'ready',JSON.stringify(n));return n.value;}
 function set(t,f,k,v,u){S.set(t.model,f,k,String(v),u||E.Units.base(E.FORMULAS[f.expression.formula].args[k].dimension).id);}
 function circuit(type,values){const t=S.empty();C.preset(t,type);t.circuit.resistors.forEach((r,i)=>set(t,t.model.formulas.find(f=>f.id===r.formulaId),'R',values[i]));C.sync(t);return t;}
-test('SRO modules contain 46 visible formula families with valid units and inverse choices',()=>{
- assert.equal(Object.values(E.BASE_FORMULAS).filter(f=>!f.hidden).length,46);
+test('SRO modules contain 49 visible formula families with valid units and inverse choices',()=>{
+ assert.equal(Object.values(E.BASE_FORMULAS).filter(f=>!f.hidden).length,49);
  for(const [id,f]of Object.entries(E.BASE_FORMULAS)){
   const t=S.empty(),q=S.add(t,id);assert.doesNotThrow(()=>S.validate(t),id);
   for(const a of Object.values(f.args))if(a.unit)assert.doesNotThrow(()=>E.Units.get(a.dimension,a.unit));

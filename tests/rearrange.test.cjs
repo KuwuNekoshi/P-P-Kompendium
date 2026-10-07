@@ -24,7 +24,7 @@ function inputs(f,scale=1){
 const model=(...ids)=>({version:5,title:'Omskrivninger',tank:E.defaultTank(),inputUnits:{},shapes:[],connections:[],formulas:ids.map(id=>E.newFormula(id,id))});
 
 test('every base formula and every input has an explicit rearrangement or a specific explanation',()=>{
-  assert.equal(Object.keys(E.BASE_FORMULAS).length,133);
+  assert.equal(Object.keys(E.BASE_FORMULAS).length,136);
   const blocked=[];
   for(const [id,f]of Object.entries(E.BASE_FORMULAS)){
     const options=E.rearrangements(id);
@@ -58,7 +58,7 @@ test('every generated inverse satisfies its original equation for two independen
     assert(E.math(E.formulaAst(id)).includes('<math'));assert(E.tex(E.formulaAst(id)).length);
     verified++;
   }
-  assert.equal(verified,337);
+  assert.equal(verified,342);
 });
 
 test('belt speed can find n or D with minute units and preserves existing formulas and references',()=>{

@@ -59,11 +59,11 @@
  }
  function formulaPreview(f){
   const ctx=S.context(task),r=ctx.safe('formula:'+f.id,expanded?'expanded':'compact',true),full=ctx.safe('formula:'+f.id,'expanded',true);
-  let html=r.ok?`<div class="math-wrap">${E.math(r.ast,f.symbol,E.resultUnit(f).label,display)}</div>`:`<p class="error-box">${esc(r.error)}</p>`;
+  let html=r.ok?`<div class="math-wrap">${E.math(r.ast,f.symbol,E.Units.arithmetic(E.resultUnit(f)).label,display)}</div>`:`<p class="error-box">${esc(r.error)}</p>`;
   if(calculator){
    const answer=full.ok?E.evaluate(full.ast):{status:'error',error:full.error};
    html+='<div class="result">';
-   if(answer.status==='ready')html+=`${sym(f.symbol)} = <strong>${esc(S.format(answer.value))}</strong> ${esc(E.resultUnit(f).label)}<small>3 cifre fra første ikke-nul efter kommaet. Mellemregninger beholder præcisionen.</small>`;
+   if(answer.status==='ready'){const unit=E.resultUnit(f),tms=unit.format==='tms';html+=`${sym(f.symbol)} = <strong>${esc(tms?E.Units.formatTime(answer.value):S.format(answer.value))}</strong> ${esc(tms?'timer:minutter:sekunder':unit.label)}<small>${tms?'Formlen bruger sekunder. Sekundernes decimaler: ':''}3 cifre fra første ikke-nul efter kommaet. Mellemregninger beholder præcisionen.</small>`;}
    else if(answer.status==='incomplete')html+='<p class="note">Indtast de manglende tal nedenfor for at se resultatet.</p>';
    else html+=`<p class="error-box">${esc(answer.error||answer.message||'Beregningen er ikke defineret. Kontrollér nævnere og forudsætninger.')}</p>`;
    html+='</div>';
@@ -73,9 +73,9 @@
  function quantities(f){
   const r=S.context(task).safe('formula:'+f.id,'expanded',true);if(!r.ok)return '';
   const variables=E.variables(r.ast).filter(v=>!v.reference);
-  return `<section id="quantity-guide"><h2>Størrelserne i formlen</h2><p class="note">Skriv tallet som i opgaven og vælg enhed. Omregningen udføres, før tallet vises i formlen. Et tomt felt beholder symbolet.</p><div class="input-grid">${variables.map(v=>{
-   const unit=E.inputUnit(model(),v),key=E.Units.key(v),value=E.inputValue(model(),v),owner=model().formulas.find(f=>'formula:'+f.id===v.scope),converted=E.Units.convertedValue(value,unit);
-   return `<div class="quantity"><div class="quantity-head">${sym(v.symbol)}<span>${esc(v.label||E.DIMENSIONS[v.dimension].name)}${owner&&owner.id!==f.id?`<small>↗ ${esc(owner.name)}</small>`:''}</span></div><div class="value-entry"><input type="text" inputmode="decimal" data-action="input-value" data-key="${esc(key)}" data-dimension="${v.dimension}" value="${esc(value.replace('.',','))}" placeholder="${esc(v.symbol)}" aria-label="Tal for ${esc(v.symbol)}" maxlength="32" autocomplete="off"><button data-action="clear-value" data-key="${esc(key)}" aria-label="Ryd ${esc(v.symbol)}">×</button></div>${unitSelector(v.dimension,unit,'input-unit',key)}<span class="note" data-conversion="${esc(key)}">${converted?esc((unit.id==='percent'?E.percentToDecimal(value):converted.value).replace('.',','))+' '+esc(E.Units.base(v.dimension).label)+' i formlen':'→ '+esc(E.Units.base(v.dimension).label)+' i grundformlen'}</span></div>`;
+  return `<section id="quantity-guide"><h2>Størrelserne i formlen</h2><p class="note">Skriv tallet som i opgaven og vælg enhed. Omregningen udføres, før tallet vises i formlen. Et tomt felt beholder symbolet. TMS skrives som tt:mm:ss, fx 02:47:00. Formlen bruger sekunder, mens resultatet kan vises i TMS.</p><div class="input-grid">${variables.map(v=>{
+   const unit=E.inputUnit(model(),v),key=E.Units.key(v),value=E.inputValue(model(),v),tms=unit.format==='tms',owner=model().formulas.find(f=>'formula:'+f.id===v.scope),converted=E.Units.convertedValue(value,unit);
+   return `<div class="quantity"><div class="quantity-head">${sym(v.symbol)}<span>${esc(v.label||E.DIMENSIONS[v.dimension].name)}${owner&&owner.id!==f.id?`<small>↗ ${esc(owner.name)}</small>`:''}</span></div><div class="value-entry"><input type="text" inputmode="${tms?'text':'decimal'}" data-action="input-value" data-key="${esc(key)}" data-dimension="${v.dimension}" value="${esc(tms?E.Units.timeInput(value):value.replace('.',','))}" placeholder="${tms?'02:47:00':esc(v.symbol)}" aria-label="Tal for ${esc(v.symbol)}" maxlength="32" autocomplete="off"><button data-action="clear-value" data-key="${esc(key)}" aria-label="Ryd ${esc(v.symbol)}">×</button></div>${unitSelector(v.dimension,unit,'input-unit',key)}<span class="note" data-conversion="${esc(key)}">${converted?esc((unit.id==='percent'?E.percentToDecimal(value):converted.value).replace('.',','))+' '+esc(E.Units.base(v.dimension).label)+' i formlen':'→ '+esc(E.Units.base(v.dimension).label)+' i grundformlen'}</span></div>`;
   }).join('')}</div><div class="result-unit"><span>Resultatets enhed</span>${unitSelector(f.dimension,E.resultUnit(f),'result-unit',f.id)}</div></section>`;
  }
  function renderFormula(){
@@ -164,10 +164,9 @@
   const el=event.target,a=el.dataset.action;
   if(a==='search'){library(el.value);return;}
   if(a==='input-value'){
-   const parsed=E.parseInputValue(el.value);el.setAttribute('aria-invalid',String(parsed===null));
-   if(parsed===null)return;
-   if(parsed==='')delete model().inputValues[el.dataset.key];else model().inputValues[el.dataset.key]=parsed;
-   const unit=E.Units.get(el.dataset.dimension,model().inputUnits[el.dataset.key]||E.Units.base(el.dataset.dimension).id),c=E.Units.convertedValue(parsed,unit);
+   const unit=E.Units.get(el.dataset.dimension,model().inputUnits[el.dataset.key]||E.Units.base(el.dataset.dimension).id),parsed=unit.format==='tms'?E.Units.parseTime(el.value):E.parseInputValue(el.value);el.setAttribute('aria-invalid',String(parsed===null));
+   if(parsed===null||parsed==='')delete model().inputValues[el.dataset.key];else model().inputValues[el.dataset.key]=parsed;
+   const c=E.Units.convertedValue(parsed,unit);
    document.querySelectorAll('[data-conversion]').forEach(n=>{if(n.dataset.conversion===el.dataset.key)n.textContent=c?(unit.id==='percent'?E.percentToDecimal(parsed):c.value).replace('.',',')+' '+E.Units.base(el.dataset.dimension).label+' i formlen':'→ '+E.Units.base(el.dataset.dimension).label+' i grundformlen';});
    persist();updatePreview();
   }
@@ -175,7 +174,7 @@
  document.addEventListener('change',event=>{
   const el=event.target,a=el.dataset.action;if(!a||a==='search')return;
   try{
-   if(a==='input-value'){if(E.parseInputValue(el.value)===null)toast('Skriv ét tal med komma eller punktum.');else {persist();updatePreview();}return;}
+   if(a==='input-value'){const unit=E.Units.get(el.dataset.dimension,model().inputUnits[el.dataset.key]||E.Units.base(el.dataset.dimension).id),tms=unit.format==='tms';if((tms?E.Units.parseTime(el.value):E.parseInputValue(el.value))===null)toast(tms?'Skriv tt:mm:ss, fx 02:47:00. Minutter og sekunder skal være under 60.':'Skriv ét tal med komma eller punktum.');else {persist();updatePreview();}return;}
    if(a==='title'){model().title=el.value.trim()||'Ny SRO-opgave';persist();return;}
    if(a==='view'){view[el.dataset.key]=el.type==='checkbox'?el.checked:el.value;render();return;}
    if(a==='io-edit'){task.ioRows[Number(el.dataset.index)][el.dataset.key]=el.value;persist();return;}
@@ -198,7 +197,7 @@
    if(a==='custom-text'){const next=E.customExpression(el.value,f.dimension,f.expression.args);f.expression=next;E.initializeUnitChoices(model());commit();}
    if(a==='input-unit'||a==='result-unit'){
     const dim=el.dataset.dimension,key=el.dataset.key,old=a==='input-unit'?E.Units.get(dim,model().inputUnits[key]||E.Units.base(dim).id):E.resultUnit(f),unit=el.dataset.part?E.Units.withPart(dim,old.id,el.dataset.part,el.value):E.Units.get(dim,el.value);
-    if(a==='input-unit')model().inputUnits[key]=unit.id;else f.resultUnit=unit.id;commit();
+    if(a==='input-unit'){const value=E.Units.switchTimeFormat(model().inputValues[key]||'',old,unit);if(value)model().inputValues[key]=value;model().inputUnits[key]=unit.id;}else f.resultUnit=unit.id;commit();
    }
   }catch(error){toast(error.message);render();}
  });

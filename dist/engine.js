@@ -131,7 +131,7 @@
   function newFormula(id, formulaId) {
     const f = FORMULAS[formulaId];
     if (!f) throw new Error('Ukendt formel.');
-    return { id, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: newExpression(formulaId) };
+    return { id, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: newExpression(formulaId), ...(f.resultUnit?{resultUnit:f.resultUnit}:{}) };
   }
   function formulaSections(model){
     const groups=(model.formulaGroups||[]).map(g=>({...g,formulas:model.formulas.filter(f=>f.groupId===g.id)}));
@@ -696,7 +696,7 @@
         // A sought dimension is algebraically represented in SI. Its old input
         // value and input unit cannot become part of its own inverse formula.
         if(budget.isolate?.has(Units.key(variable)))return variable;
-        if(value!==''){variable.inputValue=value;variable.valueUnit=unit.label;}
+        if(value!==''){variable.inputValue=value;variable.valueUnit=Units.arithmetic(unit).label;}
         return Units.convert(variable,unit);
       }
       if (expr.kind === 'zero' && expr.dimension === dimension) return {type:'constant',value:'0'};
@@ -710,7 +710,7 @@
           // source formula's displayed result unit and convert back to base once.
           if(d.expression.kind==='symbol')return expandRaw(d.expression,dimension,mode,[...stack,d.target],budget,depth+1,d.name);
           const unit=resultUnit(d),variable={...leaf(d.symbol,dimension,d.name),reference:d.target};
-          if(unit.id!==Units.base(dimension).id)variable.unit=unit.label;
+          if(unit.id!==Units.base(dimension).id)variable.unit=Units.arithmetic(unit).label;
           return Units.convert(variable,unit);
         }
         return expandRaw(d.expression, dimension, mode, [...stack, d.target], budget, depth + 1, d.name);

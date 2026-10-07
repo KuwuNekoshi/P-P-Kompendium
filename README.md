@@ -2,9 +2,19 @@
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
+## Tid i timer, minutter og sekunder
+
+Under **Størrelserne i formlen** kan alle tidsfelter vælges som **TMS (tt:mm:ss)**. Skriv fx `02:47:00` for 2 timer og 47 minutter eller `00:00:01,5` for halvandet sekund. Vælg også TMS under **Resultatets enhed** for at vise svaret som timer:minutter:sekunder.
+
+I kategorien **Tid** findes **Læg tider sammen**, **Træk tider fra hinanden** og **Omregn tid · TMS**. De starter med TMS som resultatformat. Hver tid kan have sin egen enhed: 8 h + 12,34 h bliver **20:20:24**. Flere tider kan lægges sammen ved at bruge en tidligere sum som reference.
+
+TMS viser varigheder uden at nulstille efter 24 timer. Minut- og sekundfelterne skal være fra 00 til 59; sekunder kan have decimaler. Et minus foran hele varigheden er tilladt. Det er varigheder, ikke kalenderdatoer eller automatisk passage over midnat.
+
+Ved skift mellem TMS og en decimalenhed omregnes den allerede indtastede varighed. Formlen og dens referencer bruger sekunder; TMS er et format til input og resultat, ikke en enhed i nævneren på flow eller hastighed. Kun resultatets sekunddecimaler afrundes efter kompendiets normale regel. Normalversionerne gemmer tidsvalgene sammen med opgaven. Funktionen findes i både P&P og SRO, almindelig og eksamen.
+
 ## Nyt: SRO-kompendium
 
-Åbn **`sro.html`** eller **`sro-eksamen.html`** fra en release. SRO har sin egen opgave og 46 formelfamilier med omskrivninger, enhedsvalg, referencer, grupper, egen formel og en trinvis introduktion.
+Åbn **`sro.html`** eller **`sro-eksamen.html`** fra en release. SRO har sin egen opgave og 49 formelfamilier med omskrivninger, enhedsvalg, referencer, grupper, egen formel og en trinvis introduktion.
 
 Byg et elektrisk kredsløb af modstande og ledninger, flyt/drej komponenter, og brug den samlede modstand som reference i fx Ohms lov. Ledningerne bestemmer forbindelserne; serie-, parallel-, blandede og brokoblede kredsløb understøttes. Der er også interaktive oversigter over motorer, transmittere, regulering, komponenter, IP-klasser, isolering og I/O.
 
@@ -200,7 +210,7 @@ Hvis andre formler brugte det tidligere resultat, følger de den tilsvarende st�
 
 Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning og parentesregler gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
 
-**Alle 133 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **337 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
+**Alle 136 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **342 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
 
 - Geometriske mål bruger den ikke-negative løsning. For hastighed fra kinetisk energi eller dynamisk trykhøjde kan begge fortegn vælges.
 - Tid fra `s = v_start · t + (1/2) · a · t²` har to rodvalg. Vælg den tid, der passer til forløbet. Ved `a = 0` bruges `t = s / v_start`. Hvis også `v_start = 0`, kan tiden ikke bestemmes fra strækningen alene.
@@ -356,7 +366,7 @@ t = [(π/4) · D₁² · h₁ + (1/3) · (π/4) · D₁² · h₂]
 
 Keglebunden deler diameter med cylinderen. Røret leverer tværsnitsarealet til flowformlen og indgår ikke i beholderens rumfang. Kendes flowet allerede, vælger du **Kendt størrelse · Qv** ved flowet; så forsvinder rørdiameter og hastighed fra den udfoldede formel.
 
-Der er 133 grundformler, 337 omskrivninger og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
+Der er 136 grundformler, 342 omskrivninger og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
 
 ## Forudsætninger
 
@@ -395,9 +405,9 @@ Formlernes skabeloner består af faste matematiske operationer. Der bruges hverk
 
 Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer begge selvstændige HTML-filer, script-rækkefølge og offlinekrav.
 
-Alle 337 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
+Alle 342 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
 
-Talindsættelse kontrolleres på alle 133 grundformler og 337 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og resultatvisning.
+Talindsættelse kontrolleres på alle 136 grundformler og 342 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og resultatvisning.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
 

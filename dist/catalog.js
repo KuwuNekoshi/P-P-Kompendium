@@ -5478,6 +5478,111 @@
         "t_side",
         "T9"
       ]
+    },
+    "timeSum": {
+      "name": "Læg tider sammen",
+      "group": "Tid",
+      "symbol": "t_sum",
+      "dimension": "time",
+      "equation": "t_sum = t_1 + t_2",
+      "resultUnit": "tms",
+      "args": {
+        "t1": {
+          "symbol": "t_1",
+          "label": "Tid 1",
+          "dimension": "time"
+        },
+        "t2": {
+          "symbol": "t_2",
+          "label": "Tid 2",
+          "dimension": "time"
+        }
+      },
+      "template": [
+        "add",
+        "t1",
+        "t2"
+      ],
+      "note": "Vælg fx timer, minutter eller TMS (tt:mm:ss) for hver tid. TMS kan vise mere end 24 timer. Flere tider kan lægges sammen med referencer til en tidligere sum.",
+      "aliases": [
+        "timer",
+        "minutter",
+        "sekunder",
+        "TMS",
+        "tidsudregning",
+        "varighed"
+      ],
+      "source": {
+        "pages": [],
+        "triangles": []
+      }
+    },
+    "timeDifference": {
+      "name": "Træk tider fra hinanden",
+      "group": "Tid",
+      "symbol": "t_diff",
+      "dimension": "time",
+      "equation": "t_diff = t_2 − t_1",
+      "resultUnit": "tms",
+      "args": {
+        "t1": {
+          "symbol": "t_1",
+          "label": "Tid der trækkes fra",
+          "dimension": "time"
+        },
+        "t2": {
+          "symbol": "t_2",
+          "label": "Samlet tid",
+          "dimension": "time"
+        }
+      },
+      "template": [
+        "sub",
+        "t2",
+        "t1"
+      ],
+      "note": "Vælg fx timer, minutter eller TMS (tt:mm:ss) for hver tid. TMS kan vise mere end 24 timer. Flere tider kan lægges sammen med referencer til en tidligere sum.",
+      "aliases": [
+        "timer",
+        "minutter",
+        "sekunder",
+        "TMS",
+        "tidsudregning",
+        "varighed"
+      ],
+      "source": {
+        "pages": [],
+        "triangles": []
+      }
+    },
+    "timeConvert": {
+      "name": "Omregn tid · TMS",
+      "group": "Tid",
+      "symbol": "t",
+      "dimension": "time",
+      "equation": "t = t_ind",
+      "resultUnit": "tms",
+      "args": {
+        "time": {
+          "symbol": "t_ind",
+          "label": "Tid",
+          "dimension": "time"
+        }
+      },
+      "template": "time",
+      "note": "Vælg fx timer, minutter eller TMS (tt:mm:ss) for hver tid. TMS kan vise mere end 24 timer. Flere tider kan lægges sammen med referencer til en tidligere sum.",
+      "aliases": [
+        "timer",
+        "minutter",
+        "sekunder",
+        "TMS",
+        "tidsudregning",
+        "varighed"
+      ],
+      "source": {
+        "pages": [],
+        "triangles": []
+      }
     }
   },
   "SHAPES": {

@@ -1,13 +1,14 @@
 {
   "name": "pp-kompendium",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "private": true,
   "description": "Offline P&P- og SRO-kompendier med interaktive figurer, kredsløb og sammenkædede formler.",
   "scripts": {
     "build": "node tools/build.cjs",
     "test": "node --test tests/*.test.cjs",
     "check": "node --check dist/catalog.js && node --check dist/units.js && node --check dist/rearrange.js && node --check dist/fill-height.js && node --check dist/custom-formula.js && node --check dist/engine.js && node --check dist/geometry.js && node --check dist/solid-preview.js && node --check dist/tour.js && node --check dist/app.js && node tools/check.cjs",
-    "test:sro:browser": "node tools/test-sro-browser.cjs"
+    "test:sro:browser": "node tools/test-sro-browser.cjs",
+    "test:time:browser": "node tools/test-time-browser.cjs"
   },
   "engines": {
     "node": ">=18"

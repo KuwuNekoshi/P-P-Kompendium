@@ -61,6 +61,8 @@
     }));
     for(const unit of previous)if(!units[dimension].some(u=>u.id===unit.id))throw new Error('En tidligere enhed mangler i enhedsvalget.');
   }
+  // TMS is a duration format backed by seconds, never a denominator in rates.
+  units.time=[...units.time,Object.freeze({id:'tms',label:'TMS (tt:mm:ss)',format:'tms',dimension:'time',numerator:1,denominator:1,offset:'0'})];
   function choices(dimension){
     if(!Object.hasOwn(units,dimension))throw new Error('Ukendt størrelse til enhedsvalg.');
     return units[dimension];
@@ -87,6 +89,41 @@
     return combine(dimension,next.numerator,next.denominator);
   }
   const key=variable=>(variable.scope?variable.scope+':':'')+variable.symbol+':'+variable.dimension;
+  const arithmetic=unit=>unit.format==='tms'?base('time'):unit;
+  function parseTime(value){
+    if(typeof value!=='string'||value.length>32)return null;
+    const text=value.trim().replace(/−/g,'-').replace(',','.');
+    if(!text)return '';
+    const match=/^([+-]?)(\d+):([0-5]\d):([0-5]\d)(\.\d+)?$/.exec(text);
+    if(!match)return null;
+    const [,sign,h,m,s,fraction='']=match;
+    const seconds=(BigInt(h)*3600n+BigInt(m)*60n+BigInt(s)).toString()+fraction.replace(/0+$/,'').replace(/\.$/,'');
+    const result=(sign==='-'&&Number(seconds)!==0?'-':'')+seconds;
+    return result.length<=32?result:null;
+  }
+  function timeInput(value){
+    if(value==='')return '';
+    const match=/^([+-]?)(\d+)(?:\.(\d*))?$/.exec(String(value));
+    if(!match)return '';
+    const [,sign,whole,fraction='']=match,n=BigInt(whole),tail=fraction.replace(/0+$/,'');
+    return (sign==='-'&&(n!==0n||tail)?'-':'')+(n/3600n).toString().padStart(2,'0')+':'+(n/60n%60n).toString().padStart(2,'0')+':'+(n%60n).toString().padStart(2,'0')+(tail?','+tail:'');
+  }
+  function formatTime(value){
+    if(!Number.isFinite(value))return '—';
+    const [coefficient,exponent='0']=Math.abs(value).toString().split('e'),[a,b='']=coefficient.split('.'),digits=a+b,point=a.length+Number(exponent);
+    const whole=point<=0?'0':digits.slice(0,point)+'0'.repeat(Math.max(0,point-digits.length));
+    const fraction=point<=0?'0'.repeat(-point)+digits:digits.slice(point),places=Math.max(0,fraction.search(/[1-9]/))+3;
+    let rounded=BigInt(whole+fraction.slice(0,places).padEnd(places,'0'));
+    if((fraction[places]||'0')>='5')rounded++;
+    const text=rounded.toString().padStart(places+1,'0');
+    return timeInput((value<0?'-':'')+text.slice(0,-places)+'.'+text.slice(-places));
+  }
+  function switchTimeFormat(value,from,to){
+    if(!value||from.format===to.format)return value;
+    if(to.format==='tms')return convertedValue(value,from)?.value??value;
+    if(from.format==='tms')return convertedValue(value,{...to,numerator:to.denominator,denominator:to.numerator})?.value??value;
+    return value;
+  }
   const constant=value=>({type:'constant',value:String(value)});
   const unitFactor=value=>({...constant(value),unitFactor:true});
   const group=ast=>ast.type==='group'?ast:{type:'group',children:[ast]};
@@ -188,6 +225,7 @@
     return n===1n&&d===1n?body:{...group(body),unitConversion:true};
   }
   function hint(unit,direction='toBase'){
+    if(unit.format==='tms')return direction==='fromBase'?'Sekunder vises som timer:minutter:sekunder':'Skriv tt:mm:ss, fx 02:47:00. Formlen bruger sekunder.';
     const inverse=direction==='fromBase',parts=[];
     const format=n=>Number(n).toLocaleString('da-DK',{maximumFractionDigits:8});
     if(inverse&&unit.offset!=='0')parts.push('− '+format(unit.offset));
@@ -197,5 +235,5 @@
     if(!inverse&&unit.offset!=='0')parts.push('+ '+format(unit.offset));
     return parts.join(' · derefter ')||'Samme tal';
   }
-  return {choices,base,preferred,get,ratio,combine,withPart,key,convert,convertedValue,reduce,hint};
+  return {choices,base,preferred,get,ratio,combine,withPart,key,convert,convertedValue,reduce,hint,arithmetic,parseTime,timeInput,formatTime,switchTimeFormat};
 });

@@ -16,7 +16,7 @@ assert(!/<script[^>]+src=/i.test(html), 'Standalone scripts must be inline.');
 assert(!/<link[^>]+rel="stylesheet"/i.test(html), 'Standalone styles must be inline.');
 assert(html.includes("connect-src 'none'"), 'Offline page must block network connections.');
 assert(!/\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(html), 'Unexpected network API.');
-assert(html.includes('inputmode="decimal"')&&html.includes('data-action="input-value"'), 'Optional numeric substitution fields must be available offline.');
+assert(/inputmode="(?:decimal|\$\{tms\?'text':'decimal'\})"/.test(html)&&html.includes('data-action="input-value"'), 'Optional numeric and TMS substitution fields must be available offline.');
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 assert.equal(scripts.length, 10);
 for (const [i, [, script]] of scripts.entries()) new vm.Script(script, { filename: 'inline-' + i + '.js' });

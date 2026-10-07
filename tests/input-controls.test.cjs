@@ -113,3 +113,14 @@ test('production surface controls assign local side and bottom thicknesses and r
   html=h.scope.expressionEditor(expr,'volume',['formulas',0,'expression','args','V'],'V_mat',E.context(h.scope.model));
   assert.match(html,/value="material" selected/);assert.match(html,/plademateriale/);
 });
+
+test('TMS entry controls preserve durations across format switches and discard invalid draft values',()=>{
+ const m=setup(E.newFormula('sum','timeSum')),h=harness(m),key='formula:sum:t_1:time';
+ const unit=id=>h.change({value:id,dataset:{action:'input-unit',id:key,symbol:'t_1',dimension:'time'}});
+ unit('h');h.input(key,'12,34');unit('tms');assert.equal(m.inputValues[key],'44424');assert(!h.scope.valueDrafts.has(key));
+ h.scope.renderUnitGuide(E.context(m).result('formula:sum'),m.formulas[0]);assert.match(h.guide.innerHTML,/value="12:20:24"/);assert.match(h.guide.innerHTML,/44424 s/);
+ h.input(key,'25:00:01,5');assert.equal(m.inputValues[key],'90001.5');
+ h.input(key,'25:60:01');assert.equal(m.inputValues[key],undefined);h.scope.renderUnitGuide(E.context(m).result('formula:sum'),m.formulas[0]);assert.match(h.guide.innerHTML,/aria-invalid="true"/);
+ h.input(key,'08:00:00');unit('h');assert.equal(m.inputValues[key],'8');
+ h.scope.renderUnitGuide(E.context(m).result('formula:sum'),m.formulas[0]);assert.match(h.guide.innerHTML,/value="8"/);
+});
