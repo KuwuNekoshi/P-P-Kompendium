@@ -2,6 +2,16 @@
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
+## Find en formel og vælg filnavn i P&P
+
+- **Tilføj formel** har et søgefelt. Søg på navn, symbol, T-nummer eller ord fra beskrivelsen; fx `fyldetid`, `Qv`, `T9` eller `cylinder`.
+- **Søg formel** ved **Hvad vil du finde?** søger både blandt dine eksisterende formler og nye formler. Valg af en eksisterende formel åbner den uden at oprette en kopi.
+- **Søg formel / reference** ved formlens dele søger kun blandt de kilder, der passer til den pågældende størrelse. **Brug en reference** står før **Indsæt en formel**, både i dropdownen og søgevinduet.
+- Enter i søgefeltet vælger det første synlige resultat. Pil ned flytter fokus til resultatlisten, og Esc lukker uden ændringer.
+- **Gem opsætning** åbner en dialog med forslag til filnavn. Ret navnet, og vælg **Gem fil**, eller tryk Enter. Filtypen `.pp.json` tilføjes automatisk; filnavnet ændrer ikke opgavens titel inde i kompendiet. Du kan også annullere uden download.
+
+Søgning findes i begge P&P-versioner. Eksamensversionen har fortsat ingen import eller eksport af opgaver.
+
 ## Tid i timer, minutter og sekunder
 
 Under **Størrelserne i formlen** kan alle tidsfelter vælges som **TMS (tt:mm:ss)**. Skriv fx `02:47:00` for 2 timer og 47 minutter eller `00:00:01,5` for halvandet sekund. Vælg også TMS under **Resultatets enhed** for at vise svaret som timer:minutter:sekunder.
@@ -420,3 +430,5 @@ Kontroller for forhåndsomregning dækker alle enhedsfamilier, periodiske decima
 Hx-kontroller dækker alle ti profiler i begge retninger, overgange mellem dele, tom/fuld tank, små fyldninger, keglestubbens cylindertilfælde, delte mål, enheder, referencer, inputscopes, fejltilfælde, gem/åbn og de nye brugerfladekontroller.
 
 Versionstestene kører de faktiske scripts fra begge HTML-filer og kontrollerer opstart, import/eksport, lokal lagring, deaktiveret browserlagring, lommeregnerknappen, tilbage-navigation og introduktionens gendannelse af opsætningen.
+
+P&P’s søge- og gemmeforløb kan kontrolleres i en rigtig browser med `npm run test:pp:browser`. Som i de øvrige browsertests kan `PLAYWRIGHT_MODULE` og `CHROMIUM_PATH` pege på lokale installationer. Kontrollen omfatter referencer, filnavn, faktisk download og genåbning, tastatur, mobilvisning og eksamensversionen.

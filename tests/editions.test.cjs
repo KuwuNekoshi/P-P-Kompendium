@@ -9,7 +9,7 @@ function boot(edition,stored=new Map(),storageBlocked=false){
  const html=fs.readFileSync(path.join(__dirname,'..',edition==='exam'?'eksamen.html':'index.html'),'utf8');
  const markup=html.slice(0,html.indexOf('<script>')),nodes=new Map(),events={},windowEvents={},reads=[],writes=[],downloads=[];
  const element=()=>({dataset:{},innerHTML:'',textContent:'',value:'',hidden:false,open:false,style:{},handlers:{},isConnected:true,scrollTop:0,scrollLeft:0,
-   setAttribute(k,v){this[k]=v;},classList:{toggle(){}},focus(){},getContext:()=>null,
+   setAttribute(k,v){this[k]=v;},classList:{toggle(){}},focus(){},select(){},getContext:()=>null,
    addEventListener(type,fn){this.handlers[type]=fn;},querySelector:s=>query(s),querySelectorAll:()=>[],
    show(){this.open=true;},showModal(){this.open=true;},close(){this.open=false;},getClientRects:()=>[{}],
    click(){this.clicked=true;},remove(){}});
@@ -41,10 +41,10 @@ test('normal edition restores a task, exposes calculator toggle, and exports/imp
  assert.equal(h.query('#calculator-toggle')['aria-pressed'],'false');
  h.click('toggle-calculator');assert.equal(h.query('#calculator-toggle')['aria-pressed'],'true');assert.match(h.query('#formula-preview').innerHTML,/result-panel/);
  h.click('hide-result');assert.equal(h.query('#calculator-toggle')['aria-pressed'],'false');
- h.click('export');const exported=JSON.parse(await h.downloads[0].text());assert.deepEqual(exported,model);
+ h.click('export');assert.equal(h.downloads.length,0);h.query('[data-export-name]').value='Min opgave';h.click('confirm-export');const exported=JSON.parse(await h.downloads[0].text());assert.deepEqual(exported,model);
  const imported={...model,title:'Opgave fra en anden computer'};await h.import(imported);
  assert.equal(h.query('#project-title').value,imported.title);assert.equal(JSON.parse(h.stored.get(STORAGE)).title,imported.title);
- h.click('export');assert.deepEqual(JSON.parse(await h.downloads[1].text()),imported);
+ h.click('export');h.query('[data-export-name]').value='Importeret opgave';h.click('confirm-export');assert.deepEqual(JSON.parse(await h.downloads[1].text()),imported);
  h.pageshow(true);assert.equal(h.query('#project-title').value,imported.title);
 });
 test('exam starts empty with calculation on and never reads or writes task storage',()=>{

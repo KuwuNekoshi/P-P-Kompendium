@@ -56,7 +56,7 @@
   const pretty = s => s.replace(/_/g, '');
   const schoolRef = f => [...(f?.source?.triangles||[]),...(f?.source?.pages?.length?['s. '+f.source.pages.join(', ')]:[])].join(' · ');
   const formulaTitle = f => f.name+(f.source?.triangles.length?' · '+f.source.triangles.join('/'):'');
-  let libraryQuery='';
+  let libraryQuery='', searchSelect=null;
   const active = () => model.formulas.find(f => f.id === activeId);
   const getAt = p => p.reduce((o,k) => o?.[k], model);
   function setAt(p,v) { getAt(p.slice(0,-1))[p.at(-1)] = v; }
@@ -285,11 +285,11 @@
       if(expr.kind==='assembly'&&expr.shapeId&&!model.shapes.some(s=>s.id===expr.shapeId))options+=`<option value="${esc(current)}">Manglende figur · vælg en ny</option>`;
     }
     const formulas = Object.entries(E.FORMULAS).filter(([id,f]) => f.dimension === dimension&&id!=='bucketCountFromSpacing');
-    if (formulas.length) options += '<optgroup label="Indsæt en formel">' + formulas.map(([id,f]) => `<option value="formula:${id}">${esc(f.equation)} · ${esc(formulaTitle(f))}</option>`).join('') + '</optgroup>';
     if (targets.length) options += '<optgroup label="Brug en reference">' + targets.map(d => `<option value="ref:${esc(d.target)}">↗ ${esc(d.name)}</option>`).join('') + '</optgroup>';
+    if (formulas.length) options += '<optgroup label="Indsæt en formel">' + formulas.map(([id,f]) => `<option value="formula:${id}">${esc(f.equation)} · ${esc(formulaTitle(f))}</option>`).join('') + '</optgroup>';
     if (expr.kind === 'ref' && !targets.some(d => d.target === expr.target)) options += `<option value="${esc(current)}">↗ ${esc(ctx.map.get(expr.target)?.name || 'Manglende reference')}</option>`;
     options = options.replace(`value="${esc(current)}"`,`value="${esc(current)}" selected`);
-    let html = `<div class="expression"><select class="source-select" data-action="source" data-path="${pathAttr(path)}" data-dimension="${dimension}" data-symbol="${esc(defaultSymbol)}" aria-label="Kilde til ${esc(pretty(defaultSymbol))}">${options}</select>`;
+    let html = `<div class="expression"><div class="formula-source-choice"><select class="source-select" data-action="source" data-path="${pathAttr(path)}" data-dimension="${dimension}" data-symbol="${esc(defaultSymbol)}" aria-label="Kilde til ${esc(pretty(defaultSymbol))}">${options}</select><button class="text-button find-formula" data-action="search-source">Søg formel / reference</button></div>`;
     if (expr.kind === 'symbol') html += `<div class="known-symbol">${symbolHtml(expr.symbol)}<span>Indtast evt. et tal under Størrelserne i formlen</span></div>${dimension==='countPerLength'?'<p class="field-note">Dette er antal kopper pr. længdeenhed, fx 5 pr. m. Har du én kop for hver 20 cm, vælg <strong>Afstand mellem kopper</strong> ovenfor og angiv 20 cm i stedet.</p>':''}`;
     else if(expr.kind==='zero')html+='<p class="field-note">Alle figurens flader er åbne eller sammenføjede.</p>';
     else if (expr.kind === 'ref') {
@@ -435,7 +435,7 @@
     // its own modal. Only normal use opens an interactive application dialog.
     if (tutorial) $('#app-dialog').show(); else $('#app-dialog').showModal();
   }
-  function closeDialog() { $('#app-dialog').close(); pending=null; joinDraft=null; if(dialogOrigin?.isConnected)dialogOrigin.focus({preventScroll:true}); }
+  function closeDialog() { $('#app-dialog').close(); pending=null; joinDraft=null; searchSelect=null; if(dialogOrigin?.isConnected)dialogOrigin.focus({preventScroll:true}); }
   function freeFaces(s) { return Object.entries(E.SHAPES[s.type].faces).filter(([key,f])=>f.join&&!E.connectionAt(model,s.id,key)); }
   function joinFields() {
     const hosts=model.shapes.filter(s=>freeFaces(s).length);
@@ -504,7 +504,47 @@
   }
   function formulaPicker(groupId=active()?.groupId||'') {
     const groups=[...new Set(Object.values(E.BASE_FORMULAS).map(f=>f.group))];
-    openDialog('Hvad vil du finde?','<p>Vælg en grundformel. Under Isolér en størrelse kan du bagefter vælge en anden ukendt.</p><div class="dialog-formula-list"><button class="dialog-formula-item" data-action="use-formula" data-formula="custom" data-group="'+esc(groupId)+'"><span>Egen formel</span><span>Skriv fx h_top + h_midte + h_bund, og forbind symbolerne</span></button><button class="dialog-formula-item" data-action="use-formula" data-formula="figureMeasure" data-group="'+esc(groupId)+'"><span>Mål i samlet figur</span><span>Isolér højde, bredde eller længde</span></button><button class="dialog-formula-item" data-action="use-formula" data-formula="fillHeight" data-group="'+esc(groupId)+'"><span>Produkthøjde i tank (Hx)</span><span>Fyld sammensatte figurer fra bunden</span></button>'+groups.map(group=>`<h3>${esc(group)}</h3>${Object.entries(E.BASE_FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="dialog-formula-item" data-action="use-formula" data-formula="${id}" data-group="${esc(groupId)}"><span>${esc(formulaTitle(f))}</span><span>${esc(f.equation)}</span></button>`).join('')}`).join('')+'</div>');
+    openDialog('Hvad vil du finde?',formulaSearchField()+'<p>Vælg en grundformel. Under Isolér en størrelse kan du bagefter vælge en anden ukendt.</p><div class="dialog-formula-list"><button class="dialog-formula-item" data-action="use-formula" data-formula="custom" data-group="'+esc(groupId)+'"><span>Egen formel</span><span>Skriv fx h_top + h_midte + h_bund, og forbind symbolerne</span></button><button class="dialog-formula-item" data-action="use-formula" data-formula="figureMeasure" data-group="'+esc(groupId)+'"><span>Mål i samlet figur</span><span>Isolér højde, bredde eller længde</span></button><button class="dialog-formula-item" data-action="use-formula" data-formula="fillHeight" data-group="'+esc(groupId)+'"><span>Produkthøjde i tank (Hx)</span><span>Fyld sammensatte figurer fra bunden</span></button>'+groups.map(group=>`<h3>${esc(group)}</h3>${Object.entries(E.BASE_FORMULAS).filter(([,f])=>f.group===group).map(([id,f])=>`<button class="dialog-formula-item" data-action="use-formula" data-formula="${id}" data-group="${esc(groupId)}"><span>${esc(formulaTitle(f))}</span><span>${esc(f.equation)}</span></button>`).join('')}`).join('')+'</div>'+formulaSearchStatus());
+    $('[data-formula-search]')?.focus?.();
+  }
+  function formulaSearchField(){
+    return '<label class="formula-search picker-search">Søg efter en formel<input type="search" data-formula-search data-action="filter-formula-list" placeholder="Fx fyldetid, T9, Qv eller cylinder" autocomplete="off"></label>';
+  }
+  function formulaSearchStatus(){
+    return '<p class="search-count" data-formula-search-count role="status"></p><p class="empty-search" data-formula-search-empty hidden>Ingen muligheder matcher. Prøv et andet navn, symbol eller T-nummer.</p>';
+  }
+  function searchFormulaSelect(control){
+    if(!control)return;
+    let group='';
+    const choices=[...control.options].filter(o=>o.value&&!o.disabled&&!o.parentElement.disabled).map(o=>{
+      const label=o.parentElement.tagName==='OPTGROUP'?o.parentElement.label:'Andre valg';
+      const heading=label!==group?'<h3>'+esc(label)+'</h3>':'';group=label;
+      return heading+`<button class="dialog-formula-item" data-action="choose-formula-option" data-value="${esc(o.value)}"><span>${esc(o.textContent)}</span><span>${o.selected?'Valgt nu':''}</span></button>`;
+    }).join('');
+    openDialog(control.id==='goal-select'?'Find en formel':'Find formel eller reference',formulaSearchField()+`<p>${control.id==='goal-select'?'Vælg en formel fra din opsætning, eller tilføj en ny.':'Søg blandt de muligheder, der passer til denne størrelse.'}</p><div class="dialog-formula-list">${choices}</div>`+formulaSearchStatus());
+    searchSelect=control;
+    $('[data-formula-search]').focus();
+  }
+  function filterFormulaList(query){
+    const normalize=value=>String(value).normalize('NFKD').toLocaleLowerCase('da').replace(/[\u0300-\u036f]/g,'').replace(/æ/g,'ae').replace(/ø/g,'o').replace(/[^\p{L}\p{N}]/gu,'');
+    const words=query.trim().split(/\s+/).map(normalize).filter(Boolean);
+    const list=$('#app-dialog').querySelector('.dialog-formula-list');if(!list)return;
+    let heading=null,group='',count=0;
+    for(const item of list.children){
+      if(item.tagName==='H3'){heading=item;group=item.textContent;item.hidden=true;continue;}
+      const value=item.dataset.formula||item.dataset.value||'',id=value.replace(/^(?:new|formula):/,'');
+      const definition=E.FORMULAS[id];
+      const text=normalize([group,item.textContent,definition?.name,definition?.equation,definition?.symbol,definition?.note,...(definition?.aliases||[]),...(definition?.source?.triangles||[]),...Object.values(definition?.args||{}).flatMap(a=>[a.symbol,a.label])].join(' '));
+      item.hidden=!words.every(word=>/^t\d+$/.test(word)&&definition?definition.source?.triangles?.some(t=>normalize(t)===word):text.includes(word));
+      if(!item.hidden){count++;if(heading)heading.hidden=false;}
+    }
+    $('[data-formula-search-count]').textContent=count+' '+(count===1?'mulighed':'muligheder')+' fundet';
+    $('[data-formula-search-empty]').hidden=count!==0;
+  }
+  function chooseFormulaOption(value){
+    const control=searchSelect;
+    if(!control?.isConnected||![...control.options].some(o=>o.value===value&&!o.disabled&&!o.parentElement.disabled))return;
+    closeDialog();control.value=value;control.focus({preventScroll:true});control.dispatchEvent(new Event('change',{bubbles:true}));
   }
   function addFormula(id,groupId=active()?.groupId||'') {
     if (model.formulas.length>=40) {notify('Der kan højst være 40 formler i én opsætning.');return;}
@@ -536,11 +576,26 @@
     pending=()=>{if(type==='shape')model=E.removeShape(model,id);else list.splice(list.indexOf(object),1);if(activeId===id)activeId=model.formulas.at(-1)?.id||null;selected=activeId?{type:'formula',id:activeId}:null;save();render();notify(object.name+' er fjernet.');};
     openDialog('Fjern '+object.name+'?',users.length?`<p>Disse formler bruger elementet:</p><ul>${users.map(name=>`<li>${esc(name)}</li>`).join('')}</ul><p>Samlinger løsnes, og de resterende figurer beholder deres egne mål og fladevalg. Direkte referencer til det fjernede element markeres, så du kan vælge en ny kilde.</p>`:'<p>Elementet fjernes fra opsætningen.</p>','<button class="button outline" data-action="close-dialog">Annullér</button><button class="button danger" data-action="confirm">Fjern</button>');
   }
+  function setupFilename(value){
+    let name=String(value).trim().replace(/(?:\.pp)?\.json$/i,'').replace(/[<>:"/\\|?*\u0000-\u001f]/g,'-').replace(/[. ]+$/g,'').trim().slice(0,120).replace(/[. ]+$/g,'');
+    if(!name)return '';
+    if(/^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(name))name='Opsætning-'+name;
+    return name+'.pp.json';
+  }
   function exportSetup() {
     if (EXAM) return;
+    const name=setupFilename(model.title)||'Opsætning.pp.json';
+    openDialog('Gem opsætning',`<label class="field-label export-name">Filnavn<input type="text" class="source-select" data-export-name data-action="export-name" value="${esc(name.slice(0,-8))}" maxlength="160" required autocomplete="off" spellcheck="false" aria-describedby="export-name-hint"></label><p class="field-note" id="export-name-hint">Filtypen .pp.json tilføjes automatisk. Opsætningens navn inde i kompendiet bevares.</p><p class="export-preview">Filen gemmes som <strong data-export-preview>${esc(name)}</strong></p><p class="inline-error" data-export-error role="alert"></p>`, '<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="confirm-export">Gem fil</button>');
+    $('[data-export-name]').focus();$('[data-export-name]').select();
+  }
+  function confirmExport(){
+    if(EXAM||!$('#app-dialog').open)return;
+    const input=$('[data-export-name]');if(!input)return;
+    const name=setupFilename(input.value);
+    if(!name){$('[data-export-error]').textContent='Skriv et filnavn.';input.focus();return;}
     const blob=new Blob([JSON.stringify(model,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=url;a.download=(model.title.replace(/[^\p{L}\p{N}_-]+/gu,'-').replace(/^-|-$/g,'')||'opsaetning')+'.pp.json';
-    document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);notify('Opsætningen er hentet som en fil.');
+    a.href=url;a.download=name;
+    document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);closeDialog();notify('Opsætningen er hentet som '+name+'.');
   }
   async function copyFormula() {
     const f=active();if(!f)return;
@@ -739,6 +794,10 @@
     }
     else if(a==='delete')remove(b.dataset.type,b.dataset.id);
     else if(a==='export')exportSetup();
+    else if(a==='confirm-export')confirmExport();
+    else if(a==='search-goal')searchFormulaSelect($('#goal-select'));
+    else if(a==='search-source')searchFormulaSelect(b.closest('.formula-source-choice').querySelector('select'));
+    else if(a==='choose-formula-option')chooseFormulaOption(b.dataset.value);
     else if(a==='import'&&!EXAM)$('#file-input')?.click();
     else if(a==='copy-formula')void copyFormula();
     else if(a==='new')replaceSetup(emptySetup(),'Start en tom opsætning?');
@@ -837,6 +896,8 @@
     if (tutorial) return;
     const el=event.target;
     if(el.dataset.action==='search-formulas'){libraryQuery=el.value;renderLibraryResults();return;}
+    if(el.dataset.action==='filter-formula-list'){filterFormulaList(el.value);return;}
+    if(el.dataset.action==='export-name'){const name=setupFilename(el.value);$('[data-export-preview]').textContent=name||'—';$('[data-export-error]').textContent='';return;}
     if(el.dataset.action==='input-value'){
       const key=el.dataset.id,dimension=key.split(':').at(-1),unit=E.Units.get(dimension,model.inputUnits?.[key]||E.Units.base(dimension).id),value=unit.format==='tms'?E.Units.parseTime(el.value):E.parseInputValue(el.value);
       valueDrafts.set(key,el.value);model.inputValues||={};
@@ -850,7 +911,13 @@
     }
   });
   document.addEventListener('keydown',event=>{
-    if(tutorial||event.key!=='Enter'||event.isComposing||!event.target.matches?.('[data-group-name]'))return;
+    if(tutorial||event.isComposing)return;
+    if(event.key==='Escape'&&event.target.matches?.('[data-formula-search]')){event.preventDefault();closeDialog();return;}
+    if(['Enter','ArrowDown'].includes(event.key)&&event.target.matches?.('[data-formula-search]')){
+      event.preventDefault();const first=$('#app-dialog').querySelector('.dialog-formula-item:not([hidden])');if(first){if(event.key==='Enter')first.click();else first.focus();}return;
+    }
+    if(event.key==='Enter'&&event.target.matches?.('[data-export-name]')){event.preventDefault();confirmExport();return;}
+    if(event.key!=='Enter'||!event.target.matches?.('[data-group-name]'))return;
     event.preventDefault();$('#app-dialog').querySelector('[data-action="save-formula-group"]').click();
   });
   $('#file-input')?.addEventListener('change',async event=>{
@@ -860,7 +927,7 @@
     try{const candidate=E.initializeUnitChoices(E.validateModel(JSON.parse(await file.text())),false);replaceSetup(candidate,'Åbn '+candidate.title+'?');}
     catch(error){openDialog('Opsætningen kunne ikke åbnes',`<p>${esc(error instanceof SyntaxError?'Filen er ikke gyldig JSON. Vælg en fil gemt fra kompendiet.':error.message)}</p>`);}
   });
-  $('#app-dialog').addEventListener('cancel',()=>{pending=null;joinDraft=null;});
+  $('#app-dialog').addEventListener('cancel',()=>{pending=null;joinDraft=null;searchSelect=null;});
   document.addEventListener('keydown',event=>{
     if(['Enter',' '].includes(event.key)&&event.target.matches('svg [role="button"]')){
       event.preventDefault();event.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));

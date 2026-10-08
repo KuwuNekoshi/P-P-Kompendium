@@ -159,3 +159,17 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .calculator-toggle[aria-pressed=true] .toggle-track:after{transform:translateX(12px)}
 .toggle-state{font-size:.7rem;margin-left:3px;text-transform:uppercase;letter-spacing:.03em}
 @media(max-width:800px){.topbar{flex-wrap:wrap;height:auto;min-height:70px;gap:12px;padding-top:12px;padding-bottom:12px}.top-actions{flex-wrap:wrap;justify-content:flex-end}.calculator-toggle{padding:8px}.local-badge{border:0;padding:0;margin-left:auto}}
+
+/* Formula search and named task downloads. */
+.goal-choice{display:flex;align-items:center;gap:8px;flex:1;max-width:60%;min-width:0}
+.goal-row .goal-choice select{flex:1;min-width:0;max-width:none;width:0}
+.goal-choice .button{flex-shrink:0;white-space:nowrap}
+.formula-source-choice{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.formula-source-choice .find-formula{align-self:flex-end;font-size:.8rem;padding:3px 0}
+.picker-search{position:sticky;top:0;background:var(--surface);z-index:1;padding:8px 0 12px;margin-bottom:8px}
+.dialog-formula-list [hidden]{display:none}
+.dialog-formula-item{overflow-wrap:anywhere}
+.export-name input{margin-top:10px;cursor:text}
+.export-preview{font-size:.875rem;overflow-wrap:anywhere}
+.export-preview strong{font-weight:550}
+@media(max-width:640px){.goal-choice{max-width:none;width:100%}.goal-choice .button{padding:10px}}
