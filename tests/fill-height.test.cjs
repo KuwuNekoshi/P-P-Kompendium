@@ -4,7 +4,7 @@ const E=require('../dist/engine.js'),F=E.FillHeight,G=require('../dist/geometry.
 const close=(a,b,message='',eps=2e-11)=>assert(Math.abs(a-b)<=eps*Math.max(1,Math.abs(b)),`${message}: ${a} ≠ ${b}`);
 function setup(type='cylinder'){
  const shape=E.newShape(type,'s',1),m={version:6,title:'Hx',tank:E.defaultTank(),shapes:[shape],connections:[],inputUnits:{},inputValues:{},formulas:[E.newFillHeight('hx','s')]};
- values(m,shape,{D:4,d:2,B:4,L:5,h:3});return m;
+ values(m,shape,{D:4,d:2,B:4,L:5,l:2,b:1,h:3});return m;
 }
 function values(m,s,d){for(const [key,e]of Object.entries(s.inputs))m.inputValues[`shape:${s.id}:${e.symbol}:length`]=String(d[key]);}
 function product(m,v,id='hx'){m.inputValues[`formula:${id}:V_produkt:volume`]=v.toLocaleString("en-US",{useGrouping:false,maximumSignificantDigits:17});}
@@ -20,6 +20,7 @@ function partial(type,d,x,orientation=1){
  const capacity={cylinder:Math.PI*r*r*H,pipe:Math.PI*r*r*H,box:d.L*d.B*H,cone:Math.PI*r*r*H/3,pyramid:d.L*d.B*H/3,triangularPrism:d.L*d.B*H/2,sphere:4*Math.PI*r*r*r/3,hemisphere:2*Math.PI*r*r*r/3,halfCylinder:Math.PI*r*r*d.L/2}[type];
  if(['box','cylinder','pipe'].includes(type))return capacity*x/H;
  if(['cone','pyramid','triangularPrism'].includes(type)){const n=type==='triangularPrism'?2:3;return flip?capacity*(1-((H-x)/H)**n):capacity*(x/H)**n;}
+ if(type==='pyramidFrustum'){const L0=flip?d.L:d.l,B0=flip?d.B:d.b,kL=((flip?d.l:d.L)-L0)/H,kB=((flip?d.b:d.B)-B0)/H;return L0*B0*x+(L0*kB+B0*kL)*x*x/2+kL*kB*x*x*x/3;}
  if(type==='sphere')return sphere(x);
  if(type==='hemisphere')return flip?sphere(x):capacity-sphere(r-x);
  if(type==='halfCylinder')return flip?capacity-segment(r-x):segment(x);
@@ -27,7 +28,7 @@ function partial(type,d,x,orientation=1){
  return Math.PI*x*(rb*rb+rb*rx+rx*rx)/3;
 }
 for(const type of Object.keys(E.SHAPES))test('Hx: '+type+' follows its dimensional fill profile in both orientations',()=>{
- const m=setup(type),d={D:4,d:2,B:4,L:5,h:3},H=height(type,d),C=cap(m);
+ const m=setup(type),d={D:4,d:2,B:4,L:5,l:2,b:1,h:3},H=height(type,d),C=cap(m);
  for(const flipped of [false,true]){
   m.formulas[0].expression.inverted=flipped;
   for(const fraction of [0.001,0.17,0.5,0.83,0.999]){
@@ -58,10 +59,10 @@ test('cone, cylinder and upper hemisphere fill bottom-up across every boundary',
  m.formulas[0].expression.shapeId='dome';assert.deepEqual(tree(m).parts.map(p=>p.id),['cone','s','dome'],'any anchor selects the same assembly');
  m.formulas[0].expression.inverted=true;product(m,T/2);assert.deepEqual(tree(m).parts.map(p=>p.id),['dome','s','cone']);assert(result(m)<2);
 });
-for(const type of ['halfCylinder','triangularPrism','pyramid'])test('box with '+type+' uses the shared rectangular join and remaining volume',()=>{
- let m=setup('box');const bottom=E.newShape(type,'bottom',2);m.shapes.push(bottom);values(m,bottom,{D:99,B:99,L:99,h:2});
+for(const type of ['halfCylinder','triangularPrism','pyramid','pyramidFrustum'])test('box with '+type+' uses the shared rectangular join and remaining volume',()=>{
+ let m=setup('box');const bottom=E.newShape(type,'bottom',2);m.shapes.push(bottom);values(m,bottom,{D:99,B:99,L:99,l:2,b:1,h:2});
  m=E.connect(m,{shape:'s',face:'bottom'},{shape:'bottom',face:'top'},'join');
- const d={D:4,B:4,L:5,h:2},C=cap(m,'bottom');
+ const d={D:4,B:4,L:5,l:2,b:1,h:2},C=cap(m,'bottom');
  for(const x of [0.2,1,1.8]){product(m,partial(type,d,x));close(result(m),x);}
  product(m,C+20*1.4);close(result(m),3.4);
  assert.deepEqual(tree(m).parts.map(p=>p.id),['bottom','s']);

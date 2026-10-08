@@ -2,6 +2,16 @@
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
+## Pyramidestub til firkantede tanke
+
+Vælg **Pyramidestub** blandt figurerne, eller brug **Sammensæt → Kasse → Bund → Ny pyramidestub · Top**. Toppen har længde `L` og bredde `B`; bunden har længde `l` og bredde `b`. `h` er den lodrette højde. Alle mål er indvendige, og nye længder starter i mm.
+
+Begge rektangulære ender kan samles med andre figurer og får fælles længde og bredde ved samlingen. Alle seks flader kan åbnes/lukkes, og pladerne kan få forskellige tykkelser. Samleflader tælles ikke med i pladeareal eller tankmasse. Figuren vises samlet i både skitse og 3D; visningen er skematisk.
+
+Rumfanget er `V = h / 6 · (2LB + Lb + lB + 2lb)`. Formlen gælder for centrerede, parallelle rektangler og rette trapezsider, også ved forskellige længde- og breddeforhold. Ved ligedannede ender er den identisk med den klassiske pyramidestubformel. En trapezside beregnes som `(L + l) / 2 · √(h² + ((B − b) / 2)²)`; for det andet sidepar byttes længde og bredde.
+
+Volumen, pladeareal og plademateriale kan bruges som referencer. Højde og begge enders længde/bredde kan isoleres fra rumfanget, også i en samling. Hx følger det varierende tværsnit nedefra og fortsætter i næste tankdel, når stubben er fyldt. Ved delvis fyldning viser Hx den tilsvarende volumenligning og bruger intervalhalvering til det numeriske resultat.
+
 ## Find en formel og vælg filnavn i P&P
 
 - **Tilføj formel** har et søgefelt. Søg på navn, symbol, T-nummer eller ord fra beskrivelsen; fx `fyldetid`, `Qv`, `T9` eller `cylinder`.
@@ -98,7 +108,7 @@ Ved rumfangs- og arealinput kan du også vælge figuren direkte under **Fra én 
 Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, egne formler, indsatte formler, formelkæden, omskrivning af formler, enheder, tal med små mærker og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
 
 - Vælg, hvad du vil finde, fx fyldetid, volumenflow eller rumfang.
-- Indsæt cylinder, kegle, halvkugle, keglestub, kasse, kugle, rør, **halvcylinder**, **V-bund** eller **pyramide**.
+- Indsæt cylinder, kegle, halvkugle, keglestub, kasse, kugle, rør, **halvcylinder**, **V-bund** **pyramide** eller **pyramidestub**.
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
 - Vælg en figur, angiv **Indvendig diameter** eller **Udvendig diameter**, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra pladearealet.
 - Vælg ved hver størrelse: **kendt størrelse**, **indsæt en formel** eller **brug en reference**.
@@ -129,7 +139,7 @@ Når alle nødvendige værdier er angivet, vælges den aktuelle del automatisk. 
 
 Eksempel med en keglebund under en cylinder: Før keglen er fyldt, bruges `Hx = h_kegle · (V_produkt / V_kegle)^(1/3)`. Derefter bruges `Hx = h_kegle + (V_produkt − V_kegle) / A_cylinder`. Overskydende volumen bruges dermed kun i den næste del.
 
-Alle ti figurtyper har fyldeprofiler: cylinder, rør, kasse, kegle, keglestub, kugle, halvkugle, halvcylinder, V-bund og pyramide. **Vend hele tanken på hovedet** vender både rækkefølge og profiler i Hx-formlen; figurvisningen ændres ikke. En halvkugle følger også sin orientering som kuppel eller bund.
+Alle elleve figurtyper har fyldeprofiler: cylinder, rør, kasse, kegle, keglestub, kugle, halvkugle, halvcylinder, V-bund, pyramide og pyramidestub. **Vend hele tanken på hovedet** vender både rækkefølge og profiler i Hx-formlen; figurvisningen ændres ikke. En halvkugle følger også sin orientering som kuppel eller bund.
 
 Kugle, halvkugle og halvcylinder har en ligning for rumfang som funktion af delhøjden. Vejledningen viser denne ligning og intervalhalvering til TI-30. Halvcylinderens `acos` (cos⁻¹) skal bruge **RAD**, ikke grader. Beregn hver del separat, gem mellemresultater i hukommelsen, og afrund først det endelige svar. Formelvisningen og de gemte input ændres ikke af mellemregningernes afrunding.
 
@@ -220,7 +230,7 @@ Hvis andre formler brugte det tidligere resultat, følger de den tilsvarende st�
 
 Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning og parentesregler gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
 
-**Alle 136 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **342 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
+**Alle 138 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **352 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
 
 - Geometriske mål bruger den ikke-negative løsning. For hastighed fra kinetisk energi eller dynamisk trykhøjde kan begge fortegn vælges.
 - Tid fra `s = v_start · t + (1/2) · a · t²` har to rodvalg. Vælg den tid, der passer til forløbet. Ved `a = 0` bruges `t = s / v_start`. Hvis også `v_start = 0`, kan tiden ikke bestemmes fra strækningen alene.
@@ -376,7 +386,7 @@ t = [(π/4) · D₁² · h₁ + (1/3) · (π/4) · D₁² · h₂]
 
 Keglebunden deler diameter med cylinderen. Røret leverer tværsnitsarealet til flowformlen og indgår ikke i beholderens rumfang. Kendes flowet allerede, vælger du **Kendt størrelse · Qv** ved flowet; så forsvinder rørdiameter og hastighed fra den udfoldede formel.
 
-Der er 136 grundformler, 342 omskrivninger og 10 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
+Der er 138 grundformler, 352 omskrivninger og 11 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
 
 ## Forudsætninger
 
@@ -415,9 +425,9 @@ Formlernes skabeloner består af faste matematiske operationer. Der bruges hverk
 
 Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer begge selvstændige HTML-filer, script-rækkefølge og offlinekrav.
 
-Alle 342 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
+Alle 352 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
 
-Talindsættelse kontrolleres på alle 136 grundformler og 342 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og resultatvisning.
+Talindsættelse kontrolleres på alle 138 grundformler og 352 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og resultatvisning.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
 
@@ -425,10 +435,12 @@ Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler o
 
 GitHub-workflowen **Udgiv offline-kompendium** kører ved ændringer i `package.json` på `main` og kan også startes manuelt. Den kører testene, bygger begge offlinefiler og kontrollerer, at de matcher de indcheckede `index.html` og `eksamen.html`. Versionsnummeret i `package.json` og den tilsvarende tekst i `releases/vX.Y.Z.md` bruges til en GitHub Release med både `index.html` og `eksamen.html` som assets. Udgivelsen peger på det præcise commit; allerede udgivne versioner ændres ikke.
 
-Kontroller for forhåndsomregning dækker alle enhedsfamilier, periodiske decimaler og forkortede udtryk. Fladetykkelser testes med åbne/lukkede flader, samlinger, separate diametermål, alle ti figurer og gem/åbn. Ligevægt kontrolleres med blandede enheder og en samlet referencekæde for kassen og keglen fra opgaven.
+Kontroller for forhåndsomregning dækker alle enhedsfamilier, periodiske decimaler og forkortede udtryk. Fladetykkelser testes med åbne/lukkede flader, samlinger, separate diametermål, alle elleve figurer og gem/åbn. Ligevægt kontrolleres med blandede enheder og en samlet referencekæde for kassen og keglen fra opgaven.
 
-Hx-kontroller dækker alle ti profiler i begge retninger, overgange mellem dele, tom/fuld tank, små fyldninger, keglestubbens cylindertilfælde, delte mål, enheder, referencer, inputscopes, fejltilfælde, gem/åbn og de nye brugerfladekontroller.
+Hx-kontroller dækker alle elleve profiler i begge retninger, overgange mellem dele, tom/fuld tank, små fyldninger, keglestubbens cylindertilfælde, delte mål, enheder, referencer, inputscopes, fejltilfælde, gem/åbn og de nye brugerfladekontroller.
 
 Versionstestene kører de faktiske scripts fra begge HTML-filer og kontrollerer opstart, import/eksport, lokal lagring, deaktiveret browserlagring, lommeregnerknappen, tilbage-navigation og introduktionens gendannelse af opsætningen.
 
 P&P’s søge- og gemmeforløb kan kontrolleres i en rigtig browser med `npm run test:pp:browser`. Som i de øvrige browsertests kan `PLAYWRIGHT_MODULE` og `CHROMIUM_PATH` pege på lokale installationer. Kontrollen omfatter referencer, filnavn, faktisk download og genåbning, tastatur, mobilvisning og eksamensversionen.
+
+Pyramidestubbens brugerforløb kan kontrolleres med `npm run test:pyramid:browser`: samling med kasse, uafhængige bundmål, åbne/lukkede flader, isoleringsvalg, rumfang, Hx i og over stubben, skitse/3D, mobilvisning og eksamensadfærd. Node-testene kontrollerer også alle 64 kombinationer af flader, materialemængde med separate tykkelser, samlinger i begge retninger og grænsetilfældene kasse, pyramide og kile.

@@ -5583,6 +5583,161 @@
         "pages": [],
         "triangles": []
       }
+    },
+    "rectangularFrustumVolume": {
+      "name": "Pyramidestubbens rumfang · rektangulær",
+      "group": "Geometri",
+      "symbol": "V",
+      "dimension": "volume",
+      "equation": "V = (h / 6) · (2 · L · B + L · b + l · B + 2 · l · b)",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Top: længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Top: bredde",
+          "dimension": "length"
+        },
+        "l": {
+          "symbol": "l",
+          "label": "Bund: længde",
+          "dimension": "length"
+        },
+        "b": {
+          "symbol": "b",
+          "label": "Bund: bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret højde mellem endefladerne",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          "h",
+          "6"
+        ],
+        [
+          "add",
+          [
+            "mul",
+            "2",
+            "L",
+            "B"
+          ],
+          [
+            "mul",
+            "L",
+            "b"
+          ],
+          [
+            "mul",
+            "l",
+            "B"
+          ],
+          [
+            "mul",
+            "2",
+            "l",
+            "b"
+          ]
+        ]
+      ],
+      "note": "Centrerede, parallelle rektangler med rette, trapezformede sider. L og B er topmål; l og b er bundmål. Alle mål er indvendige. Ved ligedannede ender er figuren en pyramidestub; formlen gælder også en firkantet overgang med forskellige længde- og breddeforhold.",
+      "aliases": [
+        "pyramidestub",
+        "firkantet tank",
+        "rektangulær pyramidestub",
+        "kvadratisk pyramidestub",
+        "tragtbund",
+        "firkantet overgang"
+      ]
+    },
+    "rectangularFrustumSide": {
+      "name": "Pyramidestubbens ene trapezside",
+      "group": "Overflade",
+      "symbol": "A",
+      "dimension": "area",
+      "equation": "A = ((L + l) / 2) · √(h² + ((B − b) / 2)²)",
+      "args": {
+        "L": {
+          "symbol": "L",
+          "label": "Top: længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Top: bredde",
+          "dimension": "length"
+        },
+        "l": {
+          "symbol": "l",
+          "label": "Bund: længde",
+          "dimension": "length"
+        },
+        "b": {
+          "symbol": "b",
+          "label": "Bund: bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret højde mellem endefladerne",
+          "dimension": "length"
+        }
+      },
+      "template": [
+        "mul",
+        [
+          "div",
+          [
+            "add",
+            "L",
+            "l"
+          ],
+          "2"
+        ],
+        [
+          "sqrt",
+          [
+            "add",
+            [
+              "pow",
+              "h",
+              "2"
+            ],
+            [
+              "pow",
+              [
+                "div",
+                [
+                  "sub",
+                  "B",
+                  "b"
+                ],
+                "2"
+              ],
+              "2"
+            ]
+          ]
+        ]
+      ],
+      "note": "Én side med parallelle kanter L og l. B og b er endefladernes mål vinkelret på disse kanter. For det andet sidepar byttes L med B og l med b. Endefladerne er centrerede; h er lodret højde, ikke skrå højde. Ved isolering af B eller b vælges B ≥ b; byt top- og bundmål for en udvidelse.",
+      "aliases": [
+        "pyramidestub",
+        "firkantet tank",
+        "rektangulær pyramidestub",
+        "kvadratisk pyramidestub",
+        "tragtbund",
+        "firkantet overgang"
+      ]
     }
   },
   "SHAPES": {
@@ -6275,6 +6430,133 @@
           }
         }
       }
+    },
+    "pyramidFrustum": {
+      "name": "Pyramidestub",
+      "hint": "Firkantet tankdel · rektangulær top og bund, fire skrå sider",
+      "inputs": {
+        "L": {
+          "symbol": "L",
+          "label": "Top: længde",
+          "dimension": "length"
+        },
+        "B": {
+          "symbol": "B",
+          "label": "Top: bredde",
+          "dimension": "length"
+        },
+        "l": {
+          "symbol": "l",
+          "label": "Bund: længde",
+          "dimension": "length"
+        },
+        "b": {
+          "symbol": "b",
+          "label": "Bund: bredde",
+          "dimension": "length"
+        },
+        "h": {
+          "symbol": "h",
+          "label": "Lodret højde mellem endefladerne",
+          "dimension": "length"
+        }
+      },
+      "volume": "rectangularFrustumVolume",
+      "surfaces": {},
+      "surfaceDefault": "open",
+      "faces": {
+        "top": {
+          "label": "Top · rektangel L × B",
+          "kind": "rectangle",
+          "dimensions": [
+            "L",
+            "B"
+          ],
+          "direction": -1,
+          "join": true,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "L",
+            "B": "B"
+          }
+        },
+        "bottom": {
+          "label": "Bund · rektangel l × b",
+          "kind": "rectangle",
+          "dimensions": [
+            "l",
+            "b"
+          ],
+          "direction": 1,
+          "join": true,
+          "formula": "rectangleArea",
+          "args": {
+            "L": "l",
+            "B": "b"
+          }
+        },
+        "front": {
+          "label": "Trapezside med kanter B og b · 1",
+          "kind": "trapezoid",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangularFrustumSide",
+          "args": {
+            "L": "B",
+            "l": "b",
+            "B": "L",
+            "b": "l",
+            "h": "h"
+          }
+        },
+        "back": {
+          "label": "Trapezside med kanter B og b · 2",
+          "kind": "trapezoid",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangularFrustumSide",
+          "args": {
+            "L": "B",
+            "l": "b",
+            "B": "L",
+            "b": "l",
+            "h": "h"
+          }
+        },
+        "left": {
+          "label": "Trapezside med kanter L og l · 1",
+          "kind": "trapezoid",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangularFrustumSide",
+          "args": {
+            "L": "L",
+            "B": "B",
+            "l": "l",
+            "b": "b",
+            "h": "h"
+          }
+        },
+        "right": {
+          "label": "Trapezside med kanter L og l · 2",
+          "kind": "trapezoid",
+          "dimensions": [],
+          "direction": 0,
+          "join": false,
+          "formula": "rectangularFrustumSide",
+          "args": {
+            "L": "L",
+            "B": "B",
+            "l": "l",
+            "b": "b",
+            "h": "h"
+          }
+        }
+      },
+      "note": "L og B er topmål; l og b er bundmål. Enderne er parallelle og centrerede. h er lodret højde. Formlerne gælder også, når længde og bredde ikke indsnævres i samme forhold. Visningen er skematisk."
     }
   },
   "DIMENSIONS": {

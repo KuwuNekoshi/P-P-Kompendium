@@ -5,7 +5,7 @@ const close=(a,b,label='')=>assert(Math.abs(a-b)<1e-8*Math.max(1,Math.abs(b)),`$
 const text=n=>n.toLocaleString('en-US',{useGrouping:false,maximumSignificantDigits:16});
 function setup(type='box'){
  const s=E.newShape(type,'main',1),m={version:6,title:'Mål',tank:E.defaultTank(),inputUnits:{},inputValues:{},shapes:[s],connections:[],formulas:[]};
- set(m,s,{L:3.75,B:2.5,h:4,D:2.5,d:1});return m;
+ set(m,s,{L:3.75,B:2.5,l:1.5,b:1,h:4,D:2.5,d:1});return m;
 }
 function set(m,s,values){for(const [key,e]of Object.entries(s.inputs))m.inputValues[`shape:${s.id}:${e.symbol}:length`]=text(values[key]);}
 function source(m,dimension='volume',shapeId='main'){
@@ -23,8 +23,8 @@ function solve(m,key,dimension='volume',expected){
  assert.deepEqual(E.validateModel(E.clone(m)),m);
  return {m,ctx,ast,result};
 }
-for(const bottomType of ['halfCylinder','triangularPrism','pyramid'])test('box + '+bottomType+': isolate shared length, width, box height and bottom height',()=>{
- let m=setup(),b=E.newShape(bottomType,'bottom',2);m.shapes.push(b);set(m,b,{L:99,B:99,D:99,h:2});
+for(const bottomType of ['halfCylinder','triangularPrism','pyramid','pyramidFrustum'])test('box + '+bottomType+': isolate shared length, width, box height and bottom height',()=>{
+ let m=setup(),b=E.newShape(bottomType,'bottom',2);m.shapes.push(b);set(m,b,{L:99,B:99,l:1.5,b:1,D:99,h:2});
  m=E.connect(m,{shape:'main',face:'bottom'},{shape:'bottom',face:'top'},'join');
  const options=E.figureMeasureOptions(m,E.assembly('volume',undefined,'main'),'volume').options;
  assert(!options.some(o=>o.key.includes('bottom:L_2')||o.key.includes('bottom:B_2')||o.key.includes('bottom:D_2')),'shared face dimensions have one source');

@@ -41,7 +41,7 @@ test('side thickness follows the normal diameter reference while explicit and sl
  assert.throws(()=>E.validateModel({...m,shapes:[{...m.shapes[0],plateThickness:{invalid:E.symbol('x')}}]}),/pladetykkelser/);
  assert.throws(()=>E.setPlateThickness(m,'part0','side',E.ref('shape:part0:volume')),/forkert størrelse/);
 });
-test('all ten shapes reduce to area times common thickness and support independent material references',()=>{
+test('all shapes reduce to area times common thickness and support independent material references',()=>{
  for(const type of Object.keys(E.SHAPES)){
   const m=setup(type);for(const a of Object.values(E.SHAPES[type].inputs))set(m,'shape:part0',a.symbol+'_1','length',2);
   set(m,'tank:tank','t_plade','length',3,'mm');

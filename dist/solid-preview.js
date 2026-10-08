@@ -38,7 +38,7 @@
           }
           continue;
         }
-        if(['halfCylinder','triangularPrism','pyramid'].includes(s.type)){
+        if(['halfCylinder','triangularPrism','pyramid','pyramidFrustum'].includes(s.type)){
           const r=p.r,z=p.depth,h=p.h;
           const top=[point(-r,0,-z),point(r,0,-z),point(r,0,z),point(-r,0,z)];
           flatFace('top',top);
@@ -53,6 +53,14 @@
             flatFace('back',[top[1],top[0],ridgeBack]);
             flatFace('left',[top[0],top[3],ridgeFront,ridgeBack]);
             flatFace('right',[top[2],top[1],ridgeBack,ridgeFront]);
+          }else if(s.type==='pyramidFrustum'){
+            const b=p.bottom,d=p.bottomDepth;
+            const bottom=[point(-b,h,-d),point(b,h,-d),point(b,h,d),point(-b,h,d)];
+            flatFace('bottom',bottom.slice().reverse());
+            flatFace('front',[top[3],top[2],bottom[2],bottom[3]]);
+            flatFace('back',[top[1],top[0],bottom[0],bottom[1]]);
+            flatFace('left',[top[0],top[3],bottom[3],bottom[0]]);
+            flatFace('right',[top[2],top[1],bottom[1],bottom[2]]);
           }else{
             const tip=point(0,h,0);
             flatFace('front',[top[3],top[2],tip]);flatFace('back',[top[1],top[0],tip]);
