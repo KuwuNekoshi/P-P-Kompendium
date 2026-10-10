@@ -2,6 +2,12 @@
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
+## Duplikér en formel
+
+Under **Mine formler** har hver formel en **Duplikér formel**-knap (to overlappende firkanter) ved siden af op/ned. Kopien placeres lige under originalen i samme gruppe og vælges automatisk. Navnet får “· kopi”, og resultatet får sit eget symbol.
+
+Tal, enheder, resultatformat og hele formelopsætningen kopieres. Referencer peger fortsat på de samme figurer og delformler. Skifter du reference, tal eller enhed i kopien, ændres originalen ikke. Redigerer du selve en fælles kilde, opdateres begge formler, så længe de begge henviser til den. Funktionen virker også til egne formler, Hx og isolerede mål og findes i begge P&P-versioner.
+
 ## Del af volumen · procent
 
 Vælg **Tilføj formel → Del af volumen · procent**, eller søg efter `procent`, `delvolumen` eller `fyldningsgrad`. Vælg en volumenreference, en enkelt figur eller en samlet tank under **Volumen der tages en del af**. Du kan også indtaste et kendt rumfang eller indsætte en volumenformel.
@@ -464,3 +470,5 @@ P&P’s søge- og gemmeforløb kan kontrolleres i en rigtig browser med `npm run
 Pyramidestubbens brugerforløb kan kontrolleres med `npm run test:pyramid:browser`: samling med kasse, uafhængige bundmål, åbne/lukkede flader, isoleringsvalg, rumfang, Hx i og over stubben, skitse/3D, mobilvisning og eksamensadfærd. Node-testene kontrollerer også alle 64 kombinationer af flader, materialemængde med separate tykkelser, samlinger i begge retninger og grænsetilfældene kasse, pyramide og kile.
 
 `npm run test:volume:browser` kontrollerer valg af procentformlen, volumenreferencer, 25 %-input, forhåndsomregning, m³/liter, Qm fra 64 % til samlet flow, restandel som reference og sammenfoldning, flytning og redigering af grupper i begge P&P-versioner. Node-testene dækker desuden separate procentandele, gem/åbn, indlejrede formler, Hx, Qv, masse og isolering.
+
+`npm run test:duplicate:browser` kontrollerer duplikering med placering og gruppe, separate referencevalg, procenttal og resultatenheder, tastatur, mobilvisning, lokal genåbning og eksamensnulstilling. Node-testene dækker også indlejrede formler, egne udtryk, Hx, isolerede mål, levende referencer samt navne- og kapacitetsgrænser.

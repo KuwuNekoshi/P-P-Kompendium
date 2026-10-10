@@ -133,6 +133,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .saved-formula-row .saved-formula{width:100%;padding:10px 7px;gap:6px}
 .formula-order-controls{display:flex;align-items:center;gap:3px;padding:0 5px;min-width:0}
 .order-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 29px;min-height:29px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:.9rem;line-height:1}
+.formula-duplicate svg{width:14px;height:14px;flex-shrink:0}
 .order-button:not(:disabled):hover{background:var(--soft);border-color:var(--muted)}
 .formula-order-controls select{flex:1;width:0;min-height:29px;padding:4px 2px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:.7rem;text-overflow:ellipsis}
 .saved-group{min-width:0;border-top:1px solid var(--border);padding:10px 0 5px;margin-bottom:7px}
@@ -8010,6 +8011,25 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     if (!f) throw new Error('Ukendt formel.');
     return { id, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: newExpression(formulaId), ...(f.resultUnit?{resultUnit:f.resultUnit}:{}) };
   }
+  // Copy the expression and its owner's inputs, keeping reference targets live.
+  // The copy has a new owner scope, so edits never write into the source formula.
+  function duplicateFormula(model,sourceId,id){
+    const next=validateModel(model),index=next.formulas.findIndex(f=>f.id===sourceId);
+    if(index<0)throw new Error('Formlen findes ikke.');
+    if(next.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
+    const source=next.formulas[index],copy=clone(source);
+    copy.id=id;
+    const name=source.name.replace(/ · kopi(?: \d+)?$/u,'');
+    let n=1;
+    do{const suffix=' · kopi'+(n===1?'':' '+n);copy.name=name.slice(0,120-suffix.length)+suffix;n++;}
+    while(next.formulas.some(f=>f.name===copy.name));
+    const stem=source.symbol.replace(/_\d+$/u,'').replace(/_/g,'').slice(0,20);
+    n=2;
+    do{copy.symbol=stem+'_'+n++;}while(next.formulas.some(f=>f.symbol===copy.symbol));
+    next.formulas.splice(index+1,0,copy);
+    copyInputs(next,'formula:'+sourceId,'formula:'+id);
+    return validateModel(next);
+  }
   function formulaSections(model){
     const groups=(model.formulaGroups||[]).map(g=>({...g,formulas:model.formulas.filter(f=>f.groupId===g.id)}));
     const ungrouped=model.formulas.filter(f=>!f.groupId);
@@ -9028,7 +9048,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { initializeUnitChoices, CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { initializeUnitChoices, CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, duplicateFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
 
 </script>
@@ -9522,7 +9542,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     $('#formula-count').textContent = model.formulas.length;
     const groups=model.formulaGroups||[];
     const arrows=(action,id,name,index,length)=>[-1,1].map(direction=>`<button class="order-button" data-action="${action}" data-id="${esc(id)}" data-part="${direction<0?'up':'down'}" aria-label="${esc('Flyt '+name+(direction<0?' op':' ned'))}" title="${direction<0?'Flyt op':'Flyt ned'}" ${(index+direction<0||index+direction>=length)?'disabled':''}>${direction<0?'↑':'↓'}</button>`).join('');
-    const row=(f,index,list)=>`<div class="saved-formula-row ${f.id===activeId?'is-active':''}"><button class="saved-formula ${f.id===activeId?'active':''}" data-action="select-formula" data-id="${esc(f.id)}" ${f.id===activeId?'aria-current="true"':''}><span class="saved-symbol">${symbolHtml(f.symbol)}</span><span>${esc(f.name)}</span><span class="item-chevron" aria-hidden="true">›</span></button><div class="formula-order-controls">${arrows('move-formula',f.id,f.name,index,list.length)}<select data-action="formula-group" data-id="${esc(f.id)}" aria-label="${esc('Gruppe for '+f.name)}" title="Flyt til gruppe"><option value="" ${!f.groupId?'selected':''}>Uden gruppe</option>${groups.map(g=>`<option value="${esc(g.id)}" ${f.groupId===g.id?'selected':''}>${esc(g.name)}</option>`).join('')}<option value="+new">+ Ny gruppe…</option></select></div></div>`;
+    const row=(f,index,list)=>`<div class="saved-formula-row ${f.id===activeId?'is-active':''}"><button class="saved-formula ${f.id===activeId?'active':''}" data-action="select-formula" data-id="${esc(f.id)}" ${f.id===activeId?'aria-current="true"':''}><span class="saved-symbol">${symbolHtml(f.symbol)}</span><span>${esc(f.name)}</span><span class="item-chevron" aria-hidden="true">›</span></button><div class="formula-order-controls">${arrows('move-formula',f.id,f.name,index,list.length)}<button class="order-button formula-duplicate" data-action="duplicate-formula" data-id="${esc(f.id)}" aria-label="${esc('Duplikér '+f.name)}" title="Duplikér formel" ${model.formulas.length>=40?'disabled':''}>${icon('copy')}</button><select data-action="formula-group" data-id="${esc(f.id)}" aria-label="${esc('Gruppe for '+f.name)}" title="Flyt til gruppe"><option value="" ${!f.groupId?'selected':''}>Uden gruppe</option>${groups.map(g=>`<option value="${esc(g.id)}" ${f.groupId===g.id?'selected':''}>${esc(g.name)}</option>`).join('')}<option value="+new">+ Ny gruppe…</option></select></div></div>`;
     $('#saved-formulas').innerHTML=E.formulaSections(model).map((group,index)=>{
       const content=group.formulas.map((f,i)=>row(f,i,group.formulas)).join('')||'<p class="empty-formula-group">Ingen formler endnu.</p>';
       if(!group.id)return `${groups.length?'<h3 class="ungrouped-heading">Uden gruppe</h3>':''}${content}`;
@@ -10063,7 +10083,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     {section:'SAMLINGER', title:'Fælles flader og samlede formler', target:'.assembly-totals', detail:'assembly-totals', body:'<p>Her finder du det samlede <strong>rumfang</strong> og <strong>pladeareal</strong>. Åbne flader og de to endeflader i en samling udelades automatisk fra pladearealet. <strong>Brug formel</strong> føjer summen til Mine formler.</p><p><strong>Skil ad</strong> under visningen løsner samlingen. Delene får deres egne mål og fladevalg tilbage. Sum af rumfang forudsætter, at delene ikke overlapper.</p><p>Vælg <strong>Isolér højde, bredde eller længde</strong> for at finde et mål ud fra det kendte samlede rumfang eller pladeareal. Fælles mål i samlinger behandles som én ukendt. Du kan også vælge <strong>Isolér et mål i figurerne</strong> på en gemt figurformel.</p>'},
     {section:'FORMLER', title:'Vælg, hvad du vil finde', target:'.goal-row', body:'<p>Her vælger du hovedformlen. I eksemplet vil vi finde <strong>Fyldetid</strong>: t = V / Qᵥ.</p><p>Menuen viser både dine egne formler og muligheden for at tilføje en ny. Figurerne leverer fx rumfanget V, mens en anden formel kan levere volumenflowet Qᵥ.</p><p>Vælg <strong>Produkthøjde i tank (Hx)</strong>, når du kender produktvolumen. Vælg den samlede tank i højre side. Hx følger delene fra bunden, bruger restvolumen i den næste del og viser delberegningerne.</p>'},
     {section:'FIGURER', title:'Særskilt tykkelse for sider og bund', target:'.plate-settings', scene:'parts', focus:'cylinder', detail:'plates-cylinder', body:'<p>Under <strong>Pladetykkelser</strong> vælger du en fælles sidetykkelse og eventuelt en anden tykkelse for bund, top eller en bestemt flade. Vælg <strong>Kendt størrelse</strong> for at bruge fx t_side og t_bund.</p><p>Brug <strong>Tankmasse med separate pladetykkelser</strong> i formelsamlingen. Den summerer areal gange tykkelse for de lukkede flader. Åbne og sammenføjede flader tæller ikke med.</p>'},
-    {section:'OVERBLIK', title:'Sæt formlerne i rækkefølge og grupper', target:'#saved-formulas', scene:'organize', body:'<p>Brug <strong>↑ og ↓</strong> under en formel for at flytte den i sin gruppe. Dropdown-menuen flytter formlen til en anden gruppe eller <strong>Uden gruppe</strong>.</p><p><strong>Opret gruppe</strong> giver en ny gruppe. Fold gruppen ud for at vise dens flytteknapper og formler. Overskriften folder det hele sammen igen. <strong>Redigér</strong> ændrer navnet eller fjerner gruppen; formlerne bliver bevaret. Rækkefølge og grupper gemmes med opsætningen.</p>'},
+    {section:'OVERBLIK', title:'Sæt formlerne i rækkefølge og grupper', target:'#saved-formulas', scene:'organize', body:'<p>Brug <strong>↑ og ↓</strong> under en formel for at flytte den i sin gruppe. Knappen <strong>Duplikér formel</strong> laver en selvstændig kopi med de samme tal, enheder og referencer lige under originalen. Dropdown-menuen flytter formlen til en anden gruppe eller <strong>Uden gruppe</strong>.</p><p><strong>Opret gruppe</strong> giver en ny gruppe. Fold gruppen ud for at vise dens flytteknapper og formler. Overskriften folder det hele sammen igen. <strong>Redigér</strong> ændrer navnet eller fjerner gruppen; formlerne bliver bevaret. Rækkefølge og grupper gemmes med opsætningen.</p>'},
     {section:'FORMLER', title:'Find formler fra formelsamlingen', target:'.formula-search', scene:'library', body:'<p>Fanen <strong>Formelsamling</strong> samler formlerne fra jeres materiale. Søg på et navn, symbol eller T-nummer, fx <strong>Pvirk</strong>, <strong>eta</strong> eller <strong>T9</strong>.</p><p>Kortene viser formlen, forudsætninger og henvisning til siden i jeres samling. Tryk <strong>Brug formel</strong> for at arbejde videre med den.</p>'},
     {section:'FORMLER', title:'Gem delformler, der kan bruges igen', target:['#saved-formulas','.goal-row'], body:'<p><strong>Mine formler</strong> samler opsætningens delformler. Her har vi rumfang, volumenflow og fyldetid. På en smal skærm vælger du dem i <strong>Hvad vil du finde?</strong>.</p><p>Brug <strong>Tilføj formel</strong> til nye delformler, og giv dem et genkendeligt navn i tilpasningspanelet. De kan derefter vælges som referencer.</p>'},
     {section:'EGNE FORMLER', title:'Skriv en egen formel med referencer', target:'#inspector .custom-expression', scene:'custom', body:'<p>Vælg <strong>Tilføj formel → Egen formel</strong> og skriv højresiden under <strong>Redigér udtryk og resultat</strong>, fx h_top + h_midte + h_bund. Vælg derefter en størrelse og kilde for hvert symbol. Du kan bruge figurmål, kendte værdier og andre formler.</p><p>Til en ukendt midterhøjde bruges først <strong>Isolér et mål</strong> med et kendt totalrumfang. <strong>Tilføj samlet højde</strong> opretter summen med en reference til den fundne højde. Diameter og keglehøjder alene bestemmer ikke midterhøjden.</p>'},
@@ -10165,6 +10185,13 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     }
     else if(a==='move-formula'||a==='move-formula-group'){
       try{model=(a==='move-formula'?E.moveFormula:E.moveFormulaGroup)(model,b.dataset.id,b.dataset.part==='up'?-1:1);refreshOrganization(a,b.dataset.id,b.dataset.part);}catch(error){notify(error.message);}
+    }
+    else if(a==='duplicate-formula'){
+      try{
+        const id=newId('formula');model=E.duplicateFormula(model,b.dataset.id,id);save();select('formula',id,true);
+        document.querySelector(`[data-action="select-formula"][data-id="${id}"]`)?.focus({preventScroll:true});
+        notify('Formlen er duplikeret. Referencer er bevaret; tal og valg kan ændres uafhængigt.');
+      }catch(error){notify(error.message);}
     }
     else if(a==='new-formula-group')formulaGroupDialog();
     else if(a==='edit-formula-group')formulaGroupDialog(b.dataset.id);

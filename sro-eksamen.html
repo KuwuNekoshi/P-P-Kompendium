@@ -4038,6 +4038,25 @@
     if (!f) throw new Error('Ukendt formel.');
     return { id, name: f.name, symbol: f.symbol, dimension: f.dimension, expression: newExpression(formulaId), ...(f.resultUnit?{resultUnit:f.resultUnit}:{}) };
   }
+  // Copy the expression and its owner's inputs, keeping reference targets live.
+  // The copy has a new owner scope, so edits never write into the source formula.
+  function duplicateFormula(model,sourceId,id){
+    const next=validateModel(model),index=next.formulas.findIndex(f=>f.id===sourceId);
+    if(index<0)throw new Error('Formlen findes ikke.');
+    if(next.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
+    const source=next.formulas[index],copy=clone(source);
+    copy.id=id;
+    const name=source.name.replace(/ · kopi(?: \d+)?$/u,'');
+    let n=1;
+    do{const suffix=' · kopi'+(n===1?'':' '+n);copy.name=name.slice(0,120-suffix.length)+suffix;n++;}
+    while(next.formulas.some(f=>f.name===copy.name));
+    const stem=source.symbol.replace(/_\d+$/u,'').replace(/_/g,'').slice(0,20);
+    n=2;
+    do{copy.symbol=stem+'_'+n++;}while(next.formulas.some(f=>f.symbol===copy.symbol));
+    next.formulas.splice(index+1,0,copy);
+    copyInputs(next,'formula:'+sourceId,'formula:'+id);
+    return validateModel(next);
+  }
   function formulaSections(model){
     const groups=(model.formulaGroups||[]).map(g=>({...g,formulas:model.formulas.filter(f=>f.groupId===g.id)}));
     const ungrouped=model.formulas.filter(f=>!f.groupId);
@@ -5056,7 +5075,7 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { initializeUnitChoices, CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { initializeUnitChoices, CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, duplicateFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
 
 </script>

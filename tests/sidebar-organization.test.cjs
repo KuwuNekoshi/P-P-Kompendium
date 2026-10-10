@@ -9,7 +9,7 @@ function harness(model){
  const dialog={open:false,querySelector:selector=>selector==='[data-group-name]'?input:{click(){click({action:'save-formula-group',id:''});}}};
  const get=selector=>{if(selector==='#app-dialog')return dialog;if(!elements.has(selector))elements.set(selector,{innerHTML:'',textContent:''});return elements.get(selector);};
  const buttons=()=>[...get('#saved-formulas').innerHTML.matchAll(/<(button|select)\b([^>]*)>/g)].map(([,tag,attrs])=>({dataset:Object.fromEntries([...attrs.matchAll(/data-([\w-]+)="([^"]*)"/g)].map(([,k,v])=>[k,v])),disabled:/\bdisabled/.test(attrs),focus(){focused.push(this.dataset);}}));
- const scope=vm.createContext({E,model,activeId:'a',selected:{type:'formula',id:'a'},tutorial:null,expanded:true,valueDisplay:'both',valueDrafts:new Map(),esc,symbolHtml:E.mathSymbol,pretty:s=>s,formulaTitle:f=>f.name,shapeIcon:()=>'',
+ const scope=vm.createContext({E,model,activeId:'a',selected:{type:'formula',id:'a'},tutorial:null,expanded:true,valueDisplay:'both',valueDrafts:new Map(),esc,symbolHtml:E.mathSymbol,icon:()=>'<svg aria-hidden="true"></svg>',pretty:s=>s,formulaTitle:f=>f.name,shapeIcon:()=>'',
  $:get,active:()=>scope.model.formulas.find(f=>f.id===scope.activeId),save:()=>saves++,notify:message=>messages.push(message),newId:prefix=>prefix+'-'+(++serial),
  changeView:()=>{},closeDialog:()=>{dialog.open=false;},openDialog:(title,body,footer)=>{dialog.open=true;scope.dialogTitle=title;scope.dialogBody=body;scope.dialogFooter=footer;input.value=(body.match(/data-group-name[^>]*value="([^"]*)"/)||[])[1]||'';},
  document:{addEventListener:(type,fn)=>(handlers[type]||=[]).push(fn),querySelectorAll:()=>buttons(),querySelector:()=>({focus(){focused.push('new-group');}})},matchMedia:()=>({matches:false})});
