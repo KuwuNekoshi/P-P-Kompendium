@@ -22,7 +22,9 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .unit-symbol-list>div{display:block;padding:16px 0}
 .unit-symbol-list dt{margin-bottom:11px;flex-wrap:wrap;row-gap:4px}
 .unit-symbol-list dd{white-space:normal}
-.value-entry{display:flex;align-items:flex-end;gap:12px;margin-bottom:10px;min-width:0}
+.value-entry{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:10px;min-width:0}
+.value-entry .standard-choice{flex-basis:100%}
+.standard-choice select{width:100%;min-width:0;text-overflow:ellipsis}
 .value-field{display:flex;flex:1;flex-direction:column;gap:6px;min-width:0;font-size:.75rem;color:var(--muted)}
 .value-field input{width:100%;min-width:0;min-height:42px;padding:9px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:1rem;font-variant-numeric:tabular-nums}
 .value-field input:hover{border-color:var(--muted)}
@@ -174,3 +176,38 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .export-preview{font-size:.875rem;overflow-wrap:anywhere}
 .export-preview strong{font-weight:550}
 @media(max-width:640px){.goal-choice{max-width:none;width:100%}.goal-choice .button{padding:10px}}
+/* Compact figure sections and the dedicated units/standards tab. */
+.section-fold>summary{cursor:pointer;font-size:.875rem;font-weight:550;line-height:1.6;padding:10px 0;min-height:42px}
+.section-fold[open]>summary{margin-bottom:12px}
+.insert-figures>summary{padding-top:0}
+.construction-actions{margin-bottom:14px}
+.assembly-section>summary{font-size:.95rem;padding:0;min-height:26px}
+.assembly-section:not([open]){padding-block:16px;margin-bottom:22px}
+.assembly-heading{justify-content:flex-end}
+.view-tabs{gap:20px}
+.view-tabs button{white-space:normal;min-width:0;text-align:left}
+#tab-standards{margin-left:auto;max-width:185px}
+.standards-section{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:20px;margin-bottom:20px;min-width:0}
+.standards-section h3,.unit-guide h3{font-size:1rem;font-weight:550}
+.standards-section p{font-size:.875rem;color:var(--muted);line-height:1.8;margin:14px 0}
+.standards-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.standards-table{border-collapse:collapse;width:100%;font-size:.875rem;line-height:1.7}
+.standards-table th,.standards-table td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+.standards-table thead{background:var(--soft)}
+.standards-table tbody th{font-weight:500}
+.standards-table .text-button{min-height:32px}
+.standard-fields{display:grid;gap:18px}
+.standard-fields .field-label{display:flex;flex-direction:column;gap:8px}
+.standard-fields input,.standard-fields select{width:100%}
+@media(max-width:640px){.view-tabs{gap:12px}.view-tabs button{font-size:.8rem;flex:1}.view-tabs .tab-count{display:none}#tab-standards{max-width:none;margin-left:0}.standards-section{padding:16px}.standards-table th,.standards-table td{padding:8px}.standard-choice{max-width:100%}}
+@media(max-width:640px){
+  .standards-table thead{display:none}
+  .standards-table tbody{display:block}
+  .standards-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:14px 0;border-bottom:1px solid var(--border)}
+  .standards-table tbody th{grid-column:1/-1}
+  .standards-table th,.standards-table td{padding:0;border:0;overflow-wrap:normal}
+  .standards-table td:nth-child(2){display:none}
+  .standards-table td:last-child{white-space:nowrap;font-size:.8rem;color:var(--muted)}
+  .standards-table td .text-button{margin-left:8px}
+  .unit-guide table{min-width:650px}
+}

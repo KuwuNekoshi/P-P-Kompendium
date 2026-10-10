@@ -2,6 +2,16 @@
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
+## Standardværdier og en enklere formelbygger
+
+Fanen **Enheder og omregninger** står til højre for **Formelsamling**. Her kan du se tyngdeaccelerationen **9,82 m/s²**, vandets specifikke varmekapacitet **4,18 kJ/(kg·°C)** og omregningstabellen. Nye felter og resultater til specifik varmekapacitet starter i kJ/(kg·°C); beregningerne bruger stadig J/(kg·K). En temperaturforskel på 1 °C svarer til 1 K.
+
+**Tilføj standard** gemmer et navn, en størrelse, et tal og en enhed, fx sukkerets densitet fra din opgave. Egne standarder kan redigeres og fjernes. Ved et talfelt med passende standarder findes **Standard (valgfrit)**: valget indsætter tal og enhed, og du kan straks rette tallet frit. Standarder med andre størrelser vises ikke. Den indsatte værdi er en kopi; ændring eller fjernelse af standarden ændrer ikke tidligere beregninger. Egne standarder gemmes og eksporteres med den almindelige opsætning. I eksamensversionen gælder de kun den aktuelle session.
+
+Tyngdeaccelerationen **g** udfyldes automatisk i nye formler, også i indsatte underformler og egne formler, når symbolet er g og størrelsen er acceleration. Du kan redigere den eller bruge **Ryd** til at beholde et symbol. Rydning og eksisterende opsætninger bevares; gamle tal/enheder ændrer ikke betydning. Vandets varmekapacitet vælges frivilligt, når opgaven handler om vand.
+
+**Indsæt en figur**, **Vælg dine figurer** og **Sammensatte figurer** kan foldes sammen uafhængigt med overskriften. De forbliver foldet under redigering. Kildemenuerne viser **Kendt størrelse** og **Egen formel** først, derefter egne formelreferencer under **Brug en reference**, figurer under **Figur referencer** og til sidst nye formler. Sammenføjede dele tæller som én figur. De brede valg for alle beholderdele og plademateriale tilbydes ikke længere som nye kilder. Eksisterende beholder- og pladematerialeformler vises fortsat med deres tidligere kilde og beregnes uændret; T9 og separate pladetykkelser virker stadig.
+
 ## Duplikér en formel
 
 Under **Mine formler** har hver formel en **Duplikér formel**-knap (to overlappende firkanter) ved siden af op/ned. Kopien placeres lige under originalen i samme gruppe og vælges automatisk. Navnet får “· kopi”, og resultatet får sit eget symbol.
@@ -93,6 +103,7 @@ Nye størrelser og resultater starter med disse enheder:
 | Omdrejningstal | omdr./min |
 | Volumenflow, Qv | m³/h |
 | Masseflow, Qm | ton/h (t/h) |
+| Specifik varmekapacitet | kJ/(kg·°C) |
 
 Du kan altid ændre enhederne i dropdown-menuerne. Valgene gælder også nye figurer, indsatte underformler og egne formler. Beregningernes SI-grundlag er uændret; omregninger håndteres automatisk. Eksisterende opsætninger beholder deres enheder, også når en tidligere standardenhed ikke var gemt udtrykkeligt, så gamle tal ikke ændrer betydning.
 
@@ -472,3 +483,5 @@ Pyramidestubbens brugerforløb kan kontrolleres med `npm run test:pyramid:browse
 `npm run test:volume:browser` kontrollerer valg af procentformlen, volumenreferencer, 25 %-input, forhåndsomregning, m³/liter, Qm fra 64 % til samlet flow, restandel som reference og sammenfoldning, flytning og redigering af grupper i begge P&P-versioner. Node-testene dækker desuden separate procentandele, gem/åbn, indlejrede formler, Hx, Qv, masse og isolering.
 
 `npm run test:duplicate:browser` kontrollerer duplikering med placering og gruppe, separate referencevalg, procenttal og resultatenheder, tastatur, mobilvisning, lokal genåbning og eksamensnulstilling. Node-testene dækker også indlejrede formler, egne udtryk, Hx, isolerede mål, levende referencer samt navne- og kapacitetsgrænser.
+
+`npm run test:standards:browser` kontrollerer g-standard, redigering og rydning, vandets varmekapacitet og SI-omregning, egne standarder med redigering/fjernelse, passende dropdowns, eksport/import og genåbning, referencegrupper, sammenfoldning, tastatur, mørkt tema, mobilvisning og eksamensnulstilling. Som i de øvrige browsertests kan `PLAYWRIGHT_MODULE` og `CHROMIUM_PATH` pege på lokale installationer. Node-testene kontrollerer også validering af standarder og kompatibilitet med eksisterende opsætninger.

@@ -3249,7 +3249,7 @@
   }
   const base=dimension=>choices(dimension)[0];
   // Entry/display preferences are separate from the SI basis of the equations.
-  const defaults=Object.freeze({length:'mm',rotationRate:'rpm',flow:'m3_h',massFlow:'ton_h'});
+  const defaults=Object.freeze({length:'mm',rotationRate:'rpm',flow:'m3_h',massFlow:'ton_h',heatCapacity:'kJ_kgC'});
   const preferred=dimension=>get(dimension,defaults[dimension]||base(dimension).id);
   function get(dimension,id){
     const unit=choices(dimension).find(u=>u.id===id);
@@ -3930,6 +3930,19 @@
   const innerTarget = (s,key) => `shape:${s.id}:inner:${key}`;
   const geometricInput = (s,key) => diameterKeys(s).includes(key)?innerTarget(s,key):`shape:${s.id}:input:${key}`;
   const own = (object, key) => Object.hasOwn(object, key);
+  const STANDARD_VALUES=Object.freeze([
+    Object.freeze({id:'standard-gravity',name:'Tyngdeacceleration · g',dimension:'acceleration',value:'9.82',unit:'m_s2'}),
+    Object.freeze({id:'standard-water-heat',name:'Vand · specifik varmekapacitet',dimension:'heatCapacity',value:'4.18',unit:'kJ_kgC'})
+  ]);
+  const standardValues=(model,dimension)=>[...(model.standards||[]),...STANDARD_VALUES].filter(s=>!dimension||s.dimension===dimension);
+  function applyStandard(model,key,id){
+    const standard=standardValues(model).find(s=>s.id===id);
+    const [type,owner,name,dimension]=key.split(':');
+    if(!standard||standard.dimension!==dimension||!['formula','shape','tank'].includes(type)||!owner||!name||key.split(':').length!==4)throw new Error('Standarden passer ikke til denne størrelse.');
+    model.inputValues||={};model.inputUnits||={};
+    model.inputValues[key]=standard.value;model.inputUnits[key]=standard.unit;
+    return model;
+  }
   const inputScope = descriptor => descriptor?descriptor.ownerType+':'+descriptor.ownerId:'';
   const storedInput = (model,field,variable) => model[field]?.[Units.key(variable)] ?? (model.version<6?model[field]?.[Units.key({...variable,scope:undefined})]:undefined);
   const inputUnit = (model,variable) => Units.get(variable.dimension,storedInput(model,'inputUnits',variable) || Units.base(variable.dimension).id);
@@ -3966,9 +3979,17 @@
     const choose=dimension=>useDefaults?Units.preferred(dimension):Units.base(dimension);
     function visit(expr,dimension,scope,defaultUnit){
       if(expr.kind==='symbol'){
-        if(!defaultUnit&&Units.preferred(dimension).id===Units.base(dimension).id)return;
+        const gravity=dimension==='acceleration'&&expr.symbol==='g';
+        if(!gravity&&!defaultUnit&&Units.preferred(dimension).id===Units.base(dimension).id)return;
         const key=Units.key({symbol:expr.symbol,dimension,scope});
-        if(!own(model.inputUnits,key))model.inputUnits[key]=useDefaults&&defaultUnit?Units.get(dimension,defaultUnit).id:choose(dimension).id;
+        if(!own(model.inputUnits,key)){
+          model.inputUnits[key]=useDefaults&&defaultUnit?Units.get(dimension,defaultUnit).id:choose(dimension).id;
+          // The stored unit also marks an initialized g. Clearing or importing
+          // a symbolic g therefore never re-inserts the default on the next save.
+          if(gravity&&useDefaults&&!own(model.inputValues||{},key)){
+            model.inputValues||={};model.inputValues[key]='9.82';
+          }
+        }
       }else if(expr.kind==='formula'){
         for(const [name,arg]of Object.entries(FORMULAS[expr.formula].args))visit(expr.args[name],arg.dimension,scope,arg.defaultUnit);
       }else if(expr.kind==='custom'){
@@ -4938,6 +4959,17 @@
       return form(e.formula,Object.fromEntries(Object.entries(f.args).map(([k,a]) => [k,cleanExpr(e.args?.[k],a.dimension,depth+1)])));
     }
     const model = { version:6,inputUnits:{},title:input.title,tank:defaultTank(),shapes:[],formulas:[],connections:[] };
+    if(own(input,'standards')){
+      if(!Array.isArray(input.standards)||input.standards.length>100)fail('ugyldig liste over standarder.');
+      const standardIds=new Set(STANDARD_VALUES.map(s=>s.id));
+      model.standards=input.standards.map(s=>{
+        if(!s||!str(s.id,64)||!/^[a-zA-Z0-9_-]+$/.test(s.id)||standardIds.has(s.id)||!str(s.name)||!s.name.trim()||!own(DIMENSIONS,s.dimension))fail('ugyldig standard.');
+        const value=parseInputValue(s.value);
+        if(value===null||value===''||!Number.isFinite(Number(value)))fail('en standard skal have en gyldig talværdi.');
+        try{if(Units.get(s.dimension,s.unit).format)throw Error();}catch(_){fail('en standardenhed passer ikke til størrelsen.');}
+        standardIds.add(s.id);return {id:s.id,name:s.name.trim(),dimension:s.dimension,value,unit:s.unit};
+      });
+    }
     const groupIds=new Set();
     if(own(input,'formulaGroups')){
       if(!Array.isArray(input.formulaGroups)||input.formulaGroups.length>40)fail('ugyldig liste over formelgrupper.');
@@ -5075,7 +5107,7 @@
       f.note+=' Krav før kvadrering: '+f.constraints.map(t=>plain(instantiate(t,args))+' ≥ 0').join('; ')+'.';
     }
   }
-  return { initializeUnitChoices, CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, duplicateFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
+  return { STANDARD_VALUES, standardValues, applyStandard, initializeUnitChoices, CustomFormula, customExpression, newCustomFormula, measureHeightShape, totalHeightFromMeasure, isolatedMeasure, newFigureMeasure, figureMeasureOptions, isolateFigureFormula, FillHeight, fillHeight, newFillHeight, resolveFillAst, BASE_FORMULAS, rearrangements, rearrangeFormula, FORMULAS, SHAPES, DIMENSIONS, SCHOOL_SOURCE, UNIT_GUIDE, Units, inputScope, copyInputs, inputUnit, inputValue, parseInputValue, percentToDecimal, displayAst, resultUnit, defaultTank, diameterKeys, diameterSettings, slopedWall, newTankMass, newFilledTankMass, clone, symbol, ref, form, assembly, newExpression, newShape, newFormula, duplicateFormula, formulaSections, moveFormula, assignFormulaGroup, addFormulaGroup, renameFormulaGroup, moveFormulaGroup, removeFormulaGroup, example, descriptors, references, dependsOn, usersOf, context, math, mathSymbol, mathBody, plain, tex, variables, evaluate, formulaAst, validateModel, legacyFaces, faceInfo, connectionAt, otherEnd, component, components, canConnect, sharedInputs, surfaceExpression, materialExpression, plateThickness, plateSymbol, setPlateThickness, connect, disconnect, removeShape, setIncluded, setDiameterBasis };
 });
 
 </script>
