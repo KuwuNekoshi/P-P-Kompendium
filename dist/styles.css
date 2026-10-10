@@ -199,6 +199,29 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
 .standard-fields{display:grid;gap:18px}
 .standard-fields .field-label{display:flex;flex-direction:column;gap:8px}
 .standard-fields input,.standard-fields select{width:100%}
+.standard-fields .unit-fraction{width:100%}
+.standard-fields .unit-fraction select{width:auto;flex:1;min-width:0}
+.result-content{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.result-main{min-width:0}
+.result-marker{display:flex;align-items:center;gap:8px;flex-shrink:0;font-size:.8rem;line-height:1.5;cursor:pointer}
+.result-marker input{width:17px;height:17px;accent-color:var(--blue);cursor:pointer}
+.result-marker:has(input:disabled){color:var(--muted);cursor:default}
+.results-empty{color:var(--muted);font-size:.875rem;line-height:1.8;margin-bottom:18px}
+.results-group{margin-bottom:28px;min-width:0}
+.results-group h3{font-size:1rem;font-weight:550;margin-bottom:12px;overflow-wrap:anywhere}
+.results-list{display:grid;gap:12px}
+.result-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:20px;min-width:0}
+.result-card-value,.result-card-formula{min-width:0}
+.result-card-name{text-align:left;font-weight:550;overflow-wrap:anywhere;line-height:1.6}
+.result-card .result-value{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin:14px 0}
+.result-card .result-value strong{overflow-wrap:anywhere}
+.remove-result{font-size:.75rem;color:var(--muted);margin-top:8px}
+.result-card-formula>span{font-size:.75rem;color:var(--muted)}
+.result-card-formula>div{margin-top:14px;padding:6px 0;overflow-x:auto;max-width:100%}
+.result-card-formula math{font-size:1.2rem}
+@media(max-width:900px){.result-content{flex-wrap:wrap;gap:14px}.result-marker{margin-left:auto}}
+@media(max-width:640px){.result-card{grid-template-columns:minmax(0,1fr);gap:16px;padding:16px}.result-card-formula{border-top:1px solid var(--border);padding-top:14px}.view-tabs{gap:10px}.view-tabs button{font-size:.75rem}}
+@media print{.result-marker,.remove-result{display:none!important}.result-card{break-inside:avoid}.result-card-formula>div{overflow:visible}}
 @media(max-width:640px){.view-tabs{gap:12px}.view-tabs button{font-size:.8rem;flex:1}.view-tabs .tab-count{display:none}#tab-standards{max-width:none;margin-left:0}.standards-section{padding:16px}.standards-table th,.standards-table td{padding:8px}.standard-choice{max-width:100%}}
 @media(max-width:640px){
   .standards-table thead{display:none}

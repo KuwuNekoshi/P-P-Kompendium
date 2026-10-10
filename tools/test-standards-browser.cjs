@@ -14,7 +14,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    const set=async(s,d,v)=>{await input(s,d).fill(v);await input(s,d).press('Tab');};
    const result=()=>page.locator('.result-value strong').innerText();
    const tab=view=>page.locator(`[data-view="${view}"]`).click();
-   const sugar=async()=>{await tab('standards');await action('add-standard').click();await page.locator('[data-standard-name]').fill('Sukker · opgavens densitet');await page.locator('[data-standard-value]').fill('0,8');await page.locator('[data-standard-unit]').selectOption('kg_L');await action('save-standard').click();return page.locator('[data-action="edit-standard"]').first().getAttribute('data-id');};
+   const sugar=async()=>{await tab('standards');await action('add-standard').click();await page.locator('[data-standard-name]').fill('Sukker · opgavens densitet');await page.locator('[data-standard-value]').fill('0,8');await page.locator('[data-action="standard-unit-part"][data-part="numerator"]').selectOption('kg');await page.locator('[data-action="standard-unit-part"][data-part="denominator"]').selectOption('L');assert.equal(await page.locator('[data-standard-unit]').getAttribute('data-unit'),'kg_L');await action('save-standard').click();return page.locator('[data-action="edit-standard"]').first().getAttribute('data-id');};
    await page.goto(pathToFileURL(path.resolve(__dirname,'..',edition)).href);
    if(edition==='index.html'){await action('new').click();await action('confirm').click();await page.locator('#calculator-toggle').click();}
    const gravity=await add('gravityForce');assert.equal(await input('g','acceleration').inputValue(),'9.82');await set('m','mass','2');assert.equal(await result(),'19,640');
@@ -32,11 +32,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    const sugarId=await sugar();await tab('builder');const mass=await add('mass');
    assert(await standard('ρ','density').locator(`option[value="${sugarId}"]`).count());assert.equal(await standard('V','volume').count(),0);
    await standard('ρ','density').selectOption(sugarId);assert.equal(await input('ρ','density').inputValue(),'0.8');await set('V','volume','2');assert.equal(await result(),'1600,000');
-   await tab('standards');await action('edit-standard').first().click();await page.locator('[data-standard-value]').fill('1');await action('save-standard').click();await tab('builder');assert.equal(await result(),'1600,000');await set('ρ','density','0,9');assert.equal(await result(),'1800,000');
+   await tab('standards');await action('edit-standard').first().click();assert.equal(await page.locator('[data-action="standard-unit-part"][data-part="denominator"]').inputValue(),'L');await page.locator('[data-standard-value]').fill('1');await page.locator('[data-action="standard-unit-part"][data-part="numerator"]').selectOption('g');await page.locator('[data-action="standard-unit-part"][data-part="denominator"]').selectOption('cm3');assert.equal(await page.locator('[data-standard-unit]').getAttribute('data-unit'),'g_cm3');await action('save-standard').click();await tab('builder');assert.equal(await result(),'1600,000');await set('ρ','density','0,9');assert.equal(await result(),'1800,000');
    // Persist and round-trip standards through the actual normal-edition file controls.
    if(edition==='index.html'){
     await action('export').click();const downloading=page.waitForEvent('download');await action('confirm-export').click();const download=await downloading,file=await download.path(),saved=JSON.parse(fs.readFileSync(file,'utf8'));
-    assert.equal(saved.standards[0].value,'1');await action('new').click();await action('confirm').click();await action('import').click();await page.locator('#file-input').setInputFiles(file);await action('confirm').click();await select(mass);assert.equal(await result(),'1800,000');
+    assert.equal(saved.standards[0].value,'1');assert.equal(saved.standards[0].unit,'g_cm3');await action('new').click();await action('confirm').click();await action('import').click();await page.locator('#file-input').setInputFiles(file);await action('confirm').click();await select(mass);assert.equal(await result(),'1800,000');
    }
    await tab('standards');await action('remove-standard').first().click();await tab('builder');assert.equal(await standard('ρ','density').count(),0);assert.equal(await result(),'1800,000');
    await action('add-shape').filter({has:page.locator('svg')}).first().click();
@@ -56,7 +56,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    await sugar();
    if(process.env.PP_SCREENSHOT_DIR){await page.screenshot({path:path.join(process.env.PP_SCREENSHOT_DIR,'standards-'+edition+'.png'),fullPage:true});}
    await action('theme').click();await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-   await action('add-standard').click();await page.locator('[data-standard-dimension]').selectOption('heatCapacity');assert.equal(await page.locator('[data-standard-unit]').inputValue(),'kJ_kgC');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await action('close-dialog').first().click();
+   await action('add-standard').click();await page.locator('[data-standard-dimension]').selectOption('heatCapacity');assert.equal(await page.locator('[data-standard-unit]').getAttribute('data-unit'),'kJ_kgC');assert.equal(await page.locator('[data-action="standard-unit-part"][data-part="numerator"]').inputValue(),'kJ');assert.equal(await page.locator('[data-action="standard-unit-part"][data-part="denominator"]').inputValue(),'kg_C');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await action('close-dialog').first().click();
    if(process.env.PP_SCREENSHOT_DIR)await page.screenshot({path:path.join(process.env.PP_SCREENSHOT_DIR,'standards-mobile-'+edition+'.png'),fullPage:true});
    await page.reload();await tab('standards');
    if(edition==='index.html'){assert.equal(await action('edit-standard').count(),1);await tab('builder');await select(gravity);assert.equal(await input('g','acceleration').inputValue(),'9.82');}
