@@ -292,6 +292,205 @@
       ],
       "note": "For dele, som ikke overlapper. Indsæt endnu en sum for at tilføje flere dele."
     },
+    "volumePortion": {
+      "name": "Del af volumen · procent",
+      "group": "Geometri",
+      "symbol": "V_del",
+      "dimension": "volume",
+      "resultUnit": "m3",
+      "equation": "V_del = V_total · f_vol",
+      "args": {
+        "V": {
+          "symbol": "V_total",
+          "label": "Volumen der tages en del af",
+          "dimension": "volume"
+        },
+        "f": {
+          "symbol": "f_vol",
+          "label": "Andel af volumen",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "mul",
+        "V",
+        "f"
+      ],
+      "note": "Vælg en volumenreference, en figur eller en samlet tank. Andelen starter i %: skriv fx 25 for 25 %. Det svarer til f_vol = 0,25 i formlen. Resultatet starter i m³ og kan fx ændres til liter. Resultatet kan bruges som reference i Hx, masse og fyldetid.",
+      "aliases": [
+        "del af volumen",
+        "del af rumfang",
+        "delvolumen",
+        "volumenandel",
+        "procent",
+        "25%",
+        "25 %",
+        "fyldningsgrad",
+        "fyldningsprocent",
+        "andel"
+      ]
+    },
+    "massFlowPortion": {
+      "name": "Del af masseflow · Qm i procent",
+      "group": "Masse og tankvægt",
+      "symbol": "Qm_del",
+      "dimension": "massFlow",
+      "resultUnit": "ton_h",
+      "equation": "Qm_del = Qm_total · f_qm",
+      "args": {
+        "total": {
+          "symbol": "Qm_total",
+          "label": "Samlet masseflow",
+          "dimension": "massFlow"
+        },
+        "f": {
+          "symbol": "f_qm",
+          "label": "Andel af masseflow",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "mul",
+        "total",
+        "f"
+      ],
+      "note": "Skriv fx 64 for 64 %. Kender du kun delmængden og procenten, vælg Isolér → Samlet masseflow: samlet = del / andel. Brug derefter resultatet som reference til de andre dele. Ved beregning af det samlede skal andelen være forskellig fra 0. Fx 6,4 t/h ved 64 % giver 10 t/h i alt. Procenterne skal være masseandele, ikke volumenandele.",
+      "aliases": [
+        "procent",
+        "andel",
+        "delmængde",
+        "samlet",
+        "total",
+        "fuld",
+        "blanding",
+        "tank",
+        "Qm",
+        "masseflow"
+      ]
+    },
+    "flowPortion": {
+      "name": "Del af volumenflow · Qv i procent",
+      "group": "Flow og tid",
+      "symbol": "Qv_del",
+      "dimension": "flow",
+      "resultUnit": "m3_h",
+      "equation": "Qv_del = Qv_total · f_qv",
+      "args": {
+        "total": {
+          "symbol": "Qv_total",
+          "label": "Samlet volumenflow",
+          "dimension": "flow"
+        },
+        "f": {
+          "symbol": "f_qv",
+          "label": "Andel af volumenflow",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "mul",
+        "total",
+        "f"
+      ],
+      "note": "Skriv fx 64 for 64 %. Kender du kun delmængden og procenten, vælg Isolér → Samlet volumenflow: samlet = del / andel. Brug derefter resultatet som reference til de andre dele. Ved beregning af det samlede skal andelen være forskellig fra 0. Procenten skal beskrive en andel af netop denne størrelse.",
+      "aliases": [
+        "procent",
+        "andel",
+        "delmængde",
+        "samlet",
+        "total",
+        "fuld",
+        "blanding",
+        "tank",
+        "Qv",
+        "volumenflow"
+      ]
+    },
+    "massPortion": {
+      "name": "Del af masse · procent",
+      "group": "Masse og tankvægt",
+      "symbol": "m_del",
+      "dimension": "mass",
+      "resultUnit": "kg",
+      "equation": "m_del = m_total · f_m",
+      "args": {
+        "total": {
+          "symbol": "m_total",
+          "label": "Samlet masse",
+          "dimension": "mass"
+        },
+        "f": {
+          "symbol": "f_m",
+          "label": "Andel af masse",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "mul",
+        "total",
+        "f"
+      ],
+      "note": "Skriv fx 64 for 64 %. Kender du kun delmængden og procenten, vælg Isolér → Samlet masse: samlet = del / andel. Brug derefter resultatet som reference til de andre dele. Ved beregning af det samlede skal andelen være forskellig fra 0. Procenten skal beskrive en andel af netop denne størrelse.",
+      "aliases": [
+        "procent",
+        "andel",
+        "delmængde",
+        "samlet",
+        "total",
+        "fuld",
+        "blanding",
+        "tank",
+        "m",
+        "masse"
+      ]
+    },
+    "percentageRemainder": {
+      "name": "Restandel · to kendte procenter",
+      "group": "Masse og tankvægt",
+      "symbol": "f_rest",
+      "dimension": "scalar",
+      "resultUnit": "percent",
+      "equation": "f_rest = 1 − f_1 − f_2",
+      "args": {
+        "f1": {
+          "symbol": "f_1",
+          "label": "Første kendte andel",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        },
+        "f2": {
+          "symbol": "f_2",
+          "label": "Anden kendte andel",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "sub",
+        "1",
+        [
+          "add",
+          "f1",
+          "f2"
+        ]
+      ],
+      "note": "Skriv fx 64 og 20 i %. Resten er 16 %. Brug resultatet som reference til andelen i del af Qm, Qv, masse eller volumen. Andelene skal gælde samme samlede størrelse. Ved kun én kendt andel sættes den anden til 0. En negativ rest betyder, at de kendte andele tilsammen overstiger 100 %.",
+      "aliases": [
+        "procent",
+        "rest",
+        "restandel",
+        "resterende",
+        "blanding",
+        "tank 3",
+        "sidste",
+        "100%",
+        "100 %"
+      ]
+    },
     "volumeDifference": {
       "name": "Forskel i rumfang",
       "group": "Geometri",

@@ -59,13 +59,13 @@
   function initializeUnitChoices(model,useDefaults=true){
     model.inputUnits||={};
     const choose=dimension=>useDefaults?Units.preferred(dimension):Units.base(dimension);
-    function visit(expr,dimension,scope){
+    function visit(expr,dimension,scope,defaultUnit){
       if(expr.kind==='symbol'){
-        if(Units.preferred(dimension).id===Units.base(dimension).id)return;
+        if(!defaultUnit&&Units.preferred(dimension).id===Units.base(dimension).id)return;
         const key=Units.key({symbol:expr.symbol,dimension,scope});
-        if(!own(model.inputUnits,key))model.inputUnits[key]=choose(dimension).id;
+        if(!own(model.inputUnits,key))model.inputUnits[key]=useDefaults&&defaultUnit?Units.get(dimension,defaultUnit).id:choose(dimension).id;
       }else if(expr.kind==='formula'){
-        for(const [name,arg]of Object.entries(FORMULAS[expr.formula].args))visit(expr.args[name],arg.dimension,scope);
+        for(const [name,arg]of Object.entries(FORMULAS[expr.formula].args))visit(expr.args[name],arg.dimension,scope,arg.defaultUnit);
       }else if(expr.kind==='custom'){
         for(const arg of Object.values(expr.args))visit(arg.expression,arg.dimension,scope);
       }else if(expr.kind==='isolatedMeasure'){

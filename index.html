@@ -228,7 +228,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
       <div class="workspace-header"><div><label class="eyebrow" for="project-title">MIN OPSÆTNING</label><input id="project-title" class="project-title" maxlength="120" value="Bassin med keglebund" aria-label="Opsætningens navn"></div><span class="save-status" id="save-status">Gemmes på denne computer</span></div>
       <nav class="view-tabs" aria-label="Visning" role="tablist">
         <button id="tab-builder" role="tab" aria-selected="true" aria-controls="panel-builder" tabindex="0" data-view="builder">Formelbygger</button>
-        <button id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1" data-view="library">Formelsamling <span class="tab-count" id="library-total">138</span></button>
+        <button id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1" data-view="library">Formelsamling <span class="tab-count" id="library-total">143</span></button>
       </nav>
       <section id="panel-builder" role="tabpanel" aria-labelledby="tab-builder">
         <div class="goal-row"><label for="goal-select"><span class="step-number">01</span> Hvad vil du finde?</label><div class="goal-choice"><select id="goal-select" aria-label="Vælg den formel, du vil arbejde med"></select><button class="button outline" data-action="search-goal">Søg formel</button></div></div>
@@ -540,6 +540,205 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
         "V2"
       ],
       "note": "For dele, som ikke overlapper. Indsæt endnu en sum for at tilføje flere dele."
+    },
+    "volumePortion": {
+      "name": "Del af volumen · procent",
+      "group": "Geometri",
+      "symbol": "V_del",
+      "dimension": "volume",
+      "resultUnit": "m3",
+      "equation": "V_del = V_total · f_vol",
+      "args": {
+        "V": {
+          "symbol": "V_total",
+          "label": "Volumen der tages en del af",
+          "dimension": "volume"
+        },
+        "f": {
+          "symbol": "f_vol",
+          "label": "Andel af volumen",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "mul",
+        "V",
+        "f"
+      ],
+      "note": "Vælg en volumenreference, en figur eller en samlet tank. Andelen starter i %: skriv fx 25 for 25 %. Det svarer til f_vol = 0,25 i formlen. Resultatet starter i m³ og kan fx ændres til liter. Resultatet kan bruges som reference i Hx, masse og fyldetid.",
+      "aliases": [
+        "del af volumen",
+        "del af rumfang",
+        "delvolumen",
+        "volumenandel",
+        "procent",
+        "25%",
+        "25 %",
+        "fyldningsgrad",
+        "fyldningsprocent",
+        "andel"
+      ]
+    },
+    "massFlowPortion": {
+      "name": "Del af masseflow · Qm i procent",
+      "group": "Masse og tankvægt",
+      "symbol": "Qm_del",
+      "dimension": "massFlow",
+      "resultUnit": "ton_h",
+      "equation": "Qm_del = Qm_total · f_qm",
+      "args": {
+        "total": {
+          "symbol": "Qm_total",
+          "label": "Samlet masseflow",
+          "dimension": "massFlow"
+        },
+        "f": {
+          "symbol": "f_qm",
+          "label": "Andel af masseflow",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "mul",
+        "total",
+        "f"
+      ],
+      "note": "Skriv fx 64 for 64 %. Kender du kun delmængden og procenten, vælg Isolér → Samlet masseflow: samlet = del / andel. Brug derefter resultatet som reference til de andre dele. Ved beregning af det samlede skal andelen være forskellig fra 0. Fx 6,4 t/h ved 64 % giver 10 t/h i alt. Procenterne skal være masseandele, ikke volumenandele.",
+      "aliases": [
+        "procent",
+        "andel",
+        "delmængde",
+        "samlet",
+        "total",
+        "fuld",
+        "blanding",
+        "tank",
+        "Qm",
+        "masseflow"
+      ]
+    },
+    "flowPortion": {
+      "name": "Del af volumenflow · Qv i procent",
+      "group": "Flow og tid",
+      "symbol": "Qv_del",
+      "dimension": "flow",
+      "resultUnit": "m3_h",
+      "equation": "Qv_del = Qv_total · f_qv",
+      "args": {
+        "total": {
+          "symbol": "Qv_total",
+          "label": "Samlet volumenflow",
+          "dimension": "flow"
+        },
+        "f": {
+          "symbol": "f_qv",
+          "label": "Andel af volumenflow",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "mul",
+        "total",
+        "f"
+      ],
+      "note": "Skriv fx 64 for 64 %. Kender du kun delmængden og procenten, vælg Isolér → Samlet volumenflow: samlet = del / andel. Brug derefter resultatet som reference til de andre dele. Ved beregning af det samlede skal andelen være forskellig fra 0. Procenten skal beskrive en andel af netop denne størrelse.",
+      "aliases": [
+        "procent",
+        "andel",
+        "delmængde",
+        "samlet",
+        "total",
+        "fuld",
+        "blanding",
+        "tank",
+        "Qv",
+        "volumenflow"
+      ]
+    },
+    "massPortion": {
+      "name": "Del af masse · procent",
+      "group": "Masse og tankvægt",
+      "symbol": "m_del",
+      "dimension": "mass",
+      "resultUnit": "kg",
+      "equation": "m_del = m_total · f_m",
+      "args": {
+        "total": {
+          "symbol": "m_total",
+          "label": "Samlet masse",
+          "dimension": "mass"
+        },
+        "f": {
+          "symbol": "f_m",
+          "label": "Andel af masse",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "mul",
+        "total",
+        "f"
+      ],
+      "note": "Skriv fx 64 for 64 %. Kender du kun delmængden og procenten, vælg Isolér → Samlet masse: samlet = del / andel. Brug derefter resultatet som reference til de andre dele. Ved beregning af det samlede skal andelen være forskellig fra 0. Procenten skal beskrive en andel af netop denne størrelse.",
+      "aliases": [
+        "procent",
+        "andel",
+        "delmængde",
+        "samlet",
+        "total",
+        "fuld",
+        "blanding",
+        "tank",
+        "m",
+        "masse"
+      ]
+    },
+    "percentageRemainder": {
+      "name": "Restandel · to kendte procenter",
+      "group": "Masse og tankvægt",
+      "symbol": "f_rest",
+      "dimension": "scalar",
+      "resultUnit": "percent",
+      "equation": "f_rest = 1 − f_1 − f_2",
+      "args": {
+        "f1": {
+          "symbol": "f_1",
+          "label": "Første kendte andel",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        },
+        "f2": {
+          "symbol": "f_2",
+          "label": "Anden kendte andel",
+          "dimension": "scalar",
+          "defaultUnit": "percent"
+        }
+      },
+      "template": [
+        "sub",
+        "1",
+        [
+          "add",
+          "f1",
+          "f2"
+        ]
+      ],
+      "note": "Skriv fx 64 og 20 i %. Resten er 16 %. Brug resultatet som reference til andelen i del af Qm, Qv, masse eller volumen. Andelene skal gælde samme samlede størrelse. Ved kun én kendt andel sættes den anden til 0. En negativ rest betyder, at de kendte andele tilsammen overstiger 100 %.",
+      "aliases": [
+        "procent",
+        "rest",
+        "restandel",
+        "resterende",
+        "blanding",
+        "tank 3",
+        "sidste",
+        "100%",
+        "100 %"
+      ]
     },
     "volumeDifference": {
       "name": "Forskel i rumfang",
@@ -7347,7 +7546,8 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
             if(id==='generalDistance'&&key==='t')conditions.push('Denne omskrivning kræver a ≠ 0. Ved a = 0 bruges t = s / v_start. Kun tider t ≥ 0 passer til forløbet.');
             if(specialCase?.note)conditions.push(specialCase.note);
             const note=conditions.join(' ')+(f.note?' Grundformlens forudsætninger: '+f.note:'');
-            formulas[derivedId]={name:(f.name+' → '+arg.label+branch).slice(0,120),group:f.group,symbol:arg.symbol,dimension:arg.dimension,args:{given:{symbol:f.symbol,label:f.name,dimension:f.dimension},...Object.fromEntries(Object.entries(f.args).filter(([k])=>k!==key))},template,note,source:f.source,aliases:f.aliases,constraints:state.constraints,rearranged:{base:id,key,negative}};
+            formulas[derivedId]={name:(f.name+' → '+arg.label+branch).slice(0,120),group:f.group,symbol:arg.symbol,dimension:arg.dimension,args:{given:{symbol:f.symbol,label:f.name,dimension:f.dimension,...(f.resultUnit==='percent'?{defaultUnit:'percent'}:{})},...Object.fromEntries(Object.entries(f.args).filter(([k])=>k!==key))},template,note,source:f.source,aliases:f.aliases,constraints:state.constraints,rearranged:{base:id,key,negative}};
+            if(arg.defaultUnit)formulas[derivedId].resultUnit=arg.defaultUnit;
             choices.push({id:derivedId,key,symbol:arg.symbol,label:arg.label+branch,available:true});
           }catch(error){choices.push({key,symbol:arg.symbol,label:arg.label,available:false,reason:error.message});}
         }
@@ -7736,13 +7936,13 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
   function initializeUnitChoices(model,useDefaults=true){
     model.inputUnits||={};
     const choose=dimension=>useDefaults?Units.preferred(dimension):Units.base(dimension);
-    function visit(expr,dimension,scope){
+    function visit(expr,dimension,scope,defaultUnit){
       if(expr.kind==='symbol'){
-        if(Units.preferred(dimension).id===Units.base(dimension).id)return;
+        if(!defaultUnit&&Units.preferred(dimension).id===Units.base(dimension).id)return;
         const key=Units.key({symbol:expr.symbol,dimension,scope});
-        if(!own(model.inputUnits,key))model.inputUnits[key]=choose(dimension).id;
+        if(!own(model.inputUnits,key))model.inputUnits[key]=useDefaults&&defaultUnit?Units.get(dimension,defaultUnit).id:choose(dimension).id;
       }else if(expr.kind==='formula'){
-        for(const [name,arg]of Object.entries(FORMULAS[expr.formula].args))visit(expr.args[name],arg.dimension,scope);
+        for(const [name,arg]of Object.entries(FORMULAS[expr.formula].args))visit(expr.args[name],arg.dimension,scope,arg.defaultUnit);
       }else if(expr.kind==='custom'){
         for(const arg of Object.values(expr.args))visit(arg.expression,arg.dimension,scope);
       }else if(expr.kind==='isolatedMeasure'){
@@ -9326,7 +9526,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     $('#saved-formulas').innerHTML=E.formulaSections(model).map((group,index)=>{
       const content=group.formulas.map((f,i)=>row(f,i,group.formulas)).join('')||'<p class="empty-formula-group">Ingen formler endnu.</p>';
       if(!group.id)return `${groups.length?'<h3 class="ungrouped-heading">Uden gruppe</h3>':''}${content}`;
-      return `<section class="saved-group" aria-label="${esc(group.name)}"><div class="saved-group-heading"><button class="group-toggle" data-action="toggle-formula-group" data-id="${esc(group.id)}" aria-expanded="${!group.collapsed}" aria-controls="saved-group-${esc(group.id)}"><span aria-hidden="true">${group.collapsed?'›':'⌄'}</span><span>${esc(group.name)}</span><span class="count">${group.formulas.length}</span></button></div><div class="saved-group-tools">${arrows('move-formula-group',group.id,'gruppen '+group.name,index,groups.length)}<button class="group-edit text-button" data-action="edit-formula-group" data-id="${esc(group.id)}" aria-label="${esc('Redigér gruppen '+group.name)}">Redigér</button>${group.collapsed&&group.formulas.some(f=>f.id===activeId)?'<span class="group-active-note">Valgt formel</span>':''}</div><div id="saved-group-${esc(group.id)}" class="saved-group-items" ${group.collapsed?'hidden':''}>${content}<button class="text-button group-add-formula" data-action="add-formula" data-group="${esc(group.id)}">+ Tilføj formel her</button></div></section>`;
+      return `<section class="saved-group" aria-label="${esc(group.name)}"><div class="saved-group-heading"><button class="group-toggle" data-action="toggle-formula-group" data-id="${esc(group.id)}" aria-expanded="${!group.collapsed}" aria-controls="saved-group-${esc(group.id)}" ${group.collapsed&&group.formulas.some(f=>f.id===activeId)?'title="Valgt formel i denne gruppe"':''}><span aria-hidden="true">${group.collapsed?'›':'⌄'}</span><span>${esc(group.name)}</span><span class="count">${group.formulas.length}</span></button></div><div id="saved-group-${esc(group.id)}" class="saved-group-items" ${group.collapsed?'hidden':''}><div class="saved-group-tools">${arrows('move-formula-group',group.id,'gruppen '+group.name,index,groups.length)}<button class="group-edit text-button" data-action="edit-formula-group" data-id="${esc(group.id)}" aria-label="${esc('Redigér gruppen '+group.name)}">Redigér</button></div>${content}<button class="text-button group-add-formula" data-action="add-formula" data-group="${esc(group.id)}">+ Tilføj formel her</button></div></section>`;
     }).join('');
   }
   function renderGoal() {
@@ -9863,7 +10063,7 @@ dialog{border:1px solid var(--border);border-radius:12px;background:var(--surfac
     {section:'SAMLINGER', title:'Fælles flader og samlede formler', target:'.assembly-totals', detail:'assembly-totals', body:'<p>Her finder du det samlede <strong>rumfang</strong> og <strong>pladeareal</strong>. Åbne flader og de to endeflader i en samling udelades automatisk fra pladearealet. <strong>Brug formel</strong> føjer summen til Mine formler.</p><p><strong>Skil ad</strong> under visningen løsner samlingen. Delene får deres egne mål og fladevalg tilbage. Sum af rumfang forudsætter, at delene ikke overlapper.</p><p>Vælg <strong>Isolér højde, bredde eller længde</strong> for at finde et mål ud fra det kendte samlede rumfang eller pladeareal. Fælles mål i samlinger behandles som én ukendt. Du kan også vælge <strong>Isolér et mål i figurerne</strong> på en gemt figurformel.</p>'},
     {section:'FORMLER', title:'Vælg, hvad du vil finde', target:'.goal-row', body:'<p>Her vælger du hovedformlen. I eksemplet vil vi finde <strong>Fyldetid</strong>: t = V / Qᵥ.</p><p>Menuen viser både dine egne formler og muligheden for at tilføje en ny. Figurerne leverer fx rumfanget V, mens en anden formel kan levere volumenflowet Qᵥ.</p><p>Vælg <strong>Produkthøjde i tank (Hx)</strong>, når du kender produktvolumen. Vælg den samlede tank i højre side. Hx følger delene fra bunden, bruger restvolumen i den næste del og viser delberegningerne.</p>'},
     {section:'FIGURER', title:'Særskilt tykkelse for sider og bund', target:'.plate-settings', scene:'parts', focus:'cylinder', detail:'plates-cylinder', body:'<p>Under <strong>Pladetykkelser</strong> vælger du en fælles sidetykkelse og eventuelt en anden tykkelse for bund, top eller en bestemt flade. Vælg <strong>Kendt størrelse</strong> for at bruge fx t_side og t_bund.</p><p>Brug <strong>Tankmasse med separate pladetykkelser</strong> i formelsamlingen. Den summerer areal gange tykkelse for de lukkede flader. Åbne og sammenføjede flader tæller ikke med.</p>'},
-    {section:'OVERBLIK', title:'Sæt formlerne i rækkefølge og grupper', target:'#saved-formulas', scene:'organize', body:'<p>Brug <strong>↑ og ↓</strong> under en formel for at flytte den i sin gruppe. Dropdown-menuen flytter formlen til en anden gruppe eller <strong>Uden gruppe</strong>.</p><p><strong>Opret gruppe</strong> giver en ny gruppe. Gruppen har også flytteknapper, og overskriften folder indholdet sammen. <strong>Redigér</strong> ændrer navnet eller fjerner gruppen; formlerne bliver bevaret. Rækkefølge og grupper gemmes med opsætningen.</p>'},
+    {section:'OVERBLIK', title:'Sæt formlerne i rækkefølge og grupper', target:'#saved-formulas', scene:'organize', body:'<p>Brug <strong>↑ og ↓</strong> under en formel for at flytte den i sin gruppe. Dropdown-menuen flytter formlen til en anden gruppe eller <strong>Uden gruppe</strong>.</p><p><strong>Opret gruppe</strong> giver en ny gruppe. Fold gruppen ud for at vise dens flytteknapper og formler. Overskriften folder det hele sammen igen. <strong>Redigér</strong> ændrer navnet eller fjerner gruppen; formlerne bliver bevaret. Rækkefølge og grupper gemmes med opsætningen.</p>'},
     {section:'FORMLER', title:'Find formler fra formelsamlingen', target:'.formula-search', scene:'library', body:'<p>Fanen <strong>Formelsamling</strong> samler formlerne fra jeres materiale. Søg på et navn, symbol eller T-nummer, fx <strong>Pvirk</strong>, <strong>eta</strong> eller <strong>T9</strong>.</p><p>Kortene viser formlen, forudsætninger og henvisning til siden i jeres samling. Tryk <strong>Brug formel</strong> for at arbejde videre med den.</p>'},
     {section:'FORMLER', title:'Gem delformler, der kan bruges igen', target:['#saved-formulas','.goal-row'], body:'<p><strong>Mine formler</strong> samler opsætningens delformler. Her har vi rumfang, volumenflow og fyldetid. På en smal skærm vælger du dem i <strong>Hvad vil du finde?</strong>.</p><p>Brug <strong>Tilføj formel</strong> til nye delformler, og giv dem et genkendeligt navn i tilpasningspanelet. De kan derefter vælges som referencer.</p>'},
     {section:'EGNE FORMLER', title:'Skriv en egen formel med referencer', target:'#inspector .custom-expression', scene:'custom', body:'<p>Vælg <strong>Tilføj formel → Egen formel</strong> og skriv højresiden under <strong>Redigér udtryk og resultat</strong>, fx h_top + h_midte + h_bund. Vælg derefter en størrelse og kilde for hvert symbol. Du kan bruge figurmål, kendte værdier og andre formler.</p><p>Til en ukendt midterhøjde bruges først <strong>Isolér et mål</strong> med et kendt totalrumfang. <strong>Tilføj samlet højde</strong> opretter summen med en reference til den fundne højde. Diameter og keglehøjder alene bestemmer ikke midterhøjden.</p>'},

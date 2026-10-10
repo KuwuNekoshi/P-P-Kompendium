@@ -115,7 +115,8 @@
             if(id==='generalDistance'&&key==='t')conditions.push('Denne omskrivning kræver a ≠ 0. Ved a = 0 bruges t = s / v_start. Kun tider t ≥ 0 passer til forløbet.');
             if(specialCase?.note)conditions.push(specialCase.note);
             const note=conditions.join(' ')+(f.note?' Grundformlens forudsætninger: '+f.note:'');
-            formulas[derivedId]={name:(f.name+' → '+arg.label+branch).slice(0,120),group:f.group,symbol:arg.symbol,dimension:arg.dimension,args:{given:{symbol:f.symbol,label:f.name,dimension:f.dimension},...Object.fromEntries(Object.entries(f.args).filter(([k])=>k!==key))},template,note,source:f.source,aliases:f.aliases,constraints:state.constraints,rearranged:{base:id,key,negative}};
+            formulas[derivedId]={name:(f.name+' → '+arg.label+branch).slice(0,120),group:f.group,symbol:arg.symbol,dimension:arg.dimension,args:{given:{symbol:f.symbol,label:f.name,dimension:f.dimension,...(f.resultUnit==='percent'?{defaultUnit:'percent'}:{})},...Object.fromEntries(Object.entries(f.args).filter(([k])=>k!==key))},template,note,source:f.source,aliases:f.aliases,constraints:state.constraints,rearranged:{base:id,key,negative}};
+            if(arg.defaultUnit)formulas[derivedId].resultUnit=arg.defaultUnit;
             choices.push({id:derivedId,key,symbol:arg.symbol,label:arg.label+branch,available:true});
           }catch(error){choices.push({key,symbol:arg.symbol,label:arg.label,available:false,reason:error.message});}
         }

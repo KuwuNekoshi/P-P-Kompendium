@@ -2,6 +2,24 @@
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
+## Del af volumen · procent
+
+Vælg **Tilføj formel → Del af volumen · procent**, eller søg efter `procent`, `delvolumen` eller `fyldningsgrad`. Vælg en volumenreference, en enkelt figur eller en samlet tank under **Volumen der tages en del af**. Du kan også indtaste et kendt rumfang eller indsætte en volumenformel.
+
+Under **Størrelserne i formlen** starter andelen i **%**. Skriv fx **25** for 25 %. I den udfoldede formel bruges **0,25**, så omregningen sker præcis én gang. Resultatet starter i **m³**; vælg fx liter, hvis det passer bedre til opgaven. Eksempel: 25 % af 8 m³ er 2 m³.
+
+Resultatet kan bruges som reference i fx Hx, produktmasse og fyldetid. Procenterne er lokale for hver selvstændig formel. Du kan også isolere procentandelen eller det oprindelige volumen. Funktionen findes i begge P&P-versioner.
+
+## Procentdele af Qm, Qv og masse
+
+**Del af masseflow · Qm i procent**, **Del af volumenflow · Qv i procent** og **Del af masse · procent** bruger samme fremgangsmåde. De starter med henholdsvis t/h, m³/h og kg som resultat. Andelen starter i %, og tal samt referencer omregnes automatisk til formlens enheder.
+
+Har du kun en del, vælg **Isolér en størrelse → Samlet masseflow** (eller den tilsvarende samlede størrelse). Formlen skifter på samme plads til `samlet = del / andel`. Eksempel: Tank 1 leverer 6,4 t/h og udgør 64 %: samlet Qm er `6,4 / 0,64 = 10 t/h`. Brug dette resultat som reference i nye delberegninger: Tank 2 med 20 % giver 2 t/h.
+
+**Restandel · to kendte procenter** finder den sidste andel: 64 % og 20 % giver 16 %. Brug restandelen som reference i Qm-formlen for tank 3, som dermed giver 1,6 t/h. Andelene skal beskrive den samme samlede størrelse; masseandele og volumenandele er ikke generelt ens. Ved beregning af det samlede skal den kendte andel være forskellig fra 0.
+
+Under **Mine formler** ligger gruppens op/ned-knapper og **Redigér** nu inde i det foldbare indhold. En sammenfoldet gruppe viser kun overskriften og antallet af formler.
+
 ## Pyramidestub til firkantede tanke
 
 Vælg **Pyramidestub** blandt figurerne, eller brug **Sammensæt → Kasse → Bund → Ny pyramidestub · Top**. Toppen har længde `L` og bredde `B`; bunden har længde `l` og bredde `b`. `h` er den lodrette højde. Alle mål er indvendige, og nye længder starter i mm.
@@ -230,7 +248,7 @@ Hvis andre formler brugte det tidligere resultat, følger de den tilsvarende st�
 
 Omskrivningerne kan selv omskrives igen, gemmes, kopieres og indsættes som delformler fra højre panel. Enhedsforkortning og parentesregler gælder også dem. Formelsamlingen viser fortsat grundformlerne, så den ikke fyldes med næsten ens kort.
 
-**Alle 138 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **352 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
+**Alle 143 grundformler er gennemgået**, og alle deres input har enten en omskrivning eller en konkret forklaring. Der er **362 omskrivninger**. De omfatter produkter, brøker, differenser, kvadrat- og kubikrødder, flere forekomster af samme størrelse, blandinger og de sammensatte tankbundes arealer.
 
 - Geometriske mål bruger den ikke-negative løsning. For hastighed fra kinetisk energi eller dynamisk trykhøjde kan begge fortegn vælges.
 - Tid fra `s = v_start · t + (1/2) · a · t²` har to rodvalg. Vælg den tid, der passer til forløbet. Ved `a = 0` bruges `t = s / v_start`. Hvis også `v_start = 0`, kan tiden ikke bestemmes fra strækningen alene.
@@ -386,7 +404,7 @@ t = [(π/4) · D₁² · h₁ + (1/3) · (π/4) · D₁² · h₂]
 
 Keglebunden deler diameter med cylinderen. Røret leverer tværsnitsarealet til flowformlen og indgår ikke i beholderens rumfang. Kendes flowet allerede, vælger du **Kendt størrelse · Qv** ved flowet; så forsvinder rørdiameter og hastighed fra den udfoldede formel.
 
-Der er 138 grundformler, 352 omskrivninger og 11 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
+Der er 143 grundformler, 362 omskrivninger og 11 figurer. Hver formel har relevante symbolforklaringer og enheder. Udseendet er inspireret af Teslas enkle grænseflader og har lys og mørk visning.
 
 ## Forudsætninger
 
@@ -425,9 +443,9 @@ Formlernes skabeloner består af faste matematiske operationer. Der bruges hverk
 
 Testene dækker også indre/ydre diametre, blandede diametervalg i samlinger, fælles og separate tykkelser, radiale mål på skrå vægge, sammenhængen med T9 og migrering af gamle opsætninger. Enhedstestene kontrollerer potenser, sammensat flow, input- og resultatomregning, referencer mellem forskellige resultatenheder, procent, temperaturforskelle og absolut temperatur. Kontroller af parenteser, skoleformler, samlinger og 3D-geometri er bevaret. Filkontrollen verificerer begge selvstændige HTML-filer, script-rækkefølge og offlinekrav.
 
-Alle 352 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
+Alle 362 omskrivninger testes med to sæt kendte værdier og indsættelse tilbage i grundformlen. Testene kontrollerer desuden dimensioner, kvadratiske specialtilfælde, rødder, gem/åbn, referencer, minutter, procent og temperaturforskydninger.
 
-Talindsættelse kontrolleres på alle 138 grundformler og 352 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og resultatvisning.
+Talindsættelse kontrolleres på alle 143 grundformler og 362 omskrivninger. Testene dækker decimalnotation uden afrunding, små mærker, delvist udfyldte formler, nul, negative tal, enheder, referencer, gem/åbn og resultatvisning.
 
 Eksempelopgaver kan bruges til at udvide kataloget med flere relevante formler og opsætninger.
 
@@ -444,3 +462,5 @@ Versionstestene kører de faktiske scripts fra begge HTML-filer og kontrollerer 
 P&P’s søge- og gemmeforløb kan kontrolleres i en rigtig browser med `npm run test:pp:browser`. Som i de øvrige browsertests kan `PLAYWRIGHT_MODULE` og `CHROMIUM_PATH` pege på lokale installationer. Kontrollen omfatter referencer, filnavn, faktisk download og genåbning, tastatur, mobilvisning og eksamensversionen.
 
 Pyramidestubbens brugerforløb kan kontrolleres med `npm run test:pyramid:browser`: samling med kasse, uafhængige bundmål, åbne/lukkede flader, isoleringsvalg, rumfang, Hx i og over stubben, skitse/3D, mobilvisning og eksamensadfærd. Node-testene kontrollerer også alle 64 kombinationer af flader, materialemængde med separate tykkelser, samlinger i begge retninger og grænsetilfældene kasse, pyramide og kile.
+
+`npm run test:volume:browser` kontrollerer valg af procentformlen, volumenreferencer, 25 %-input, forhåndsomregning, m³/liter, Qm fra 64 % til samlet flow, restandel som reference og sammenfoldning, flytning og redigering af grupper i begge P&P-versioner. Node-testene dækker desuden separate procentandele, gem/åbn, indlejrede formler, Hx, Qv, masse og isolering.
