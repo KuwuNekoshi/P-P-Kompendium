@@ -69,7 +69,7 @@
   }
   const base=dimension=>choices(dimension)[0];
   // Entry/display preferences are separate from the SI basis of the equations.
-  const defaults=Object.freeze({length:'mm',rotationRate:'rpm',flow:'m3_h',massFlow:'ton_h'});
+  const defaults=Object.freeze({length:'mm',rotationRate:'rpm',flow:'m3_h',massFlow:'ton_h',heatCapacity:'kJ_kgC'});
   const preferred=dimension=>get(dimension,defaults[dimension]||base(dimension).id);
   function get(dimension,id){
     const unit=choices(dimension).find(u=>u.id===id);

@@ -37,8 +37,7 @@
   <div class="app-shell">
     <aside class="catalog" aria-label="Figurer og mine formler">
       <div class="catalog-heading"><span class="eyebrow">VÆRKTØJSKASSE</span><span aria-hidden="true">+</span></div>
-      <h2>Indsæt en figur</h2>
-      <div id="shape-library" class="shape-library"></div>
+      <details class="insert-figures section-fold" data-detail-key="insert-figures" open><summary>Indsæt en figur</summary><div id="shape-library" class="shape-library"></div></details>
       <div class="catalog-separator"></div>
       <div class="section-label"><h2>Mine formler</h2><span id="formula-count" class="count"></span></div>
       <button class="text-button create-formula-group" data-action="new-formula-group">+ Opret gruppe</button>
@@ -51,15 +50,17 @@
       <nav class="view-tabs" aria-label="Visning" role="tablist">
         <button id="tab-builder" role="tab" aria-selected="true" aria-controls="panel-builder" tabindex="0" data-view="builder">Formelbygger</button>
         <button id="tab-library" role="tab" aria-selected="false" aria-controls="panel-library" tabindex="-1" data-view="library">Formelsamling <span class="tab-count" id="library-total">143</span></button>
+        <button id="tab-standards" role="tab" aria-selected="false" aria-controls="panel-standards" tabindex="-1" data-view="standards">Enheder og omregninger</button>
       </nav>
       <section id="panel-builder" role="tabpanel" aria-labelledby="tab-builder">
         <div class="goal-row"><label for="goal-select"><span class="step-number">01</span> Hvad vil du finde?</label><div class="goal-choice"><select id="goal-select" aria-label="Vælg den formel, du vil arbejde med"></select><button class="button outline" data-action="search-goal">Søg formel</button></div></div>
-        <section class="construction" aria-labelledby="construction-heading"><div class="construction-heading"><h2 id="construction-heading"><span class="step-number">02</span> Vælg dine figurer</h2><div class="construction-actions"><span id="shape-count"></span><button class="button outline join-button" data-action="join">Sammensæt</button></div></div><div id="figure-tray" class="figure-tray"></div><p class="construction-note" id="construction-note"></p><div id="assembly-overview"></div></section>
+        <section class="construction" aria-labelledby="construction-heading"><details class="section-fold" data-detail-key="choose-figures" open><summary id="construction-heading"><span class="step-number">02</span> Vælg dine figurer</summary><div class="construction-actions"><span id="shape-count"></span><button class="button outline join-button" data-action="join">Sammensæt</button></div><div id="figure-tray" class="figure-tray"></div><p class="construction-note" id="construction-note"></p></details><div id="assembly-overview"></div></section>
         <section id="formula-preview" class="formula-preview" aria-label="Din samlede formel"></section>
         <div id="formula-chain" class="formula-chain"></div>
         <div id="symbol-guide" class="symbol-guide"></div>
       </section>
       <section id="panel-library" role="tabpanel" aria-labelledby="tab-library" hidden></section>
+      <section id="panel-standards" role="tabpanel" aria-labelledby="tab-standards" hidden></section>
     </main>
     <aside id="inspector" class="inspector" aria-label="Tilpas figuren eller formlens dele" tabindex="0"></aside>
   </div>
