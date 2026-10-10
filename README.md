@@ -10,7 +10,17 @@ Fanen **Enheder og omregninger** står til højre for **Formelsamling**. Her kan
 
 Tyngdeaccelerationen **g** udfyldes automatisk i nye formler, også i indsatte underformler og egne formler, når symbolet er g og størrelsen er acceleration. Du kan redigere den eller bruge **Ryd** til at beholde et symbol. Rydning og eksisterende opsætninger bevares; gamle tal/enheder ændrer ikke betydning. Vandets varmekapacitet vælges frivilligt, når opgaven handler om vand.
 
+Enheden for egne standarder vælges ligesom i formlerne: brøkenheder har separate valg for **tæller** og **nævner**, fx kg og L i kg/L. Specifik varmekapacitet har fx kJ over (kg·°C). Ved andre størrelser bruges ét almindeligt enhedsvalg. De samme enhedskombinationer og omregninger bruges i standarder og formler.
+
 **Indsæt en figur**, **Vælg dine figurer** og **Sammensatte figurer** kan foldes sammen uafhængigt med overskriften. De forbliver foldet under redigering. Kildemenuerne viser **Kendt størrelse** og **Egen formel** først, derefter egne formelreferencer under **Brug en reference**, figurer under **Figur referencer** og til sidst nye formler. Sammenføjede dele tæller som én figur. De brede valg for alle beholderdele og plademateriale tilbydes ikke længere som nye kilder. Eksisterende beholder- og pladematerialeformler vises fortsat med deres tidligere kilde og beregnes uændret; T9 og separate pladetykkelser virker stadig.
+
+## Saml dine resultater
+
+Slå **Lommeregner** til, og udfyld tallene i en formel. Til højre for det beregnede resultat kan du vælge **Markér som resultat**. Fanen **Resultater** til højre for **Enheder og omregninger** samler de markerede svar efter dine grupper og deres rækkefølge. Formler uden gruppe står under **Uden gruppe**. Til højre for hvert svar står den korte formel med dens enhedstilpasning; på små skærme står formlen nedenunder.
+
+Resultaterne følger de aktuelle tal, enheder og referencer. Afrunding sker kun i visningen. Hvis et tal eller en reference senere mangler, vises en forklaring i stedet for et gammelt svar. Klik på resultatets navn for at redigere formlen, eller brug **Fjern fra resultater** for kun at fjerne markeringen. Slås lommeregneren fra, skjules tallene også på resultatfanen.
+
+Markeringerne gemmes og eksporteres sammen med normalversionens opsætning. I eksamensversionen nulstilles de sammen med opgaven ved genåbning. En duplikeret formel skal markeres separat. Når en markeret formel omskrives på samme plads, bevarer den sin markering.
 
 ## Duplikér en formel
 
@@ -49,7 +59,7 @@ Volumen, pladeareal og plademateriale kan bruges som referencer. Højde og begge
 ## Find en formel og vælg filnavn i P&P
 
 - **Tilføj formel** har et søgefelt. Søg på navn, symbol, T-nummer eller ord fra beskrivelsen; fx `fyldetid`, `Qv`, `T9` eller `cylinder`.
-- **Søg formel** ved **Hvad vil du finde?** søger både blandt dine eksisterende formler og nye formler. Valg af en eksisterende formel åbner den uden at oprette en kopi.
+- **Søg formel** ved **Hvad vil du finde?** søger kun blandt nye formler, som kan tilføjes. Dine eksisterende formler åbnes fra **Mine formler** eller det almindelige valg under **Hvad vil du finde?**.
 - **Søg formel / reference** ved formlens dele søger kun blandt de kilder, der passer til den pågældende størrelse. **Brug en reference** står før **Indsæt en formel**, både i dropdownen og søgevinduet.
 - Enter i søgefeltet vælger det første synlige resultat. Pil ned flytter fokus til resultatlisten, og Esc lukker uden ændringer.
 - **Gem opsætning** åbner en dialog med forslag til filnavn. Ret navnet, og vælg **Gem fil**, eller tryk Enter. Filtypen `.pp.json` tilføjes automatisk; filnavnet ændrer ikke opgavens titel inde i kompendiet. Du kan også annullere uden download.
@@ -485,3 +495,5 @@ Pyramidestubbens brugerforløb kan kontrolleres med `npm run test:pyramid:browse
 `npm run test:duplicate:browser` kontrollerer duplikering med placering og gruppe, separate referencevalg, procenttal og resultatenheder, tastatur, mobilvisning, lokal genåbning og eksamensnulstilling. Node-testene dækker også indlejrede formler, egne udtryk, Hx, isolerede mål, levende referencer samt navne- og kapacitetsgrænser.
 
 `npm run test:standards:browser` kontrollerer g-standard, redigering og rydning, vandets varmekapacitet og SI-omregning, egne standarder med redigering/fjernelse, passende dropdowns, eksport/import og genåbning, referencegrupper, sammenfoldning, tastatur, mørkt tema, mobilvisning og eksamensnulstilling. Som i de øvrige browsertests kan `PLAYWRIGHT_MODULE` og `CHROMIUM_PATH` pege på lokale installationer. Node-testene kontrollerer også validering af standarder og kompatibilitet med eksisterende opsætninger.
+
+`npm run test:results:browser` kontrollerer markering af resultater, grupper og rækkefølge, kort formel ved siden af svaret, enhedsændringer og aktuelle værdier, lommeregner til/fra, manglende input, duplikering, fjernelse, eksport/import og genåbning samt tastatur, mørkt tema, mobilvisning og eksamensnulstilling i begge P&P-versioner. Node-testene dækker desuden levende referencer, fuld beregningspræcision, validering af markeringer og bevarelse ved isolering.

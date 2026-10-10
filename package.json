@@ -1,6 +1,6 @@
 {
   "name": "pp-kompendium",
-  "version": "1.24.0",
+  "version": "1.25.0",
   "private": true,
   "description": "Offline P&P- og SRO-kompendier med interaktive figurer, kredsløb og sammenkædede formler.",
   "scripts": {
@@ -13,7 +13,8 @@
     "test:pyramid:browser": "node tools/test-pyramid-frustum-browser.cjs",
     "test:volume:browser": "node tools/test-volume-portion-browser.cjs",
     "test:duplicate:browser": "node tools/test-duplicate-browser.cjs",
-    "test:standards:browser": "node tools/test-standards-browser.cjs"
+    "test:standards:browser": "node tools/test-standards-browser.cjs",
+    "test:results:browser": "node tools/test-results-browser.cjs"
   },
   "engines": {
     "node": ">=18"

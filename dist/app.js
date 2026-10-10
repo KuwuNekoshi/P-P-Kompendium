@@ -212,7 +212,7 @@
       const unit=E.resultUnit(f),tms=unit.format==='tms',number=tms?E.Units.formatTime(result.value):formatResultValue(result.value);
       body=`<output class="result-value">${symbolHtml(f.symbol)}<span>=</span><strong>${esc(number)}</strong><span>${esc(tms?'timer:minutter:sekunder':unit.label)}</span></output><p class="result-note">${tms?'Formlen bruger sekunder. Sekundernes decimaler: ':''}3 cifre fra første ikke-nul efter kommaet · kun resultatet afrundes · følg formlens forudsætninger</p>`;
     }
-    return `<section class="result-panel" aria-label="Beregnet resultat"><div class="result-heading"><span>Resultat</span><button class="text-button" data-action="hide-result">Skjul</button></div>${body}</section>`;
+    return `<section class="result-panel" aria-label="Beregnet resultat"><div class="result-heading"><span>Resultat</span><button class="text-button" data-action="hide-result">Skjul</button></div><div class="result-content"><div class="result-main">${body}</div><label class="result-marker" ${result.status!=='ready'&&!f.isResult?'title="Udfyld alle tal først"':''}><input type="checkbox" data-action="mark-result" data-id="${esc(f.id)}" ${f.isResult?'checked':''} ${result.status!=='ready'&&!f.isResult?'disabled':''}><span>Markér som resultat</span></label></div></section>`;
   }
   function formatResultValue(value){
     // The requested precision counts three digits in the fractional part,
@@ -237,7 +237,7 @@
   }
   function unitSelector(dimension,unit,action,id,symbol='',owner='') {
     const ratio=E.Units.ratio(dimension),result=action==='result-unit';
-    const label=result?'Resultatets enhed':`Din enhed for ${pretty(symbol)} · ${E.DIMENSIONS[dimension].name}${owner?' · '+owner:''}`;
+    const label=result?'Resultatets enhed':action==='standard-unit'?`Standardens enhed · ${E.DIMENSIONS[dimension].name}`:`Din enhed for ${pretty(symbol)} · ${E.DIMENSIONS[dimension].name}${owner?' · '+owner:''}`;
     const attributes=`data-id="${esc(id)}" data-dimension="${esc(dimension)}"${symbol?` data-symbol="${esc(symbol)}"`:''}`;
     if(!ratio)return `<div class="unit-choice"><select ${result?'id="result-unit"':''} class="unit-select" data-action="${action}" ${attributes} aria-label="${esc(label)}">${unitOptions(dimension,unit.id)}</select></div>`;
     const labelledPart=ratio.numerator.length>1?'numerator':'denominator';
@@ -374,6 +374,20 @@
       $('#inspector').innerHTML = inspectorHeader('formula',f,E.DIMENSIONS[f.dimension].name) + `<div class="inspector-content"><p class="inspector-intro">Hvad kender du? Behold symbolet, eller vælg en formel eller reference i menuen.</p>${expressionEditor(f.expression,f.dimension,['formulas',i,'expression'],f.symbol,ctx)}<div class="inspector-actions">${f.id !== activeId ? '<button class="text-button" data-action="back-to-formula">Tilbage til hovedformlen</button>' : '<button class="text-button" data-action="add-formula">Tilføj en formel</button>'}<button class="delete-button" data-action="delete" data-type="formula" data-id="${esc(f.id)}">${icon('trash')} Fjern</button></div></div>`;
     }
   }
+  function renderResults(ctx=E.context(model)) {
+    const intro='<div class="library-intro"><h2>Resultater</h2><p>Markér de resultater, du vil samle, til højre for resultatet i formelbyggeren. Tal, enheder og den korte formel følger automatisk din opsætning.</p></div>';
+    if(!resultVisible){$('#panel-results').innerHTML=intro+'<p class="results-empty">Slå lommeregneren til for at se dine resultater.</p><button class="button outline" data-action="toggle-calculator">Slå lommeregneren til</button>';return;}
+    const groups=E.formulaSections(model).map(g=>({...g,formulas:g.formulas.filter(f=>f.isResult)})).filter(g=>g.formulas.length);
+    $('#panel-results').innerHTML=intro+(groups.length?groups.map(g=>`<section class="results-group"><h3>${esc(g.name)}</h3><div class="results-list">${g.formulas.map(f=>{
+      const full=ctx.safe('formula:'+f.id,'expanded',true),result=full.ok?E.evaluate(full.ast):{status:'error',error:full.error},short=ctx.safe('formula:'+f.id,'compact',true),unit=E.resultUnit(f);
+      const value=result.status==='ready'?`<output class="result-value">${symbolHtml(f.symbol)}<span>=</span><strong>${esc(unit.format==='tms'?E.Units.formatTime(result.value):formatResultValue(result.value))}</strong><span>${esc(unit.format==='tms'?'timer:minutter:sekunder':unit.label)}</span></output>`:result.status==='incomplete'?`<p class="result-note">Udfyld de manglende værdier: ${result.missing.map(v=>symbolHtml(v.symbol)).join(', ')}</p>`:`<p class="inline-error">${esc(result.error)}</p>`;
+      return `<article class="result-card" data-result-id="${esc(f.id)}"><div class="result-card-value"><button class="text-button result-card-name" data-action="select-formula" data-id="${esc(f.id)}">${esc(f.name)}</button>${value}<button class="text-button remove-result" data-action="remove-result" data-id="${esc(f.id)}" aria-label="${esc('Fjern '+f.name+' fra resultater')}">Fjern fra resultater</button></div><div class="result-card-formula"><span>Kort formel</span><div>${short.ok?E.math(short.ast,f.symbol,E.Units.arithmetic(unit).label,'units'):`<p class="inline-error">${esc(short.error)}</p>`}</div></div></article>`;
+    }).join('')}</div></section>`).join(''):'<p class="results-empty">Ingen markerede resultater endnu.</p>');
+  }
+  function standardUnitControl(dimension,id=E.Units.preferred(dimension).id) {
+    const unit=E.Units.get(dimension,id);
+    return `<div data-standard-unit data-dimension="${esc(dimension)}" data-unit="${esc(unit.id)}">${unitSelector(dimension,unit,'standard-unit','standard-unit').replace(/<option value="tms"[^>]*>.*?<\/option>/,'')}</div>`;
+  }
   function renderStandards() {
     const row=(s,editable)=>`<tr><th scope="row">${esc(s.name)}</th><td>${esc(E.DIMENSIONS[s.dimension].name)}</td><td>${esc(s.value.replace('.',','))} ${esc(E.Units.get(s.dimension,s.unit).label)}</td><td>${editable?`<button class="text-button" data-action="edit-standard" data-id="${esc(s.id)}">Redigér</button> <button class="text-button" data-action="remove-standard" data-id="${esc(s.id)}">Fjern</button>`:'Standard'}</td></tr>`;
     $('#panel-standards').innerHTML=`<div class="library-intro"><h2>Enheder og omregninger</h2><p>Vælg en standard ved et passende talfelt, eller skriv selv. Valget indsætter både tal og enhed; tallet kan bagefter ændres frit.</p></div><section class="standards-section"><h3>Standardværdier</h3><p>Tyngdeaccelerationen g udfyldes automatisk med 9,82 m/s² i nye formler. Vandets specifikke varmekapacitet er 4,18 kJ/(kg·°C), svarende til 4,18 kJ/(kg·K). Vælg den, når opgaven handler om vand.</p><div class="unit-table-wrap"><table class="standards-table"><thead><tr><th>Navn</th><th>Størrelse</th><th>Værdi og enhed</th><th></th></tr></thead><tbody>${E.STANDARD_VALUES.map(s=>row(s,false)).join('')}</tbody></table></div></section><section class="standards-section"><div class="standards-heading"><h3>Mine standarder</h3><button class="button outline" data-action="add-standard">+ Tilføj standard</button></div><p>Gem fx sukkerets densitet med værdien fra din opgave. ${EXAM?'Egne standarder gælder kun denne session og nulstilles, når eksamensversionen genåbnes.':'Egne standarder gemmes og eksporteres sammen med opsætningen.'} Når en standard bruges, indsættes en kopi af tallet; senere ændringer af standarden ændrer ikke tidligere input.</p>${model.standards?.length?`<div class="unit-table-wrap"><table class="standards-table"><thead><tr><th>Navn</th><th>Størrelse</th><th>Værdi og enhed</th><th>Handlinger</th></tr></thead><tbody>${model.standards.map(s=>row(s,true)).join('')}</tbody></table></div>`:'<p>Ingen egne standarder endnu.</p>'}</section><section class="unit-guide"><h3>Omregninger</h3><p>Grundformlerne bruger SI. Tal omregnes automatisk til formlens enheder. Tilføj ikke omregningsfaktorerne igen. Nye felter til specifik varmekapacitet starter i kJ/(kg·°C).</p><div class="unit-table-wrap"><table><thead><tr><th scope="col">Størrelse</th><th scope="col">Fra → til</th><th scope="col">Omregning</th><th scope="col">Husk</th></tr></thead><tbody>${E.UNIT_GUIDE.map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`;
@@ -382,11 +396,11 @@
     const s=model.standards?.find(s=>s.id===id);
     if(!s&&(model.standards||[]).length>=100){notify('Der kan højst være 100 egne standarder.');return;}
     const dimension=s?.dimension||'density';
-    openDialog(s?'Redigér standard':'Tilføj standard',`<div class="standard-fields"><label class="field-label">Navn<input class="source-select" data-standard-name maxlength="120" value="${esc(s?.name||'')}" placeholder="Fx Sukker · densitet"></label><label class="field-label">Størrelse<select class="source-select" data-standard-dimension data-action="standard-dimension">${Object.entries(E.DIMENSIONS).map(([id,d])=>`<option value="${id}" ${id===dimension?'selected':''}>${esc(d.name)}</option>`).join('')}</select></label><label class="field-label">Værdi<input class="source-select" data-standard-value type="text" inputmode="decimal" maxlength="32" value="${esc(s?.value.replace('.',',')||'')}" placeholder="Værdi fra opgaven"></label><label class="field-label">Enhed<select class="source-select" data-standard-unit>${unitOptions(dimension,s?.unit||E.Units.preferred(dimension).id).replace(/<option value="tms"[^>]*>.*?<\/option>/,'')}</select></label></div><p class="inline-error" data-standard-error role="alert"></p>`,`<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="save-standard" data-id="${esc(s?.id||'')}">Gem standard</button>`);
+    openDialog(s?'Redigér standard':'Tilføj standard',`<div class="standard-fields"><label class="field-label">Navn<input class="source-select" data-standard-name maxlength="120" value="${esc(s?.name||'')}" placeholder="Fx Sukker · densitet"></label><label class="field-label">Størrelse<select class="source-select" data-standard-dimension data-action="standard-dimension">${Object.entries(E.DIMENSIONS).map(([id,d])=>`<option value="${id}" ${id===dimension?'selected':''}>${esc(d.name)}</option>`).join('')}</select></label><label class="field-label">Værdi<input class="source-select" data-standard-value type="text" inputmode="decimal" maxlength="32" value="${esc(s?.value.replace('.',',')||'')}" placeholder="Værdi fra opgaven"></label><div class="field-label"><span>Enhed</span>${standardUnitControl(dimension,s?.unit||E.Units.preferred(dimension).id)}</div></div><p class="inline-error" data-standard-error role="alert"></p>`,`<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="save-standard" data-id="${esc(s?.id||'')}">Gem standard</button>`);
     $('[data-standard-name]').focus();
   }
   function saveStandard(id) {
-    const s={id:id||newId('standard'),name:$('[data-standard-name]').value.trim(),dimension:$('[data-standard-dimension]').value,value:$('[data-standard-value]').value,unit:$('[data-standard-unit]').value};
+    const s={id:id||newId('standard'),name:$('[data-standard-name]').value.trim(),dimension:$('[data-standard-dimension]').value,value:$('[data-standard-value]').value,unit:$('[data-standard-unit]').dataset.unit};
     try{
       const next=E.clone(model);next.standards||=[];
       const index=next.standards.findIndex(other=>other.id===s.id);
@@ -427,6 +441,7 @@
     const ctx = E.context(model);
     $('#project-title').value = model.title;
     renderSidebar(); renderGoal(); renderFigures(ctx); renderPreview(ctx); renderInspector(ctx);
+    if(view==='results')renderResults(ctx);
     for (const d of document.querySelectorAll('details[data-detail-key]')) if (open.includes(d.dataset.detailKey)) d.open = true;
     for (const d of document.querySelectorAll('details.section-fold[data-detail-key]')) if (folded.includes(d.dataset.detailKey)) d.open = false;
     if (focus) {
@@ -437,9 +452,9 @@
   function changeView(next) {
     view = next;
     for (const b of document.querySelectorAll('[data-view]')) { const yes=b.dataset.view===view; b.setAttribute('aria-selected',yes); b.tabIndex=yes?0:-1; }
-    $('#panel-builder').hidden = view !== 'builder'; $('#panel-library').hidden = view !== 'library'; $('#panel-standards').hidden = view !== 'standards';
+    $('#panel-builder').hidden = view !== 'builder'; $('#panel-library').hidden = view !== 'library'; $('#panel-standards').hidden = view !== 'standards'; $('#panel-results').hidden = view !== 'results';
     $('.app-shell').classList.toggle('library-view',view!=='builder');
-    if (view==='library') renderLibrary();else if(view==='standards')renderStandards();else preview3D?.redraw();
+    if (view==='library') renderLibrary();else if(view==='standards')renderStandards();else if(view==='results')renderResults();else preview3D?.redraw();
   }
   function select(type,id,scroll=false) {
     selected = {type,id};
@@ -543,12 +558,12 @@
   function searchFormulaSelect(control){
     if(!control)return;
     let group='';
-    const choices=[...control.options].filter(o=>o.value&&!o.disabled&&!o.parentElement.disabled).map(o=>{
+    const choices=[...control.options].filter(o=>o.value&&!o.disabled&&!o.parentElement.disabled&&(control.id!=='goal-select'||o.value.startsWith('new:'))).map(o=>{
       const label=o.parentElement.tagName==='OPTGROUP'?o.parentElement.label:'Andre valg';
       const heading=label!==group?'<h3>'+esc(label)+'</h3>':'';group=label;
       return heading+`<button class="dialog-formula-item" data-action="choose-formula-option" data-value="${esc(o.value)}"><span>${esc(o.textContent)}</span><span>${o.selected?'Valgt nu':''}</span></button>`;
     }).join('');
-    openDialog(control.id==='goal-select'?'Find en formel':'Find formel eller reference',formulaSearchField()+`<p>${control.id==='goal-select'?'Vælg en formel fra din opsætning, eller tilføj en ny.':'Søg blandt de muligheder, der passer til denne størrelse.'}</p><div class="dialog-formula-list">${choices}</div>`+formulaSearchStatus());
+    openDialog(control.id==='goal-select'?'Tilføj en formel':'Find formel eller reference',formulaSearchField()+`<p>${control.id==='goal-select'?'Søg blandt nye formler, og tilføj den, du vil bruge.':'Søg blandt de muligheder, der passer til denne størrelse.'}</p><div class="dialog-formula-list">${choices}</div>`+formulaSearchStatus());
     searchSelect=control;
     $('[data-formula-search]').focus();
   }
@@ -753,6 +768,9 @@
     if(a==='theme'){theme=theme==='dark'?'light':'dark';setTheme();try{localStorage.setItem(THEME,theme);}catch(_){}}
     else if(a==='toggle-calculator'){resultVisible=!resultVisible;render();}
     else if(a==='hide-result'){resultVisible=false;render();}
+    else if(a==='remove-result'){
+      const f=model.formulas.find(f=>f.id===b.dataset.id);if(f){delete f.isResult;save();render(true);}
+    }
     else if(a==='add-standard'||a==='edit-standard')standardDialog(b.dataset.id);
     else if(a==='save-standard')saveStandard(b.dataset.id);
     else if(a==='remove-standard'){
@@ -867,7 +885,20 @@
       try{model=E.assignFormulaGroup(model,el.dataset.id,el.value);refreshOrganization(a,el.dataset.id);}catch(error){render(true);notify(error.message);}return;
     }
     if(a==='standard-dimension'){
-      $('[data-standard-unit]').innerHTML=unitOptions(el.value,E.Units.preferred(el.value).id).replace(/<option value="tms"[^>]*>.*?<\/option>/,'');return;
+      const box=$('[data-standard-unit]');box.dataset.dimension=el.value;box.dataset.unit=E.Units.preferred(el.value).id;
+      box.innerHTML=unitSelector(el.value,E.Units.preferred(el.value),'standard-unit','standard-unit').replace(/<option value="tms"[^>]*>.*?<\/option>/,'');return;
+    }
+    if(a==='standard-unit'||a==='standard-unit-part'){
+      const box=$('[data-standard-unit]');box.dataset.unit=(a==='standard-unit-part'?E.Units.withPart(box.dataset.dimension,box.dataset.unit,el.dataset.part,el.value):E.Units.get(box.dataset.dimension,el.value)).id;return;
+    }
+    if(a==='mark-result'){
+      const f=model.formulas.find(f=>f.id===el.dataset.id);if(!f)return;
+      if(el.checked){
+        const r=E.context(model).safe('formula:'+f.id,'expanded',true);
+        if(!resultVisible||!r.ok||E.evaluate(r.ast).status!=='ready')return;
+        f.isResult=true;
+      }else delete f.isResult;
+      save();render(true);return;
     }
     if(a==='input-standard'){
       if(!el.value)return;

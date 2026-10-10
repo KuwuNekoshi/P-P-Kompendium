@@ -16,9 +16,10 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   await search().fill('Qv');assert.ok(await visible().count()>0);
   await search().fill('Læg tider sammen');await search().press('Enter');assert.equal((await data()).formulas.at(-1).expression.formula,'timeSum');
   const count=(await data()).formulas.length;
-  // Goal search selects an existing task without duplicating it.
-  await action('search-goal').click();await search().fill('Fyldetid');await page.locator('[data-value="saved:time"]').click();assert.equal((await data()).formulas.length,count);
+  // Goal search only offers new formulas; existing setup formulas stay in the sidebar.
+  await action('search-goal').click();assert.equal(await page.locator('[data-action="choose-formula-option"][data-value^="saved:"]').count(),0);await search().fill('Fyldetid');await page.locator('[data-value="new:fillTime"]').click();assert.equal((await data()).formulas.length,count+1);
   assert.match(await page.locator('#formula-preview h2').innerText(),/Fyldetid/);
+  await page.locator('.saved-formula[data-id="time"]').click();
   // References are above inline formulas; the same safe choices feed the search.
   const source=page.locator('select[data-action="source"][data-symbol="V"]').first();
   const groups=await source.locator('optgroup').evaluateAll(nodes=>nodes.map(n=>n.label));assert.ok(groups.indexOf('Brug en reference')<groups.indexOf('Indsæt en formel'));

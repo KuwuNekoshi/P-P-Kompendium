@@ -162,6 +162,7 @@
     if(next.formulas.length>=40)throw new Error('Der kan højst være 40 formler i én opsætning.');
     const source=next.formulas[index],copy=clone(source);
     copy.id=id;
+    delete copy.isResult;
     const name=source.name.replace(/ · kopi(?: \d+)?$/u,'');
     let n=1;
     do{const suffix=' · kopi'+(n===1?'':' '+n);copy.name=name.slice(0,120-suffix.length)+suffix;n++;}
@@ -278,6 +279,7 @@
     const values={...clone(source.expression.args),[fromKey]:symbol(source.symbol)};
     const next=clone(model),f=newFormula(id,formulaId),known=values[toKey];
     if(inPlace&&source.name!==original.name)f.name=source.name;
+    if(inPlace&&source.isResult)f.isResult=true;
     if(source.groupId)f.groupId=source.groupId;
     if(known?.kind==='symbol')f.symbol=known.symbol;
     let unit=Units.base(f.dimension);
@@ -716,6 +718,7 @@
     const expression=ref('formula:'+sourceId),option=figureMeasureOptions(next,expression,source.dimension).options.find(o=>o.key===unknown);
     if(!option?.available)throw new Error(option?.reason||'Vælg et mål fra figuren.');
     const f={id,name:(source.name+' → '+option.symbol).slice(0,120),symbol:option.symbol,dimension:'length',resultUnit:option.unit,expression:isolatedMeasure(inPlace?clone(source.expression):expression,source.dimension,unknown,symbol(source.symbol)),...(source.groupId?{groupId:source.groupId}:{})};
+    if(inPlace&&source.isResult)f.isResult=true;
     if(next.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===f.symbol)){
       const stem=f.symbol.replace(/_/g,'').slice(0,19);let n=2;
       while(next.formulas.some(other=>(!inPlace||other.id!==sourceId)&&other.symbol===stem+'_'+n))n++;
@@ -1129,6 +1132,7 @@
       identity(f);
       if (!own(DIMENSIONS,f.dimension) || !validSymbol(f.symbol)) fail('ugyldigt formelsymbol.');
       const formula={ id:f.id,name:f.name,symbol:f.symbol,dimension:f.dimension,expression:cleanExpr(f.expression,f.dimension) };
+      if(f.isResult!==undefined){if(typeof f.isResult!=='boolean')fail('ugyldig resultatmarkering.');formula.isResult=f.isResult;}
       if(f.groupId!==undefined){if(!groupIds.has(f.groupId))fail('formlens gruppe findes ikke.');formula.groupId=f.groupId;}
       if(f.resultUnit!==undefined){
         try{Units.get(f.dimension,f.resultUnit);}catch(_){fail('resultatenheden passer ikke til formlen.');}
