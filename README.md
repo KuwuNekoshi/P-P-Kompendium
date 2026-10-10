@@ -152,6 +152,8 @@ Ved rumfangs- og arealinput kan du også vælge figuren direkte under **Fra én 
 
 Introduktionen viser et midlertidigt bassin-eksempel og gennemgår figurer, fjernelse, beholderdele, indre/ydre diameter, åbne/lukkede flader, samlingsmenuen, 3D, rumfang/pladeareal, formelsamlingen, referencer, egne formler, indsatte formler, formelkæden, omskrivning af formler, enheder, tal med små mærker og gem/åbn. Din egen opsætning gemmes ikke over: den gendannes sammen med din valgte visning og scrollposition, når guiden afsluttes. Guiden virker også på en tom opsætning og kræver ikke internet.
 
+Guiden viser også **Enheder og omregninger**, egne standarder med separate tæller-/nævnervalg, indsat sukkerdensitet og vandets varmekapacitet i en varmeformel. Derefter viser den **Markér som resultat** og **Resultater** med to grupper og korte formler ved siden af svarene. Eksemplerne er midlertidige; dine standarder, resultatmarkeringer og lommeregnerens tilstand kommer tilbage ved afslutning. Den samlede teksthjælp dækker de samme funktioner.
+
 - Vælg, hvad du vil finde, fx fyldetid, volumenflow eller rumfang.
 - Indsæt cylinder, kegle, halvkugle, keglestub, kasse, kugle, rør, **halvcylinder**, **V-bund** **pyramide** eller **pyramidestub**.
 - Brug **Sammensæt** til at sætte figurer på hinandens ender. Vælg en eksisterende figur eller indsæt et nyt endestykke direkte.
@@ -497,3 +499,5 @@ Pyramidestubbens brugerforløb kan kontrolleres med `npm run test:pyramid:browse
 `npm run test:standards:browser` kontrollerer g-standard, redigering og rydning, vandets varmekapacitet og SI-omregning, egne standarder med redigering/fjernelse, passende dropdowns, eksport/import og genåbning, referencegrupper, sammenfoldning, tastatur, mørkt tema, mobilvisning og eksamensnulstilling. Som i de øvrige browsertests kan `PLAYWRIGHT_MODULE` og `CHROMIUM_PATH` pege på lokale installationer. Node-testene kontrollerer også validering af standarder og kompatibilitet med eksisterende opsætninger.
 
 `npm run test:results:browser` kontrollerer markering af resultater, grupper og rækkefølge, kort formel ved siden af svaret, enhedsændringer og aktuelle værdier, lommeregner til/fra, manglende input, duplikering, fjernelse, eksport/import og genåbning samt tastatur, mørkt tema, mobilvisning og eksamensnulstilling i begge P&P-versioner. Node-testene dækker desuden levende referencer, fuld beregningspræcision, validering af markeringer og bevarelse ved isolering.
+
+`npm run test:guide:browser` gennemgår hele P&P-guiden i begge versioner på computer og mobil. Den kontrollerer standardernes enhedsvalg, sukker-/vandeksempler, resultatmarkering og grupperet oversigt, fremhævning, tilbage-navigation samt gendannelse ved fuld afslutning, Esc midt i en dialog og åbning af teksthjælpen. Guiden må hverken ændre opgaven i lokal lagring eller efterlade eksemplernes standarder og markeringer i brugerens opsætning.

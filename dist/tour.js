@@ -127,7 +127,8 @@
     dialog.addEventListener('close', () => end());
     dialog.addEventListener('keydown', event => {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
-      if (event.key === 'ArrowLeft') { event.preventDefault(); show(index-1); }
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); end(); }
+      else if (event.key === 'ArrowLeft') { event.preventDefault(); show(index-1); }
       else if (event.key === 'ArrowRight') { event.preventDefault(); if(index < steps.length-1) show(index+1); }
       else if ((event.key === 'Enter' || event.key === ' ') && event.target === find('#tour-title')) {
         event.preventDefault(); if(index === steps.length-1) end(); else show(index+1);
