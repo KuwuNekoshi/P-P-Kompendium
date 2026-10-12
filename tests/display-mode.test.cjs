@@ -69,3 +69,52 @@ test('compact references retain conversion factors and keep unknown symbols in a
   assert.equal(plain(result(m,'flow'),'units'),'L · B · v');
   assert.match(plain(result(m,'flow'),'values'),/30 · 50 · 2/);
 });
+
+
+test('simple substitutes reference results in their own units, preserving conversion and copy formats',()=>{
+  const m=model('rectangleArea','flow');m.version=6;
+  m.formulas[0].resultUnit='cm2';
+  m.formulas[1].expression.args.A=E.ref('formula:rectangleArea');
+  m.inputValues={
+    'formula:rectangleArea:L:length':'0.3',
+    'formula:rectangleArea:B:length':'0.5',
+    'formula:flow:v:velocity':'2'
+  };
+  const saved=JSON.stringify(m),ctx=E.context(m);
+  const ast=ctx.result('formula:flow','simple');
+  assert.equal(plain(ast,'values'),'1500 / 10000 · 2');
+  assert.equal(plain(ast,'units'),'1500 / 10000 · v');
+  assert.equal(plain(ast,'both'),'1500 / 10000 · 2 m/s (v)');
+  assert.match(E.math(ast,'Q_v','m³/s','values'),/1500 \/ 10000 · 2/);
+  assert.match(E.tex(ast,'values'),/1500/);
+  assert.equal(E.evaluate(ast).status,'ready');
+  assert(Math.abs(E.evaluate(ast).value-0.3)<1e-12);
+  assert.deepEqual(JSON.parse(JSON.stringify(m)),JSON.parse(saved));
+  assert.equal(plain(ctx.result('formula:flow','compact'),'values'),'A / 10000 · 2');
+  assert.equal(plain(ctx.result('formula:flow','expanded'),'values'),'0,3 · 0,5 · 2');
+});
+
+test('simple references update live, retain unknown symbols and never calculate with display rounding',()=>{
+  const m=model('rectangleArea','flow');m.version=6;
+  m.formulas[0].resultUnit='cm2';
+  m.formulas[1].expression.args.A=E.ref('formula:rectangleArea');
+  m.inputValues={
+    'formula:rectangleArea:L:length':'0.3333333333333333',
+    'formula:rectangleArea:B:length':'0.5',
+    'formula:flow:v:velocity':'3'
+  };
+  const ctx=E.context(m),read=()=>ctx.result('formula:flow','simple');
+  const first=read();
+  assert.match(plain(first,'values'),/^1666,667 \/ 10000 · 3$/);
+  const exact=E.evaluate(ctx.result('formula:flow','expanded')).value;
+  assert(Math.abs(E.evaluate(first).value-exact)<1e-12);
+  assert(!/[eE][+-]?\d/.test(plain(first,'values')));
+  m.inputValues['formula:rectangleArea:L:length']='0.4';
+  assert.equal(plain(read(),'values'),'2000 / 10000 · 3');
+  delete m.inputValues['formula:rectangleArea:L:length'];
+  assert.equal(plain(read(),'values'),'A / 10000 · 3');
+  m.inputValues['formula:rectangleArea:L:length']='0';
+  assert.equal(plain(read(),'values'),'0 / 10000 · 3');
+  m.inputValues['formula:rectangleArea:L:length']='0.000000000001';
+  assert(!/[eE][+-]?\d/.test(plain(read(),'values')),'Tiny intermediate result must not use exponent notation.');
+});

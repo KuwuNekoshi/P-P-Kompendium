@@ -729,6 +729,21 @@
     else next.formulas.push(f);
     return validateModel(next);
   }
+  // Match the visible result rounding while preserving full numeric precision.
+  function referenceDisplayValue(value){
+    const [coefficient,exponent='0']=Math.abs(value).toString().split('e');
+    const [whole,tail='']=coefficient.split('.'),digits=whole+tail,point=whole.length+Number(exponent);
+    const integer=point<=0?'0':digits.slice(0,point)+'0'.repeat(Math.max(0,point-digits.length));
+    const fraction=point<=0?'0'.repeat(-point)+digits:digits.slice(point);
+    const places=Math.max(0,fraction.search(/[1-9]/))+3;
+    let rounded=BigInt(integer+fraction.slice(0,places).padEnd(places,'0'));
+    if(fraction[places]>='5')rounded+=1n;
+    const text=rounded.toString().padStart(places+1,'0');
+    const resultWhole=text.slice(0,-places),resultFraction=text.slice(-places);
+    const resultPlaces=Math.max(0,resultFraction.search(/[1-9]/))+3;
+    const shortFraction=resultFraction.slice(0,resultPlaces).replace(/0+$/,'');
+    return (value<0?'-':'')+resultWhole+(shortFraction?'.'+shortFraction:'');
+  }
   function context(model) {
     const list = descriptors(model), map = new Map(list.map(d => [d.target, d]));
     const grouped=(ast,depth)=>depth>0&&!['symbol','constant','group'].includes(ast.type)?{type:'group',children:[ast]}:ast;
@@ -748,7 +763,31 @@
         if (!d) throw new Error('En reference mangler. Vælg en ny kilde i dropdown-menuen.');
         if (d.dimension !== dimension) throw new Error('Referencen passer ikke til denne størrelse.');
         if (stack.includes(d.target)) throw new Error('Cirkulær reference: en formel henviser tilbage til sig selv.');
-        if (mode === 'compact') {
+
+        if (mode === 'simple' && d.expression.kind !== 'symbol') {
+          // Show a calculated intermediate result instead of repeating its formula.
+          // Cache only within this expansion so later input edits remain live.
+          const referenceResults=budget.simpleResults||(budget.simpleResults=new Map());
+          let numeric=referenceResults.get(d.target);
+          if(!numeric){
+            const ast=Units.reduce(simplify(expandRaw(d.expression,d.dimension,'expanded',[d.target],{nodes:0})));
+            const base=evaluate(ast);
+            numeric=base;
+            if(base.status==='ready'){
+              const unit=Units.arithmetic(resultUnit(d));
+              const inUnit=evaluate(Units.convert({type:'constant',value:String(base.value)},unit,'fromBase'));
+              if(inUnit.status==='ready')
+                numeric={status:'ready',unit,value:String(inUnit.value),displayValue:referenceDisplayValue(inUnit.value)};
+              else numeric=inUnit;
+            }
+            referenceResults.set(d.target,numeric);
+          }
+          if(numeric.status==='ready')
+            return Units.convert({type:'constant',value:numeric.value,displayValue:numeric.displayValue},numeric.unit);
+          if(numeric.status==='error')throw new Error('Kan ikke beregne '+d.name+': '+numeric.error);
+          // Still missing input: keep the source symbol, as in Kort.
+        }
+        if (mode === 'compact' || mode === 'simple') {
           // Known inputs retain their declared unit. Calculated references use the
           // source formula's displayed result unit and convert back to base once.
           if(d.expression.kind==='symbol')return expandRaw(d.expression,dimension,mode,[...stack,d.target],budget,depth+1,d.name);
@@ -905,9 +944,10 @@
         else if(markup)body=node.unit&&display!=='values'?`<mrow>${mathSymbol(node.symbol)}<mspace width="0.2em"/><mtext>[${esc(node.unit)}]</mtext></mrow>`:mathSymbol(node.symbol);
         else body=texSymbol(display==='values'?{...node,unit:undefined}:node);
       }else if(node.type==='constant'){
-        if(linear)body=node.value.replace('.',',');
-        else if(markup)body=/^-?\d+(?:\.\d+)?$/.test(node.value)?`<mn>${esc(node.value.replace('.',','))}</mn>`:`<mi>${esc(node.value)}</mi>`;
-        else body=node.value==='π'?'\\pi':node.value.replace('.','{,}');
+        const visible=node.displayValue||node.value;
+        if(linear)body=visible.replace('.',',');
+        else if(markup)body=/^-?\d+(?:\.\d+)?$/.test(visible)?`<mn>${esc(visible.replace('.',','))}</mn>`:`<mi>${esc(visible)}</mi>`;
+        else body=visible==='π'?'\\pi':visible.replace('.','{,}');
       }else{
         const c=node.children.map((child,i)=>render(child,node,i));
         if(node.type==='div'){

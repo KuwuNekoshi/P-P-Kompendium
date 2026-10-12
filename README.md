@@ -2,6 +2,16 @@
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
+## Formelvisning: Kort · Simpel · Udfoldet
+
+I formlens øverste højre hjørne kan du vælge mellem **Kort**, **Simpel** og **Udfoldet**.
+
+- **Kort:** Bruges til at se en delformel som et symbol (fx A).
+- **Simpel:** Når delformlen er beregnet, erstattes referencen af dens talværdi, så mellemregninger bliver nemmere at skrive ned. Den valgte resultatenhed omregnes korrekt i den næste formel, fx **1500 cm² → 1500 / 10000 m²**. Hvis delformlen mangler tal, står symbolet i stedet. Resultatets visuelle afrunding påvirker ikke beregningen.
+- **Udfoldet:** Viser hele udtrykket med delformlerne sat ind i hinanden.
+
+**Simpel** fungerer med egne formler, figurreferencer, de normale tal-/enhedsvisninger og **Kopiér formel**, også når lommeregnerens resultatfelt er skjult. Valget bevares under indtastning og enhedsændringer. Begge P&P-versioner understøtter det; opgavens data ændres ikke af visningen.
+
 ## Standardværdier og en enklere formelbygger
 
 Fanen **Enheder og omregninger** står til højre for **Formelsamling**. Her kan du se tyngdeaccelerationen **9,82 m/s²**, vandets specifikke varmekapacitet **4,18 kJ/(kg·°C)** og omregningstabellen. Nye felter og resultater til specifik varmekapacitet starter i kJ/(kg·°C); beregningerne bruger stadig J/(kg·K). En temperaturforskel på 1 °C svarer til 1 K.
@@ -160,7 +170,7 @@ Guiden viser også **Enheder og omregninger**, egne standarder med separate tæl
 - Vælg en figur, angiv **Indvendig diameter** eller **Udvendig diameter**, og sæt hver fri flade til **Åben** eller **Lukket**. Samleflader udelades automatisk fra pladearealet.
 - Vælg ved hver størrelse: **kendt størrelse**, **indsæt en formel** eller **brug en reference**.
 - Indtast eventuelt opgavens tal og vælg enheder under **Størrelserne i formlen**, og vælg **Resultatets enhed** nederst. Indtastede tal omregnes før visning; ubekendte og resultatet beholder nødvendige omregninger.
-- Skift mellem **Kort** og **Udfoldet**. Se hele sammenhængen under **Se formelkæden**, eller kopiér formlen som tekst.
+- Skift mellem **Kort**, **Simpel** og **Udfoldet**. Se hele sammenhængen under **Se formelkæden**, eller kopiér formlen som tekst.
 
 En reference følger sin kilde. **Indsæt formlen her** indsætter en kopi af kildens aktuelle formel; eventuelle underreferencer i kopien bliver ved med at følge deres egne kilder.
 
