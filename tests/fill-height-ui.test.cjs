@@ -9,7 +9,7 @@ function model(type='halfCylinder'){
 function harness(m){
  const elements=new Map(),handlers={};let saves=0,uid=0;
  const get=selector=>{if(!elements.has(selector))elements.set(selector,{innerHTML:'',hidden:false,classList:{toggle(){}},focus(){}});return elements.get(selector);};
- const scope=vm.createContext({E,model:m,activeId:'hx',selected:{type:'formula',id:'hx'},tutorial:null,valueDisplay:'both',expanded:true,libraryQuery:'',valueDrafts:new Map(),resultVisible:false,
+ const scope=vm.createContext({E,model:m,activeId:'hx',selected:{type:'formula',id:'hx'},tutorial:null,valueDisplay:'both',formulaMode:'expanded',libraryQuery:'',valueDrafts:new Map(),resultVisible:false,
   esc,pretty:s=>s,pathAttr:p=>esc(JSON.stringify(p)),symbolHtml:E.mathSymbol,displayMath:(ast,lhs,unit)=>E.math(ast,lhs,unit,scope.valueDisplay),formulaTitle:f=>f.name,schoolRef:()=>'',icon:()=>'',
   $:get,newId:prefix=>prefix+'-'+(++uid),save:()=>saves++,render:()=>{},notify:message=>{scope.lastMessage=message;},closeDialog:()=>{},select:(type,id)=>{scope.activeId=id;},
   active:()=>scope.model.formulas.find(f=>f.id===scope.activeId),quantityOwner:()=>'',
@@ -58,4 +58,17 @@ test('nested Hx can be selected from a length source and uses its own product vo
  const html=h.scope.expressionEditor(f.expression,'area',['formulas',1,'expression'],'A',E.context(m));assert.match(html,/Tank til Hx/);
  m.inputValues['formula:area:V_produkt:volume']='2';m.inputValues['formula:area:B:length']='3';
  const r=E.evaluate(E.context(m).target('formula:area'));assert.equal(r.status,'ready');assert(Math.abs(r.value-6/Math.PI)<1e-12);
+});
+
+test('all three formula reference modes are available, with Simple selected independently of value labels',()=>{
+  const h=harness(model('cylinder'));
+  h.scope.formulaMode='simple';
+  h.scope.renderPreview(E.context(h.scope.model));
+  let html=h.get('#formula-preview').innerHTML;
+  assert.match(html,/data-mode="compact" aria-pressed="false">Kort/);
+  assert.match(html,/data-mode="simple" aria-pressed="true">Simpel/);
+  assert.match(html,/data-mode="expanded" aria-pressed="false">Udfoldet/);
+  h.scope.formulaMode='compact';h.scope.renderPreview(E.context(h.scope.model));
+  html=h.get('#formula-preview').innerHTML;
+  assert.match(html,/data-mode="compact" aria-pressed="true">Kort/);
 });
