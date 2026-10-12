@@ -9,7 +9,7 @@ function model(){
 function harness(m){
  const elements=new Map(),handlers={},fields=new Map();let saves=0,uid=0;
  const get=selector=>{if(!elements.has(selector))elements.set(selector,{innerHTML:'',hidden:false,classList:{toggle(){}},focus(){}});return elements.get(selector);};
- const scope=vm.createContext({E,model:m,activeId:'total',selected:{type:'formula',id:'total'},tutorial:null,valueDisplay:'both',expanded:true,libraryQuery:'',valueDrafts:new Map(),resultVisible:false,
+ const scope=vm.createContext({E,model:m,activeId:'total',selected:{type:'formula',id:'total'},tutorial:null,valueDisplay:'both',formulaMode:'expanded',libraryQuery:'',valueDrafts:new Map(),resultVisible:false,
   esc,pretty:s=>s,pathAttr:p=>esc(JSON.stringify(p)),symbolHtml:E.mathSymbol,displayMath:(ast,lhs,unit)=>E.math(ast,lhs,unit,scope.valueDisplay),formulaTitle:f=>f.name,schoolRef:()=>'',icon:()=>'',
   $:get,newId:prefix=>prefix+'-'+(++uid),save:()=>saves++,render:()=>{},notify:message=>{scope.lastMessage=message;},closeDialog:()=>{},select:(type,id)=>{scope.activeId=id;},
   active:()=>scope.model.formulas.find(f=>f.id===scope.activeId),quantityOwner:()=>'',

@@ -5,7 +5,7 @@ const setup=(...formulas)=>({version:6,title:'Felter',inputUnits:{},inputValues:
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function harness(model){
   const handlers={},guide={innerHTML:''};
-  const scope=vm.createContext({E,model,tutorial:null,expanded:true,valueDisplay:'both',valueDrafts:new Map(),
+  const scope=vm.createContext({E,model,tutorial:null,formulaMode:'expanded',valueDisplay:'both',valueDrafts:new Map(),
     esc,pretty:s=>s.replace(/_/g,''),pathAttr:p=>esc(JSON.stringify(p)),symbolHtml:E.mathSymbol,displayMath:E.math,formulaTitle:f=>f.name,
     $:()=>guide,save:()=>{},render:()=>{},notify:()=>{},
     ownerTarget:path=>'formula:'+model.formulas[path[1]].id,
@@ -123,4 +123,15 @@ test('TMS entry controls preserve durations across format switches and discard i
  h.input(key,'25:60:01');assert.equal(m.inputValues[key],undefined);h.scope.renderUnitGuide(E.context(m).result('formula:sum'),m.formulas[0]);assert.match(h.guide.innerHTML,/aria-invalid="true"/);
  h.input(key,'08:00:00');unit('h');assert.equal(m.inputValues[key],'8');
  h.scope.renderUnitGuide(E.context(m).result('formula:sum'),m.formulas[0]);assert.match(h.guide.innerHTML,/value="8"/);
+});
+
+test('Simple reference mode stays selected while inputs and units are edited',()=>{
+  const m=setup(E.newFormula('diameter','diameter')),h=harness(m),key='formula:diameter:r:length';
+  h.scope.formulaMode='simple';
+  h.input(key,'15');assert.equal(h.scope.formulaMode,'simple');
+  h.change({value:'cm',dataset:{action:'input-unit',id:key,symbol:'r',dimension:'length'}});
+  assert.equal(h.scope.formulaMode,'simple');
+  assert.equal(m.inputValues[key],'15');assert.equal(m.inputUnits[key],'cm');
+  h.scope.formulaMode='compact';
+  h.input(key,'20');assert.equal(h.scope.formulaMode,'expanded');
 });
