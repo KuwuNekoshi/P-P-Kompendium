@@ -70,7 +70,7 @@ test('shape and custom consumers are rebound and missing quantity references fai
 });
 test('production Isolér control changes the selected formula without allocating another ID',()=>{
  const app=fs.readFileSync(require.resolve('../dist/app.js'),'utf8'),handlers={};let saves=0;
- const scope=vm.createContext({E,model:setup('fillTime'),tutorial:null,expanded:false,save:()=>saves++,render:()=>{},notify:s=>{scope.message=s;},select:(type,id)=>{scope.activeId=id;},newId:()=>{throw Error('Must reuse the ID');},document:{addEventListener:(t,fn)=>handlers[t]=fn}});
+ const scope=vm.createContext({E,model:setup('fillTime'),tutorial:null,formulaMode:'compact',save:()=>saves++,render:()=>{},notify:s=>{scope.message=s;},select:(type,id)=>{scope.activeId=id;},newId:()=>{throw Error('Must reuse the ID');},document:{addEventListener:(t,fn)=>handlers[t]=fn}});
  vm.runInContext(app.slice(app.indexOf("  document.addEventListener('change',event=>{"),app.indexOf("  document.addEventListener('input',event=>{")),scope);
  handlers.change({target:{value:'inverse:fillTime:V',dataset:{action:'rearrange-formula',id:'fillTime'}}});
  assert.equal(scope.model.formulas.length,1);assert.equal(scope.model.formulas[0].id,'fillTime');assert.equal(scope.model.formulas[0].dimension,'volume');assert.equal(scope.activeId,'fillTime');assert.equal(saves,1);assert.match(scope.message,/omskrevet/);
