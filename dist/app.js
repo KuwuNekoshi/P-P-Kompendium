@@ -780,7 +780,7 @@
   }
   function startTutorial() {
     if (tutorial) return;
-    tutorial = {model,activeId,selected,view,expanded,geometryView,previewPose:preview3D?.getPose()||previewPose,libraryQuery,valueDrafts,valueDisplay,resultVisible,
+    tutorial = {model,activeId,selected,view,formulaMode,geometryView,previewPose:preview3D?.getPose()||previewPose,libraryQuery,valueDrafts,valueDisplay,resultVisible,
       origin:document.activeElement,scrollX:window.scrollX,scrollY:window.scrollY,
       inspectorTop:$('#inspector').scrollTop,inspectorLeft:$('#inspector').scrollLeft,
       saveStatus:$('#save-status').textContent,
