@@ -170,6 +170,8 @@
   }
   // Cancel only exact, positive unit scales. Formula constants and variable
   // denominators stay in place; affine temperatures are explicit boundaries.
+  // An entered number is normally preconverted to SI for display. Only unfold
+  // that annotation when another unit factor can cancel it.
   const bigGcd=(a,b)=>b?bigGcd(b,a%b):a;
   const one=ast=>ast.type==='constant'&&ast.value==='1';
   const product=children=>{const parts=children.filter(c=>!one(c));return parts.length===0?constant(1):parts.length===1?parts[0]:{type:'mul',children:parts};};
@@ -180,17 +182,24 @@
     let x=1n<<BigInt(Math.ceil(n.toString(2).length/2));
     while(true){const y=(x+n/x)/2n;if(y>=x)return x;x=y;}
   }
-  function scales(ast){
-    // Keep a percentage's /100 local so it cannot disappear into unrelated
-    // length or output-unit scales. Numeric views can then show its decimal.
-    if(ast.unitOffset||ast.percentInput||ast.convertedInput||ast.type==='fillHeight')return boundary(ast);
+  function scales(ast,includeConvertedInput=false){
+    // Keep percentages and affine temperature offsets local. Converted numeric
+    // inputs are boundaries until an enclosing expression needs to cancel them.
+    if(ast.unitOffset||ast.percentInput||(ast.convertedInput&&!includeConvertedInput)||ast.type==='fillHeight')return boundary(ast);
     if(ast.type==='constant'&&ast.unitFactor)return {body:constant(1),n:BigInt(ast.value),d:1n};
     if(!ast.children)return boundary(ast);
-    const parts=ast.children.map(scales);
+    const parts=ast.children.map(child=>scales(child,includeConvertedInput));
     if(ast.type==='group'){
-      const part=parts[0];
-      // The extracted body no longer contains this wrapper's conversion.
-      const {unitConversion,unitOffset,...rest}=ast;
+      let part=parts[0];
+      if(ast.convertedInput&&includeConvertedInput){
+        // A single compound unit (e.g. ton/h = 1000/3600 kg/s) is NOT
+        // cancellation with another unit. Normalize it before checking for
+        // inverse factors elsewhere, so a lone converted input stays legible.
+        const divisor=bigGcd(part.n,part.d);
+        part={...part,n:part.n/divisor,d:part.d/divisor};
+      }
+      // The extracted body must use the original entered value and unit.
+      const {unitConversion,unitOffset,convertedInput,...rest}=ast;
       return {...part,body:['symbol','constant','group'].includes(part.body.type)?part.body:{...rest,children:[part.body]}};
     }
     if(ast.type==='mul')return {body:product(parts.map(p=>p.body)),n:parts.reduce((a,p)=>a*p.n,1n),d:parts.reduce((a,p)=>a*p.d,1n)};
@@ -216,7 +225,12 @@
     if(!ast.children||ast.type==='fillHeight')return ast;
     let node={...ast,children:ast.children.map(reduce)};
     if(node.type==='group'&&!node.unitOffset&&!node.convertedInput&&node.children[0].type==='group')node=node.children[0];
-    const part=scales(node),divisor=bigGcd(part.n,part.d);
+    // A numerator from a supplied unit can cancel a denominator from the
+    // requested result (or another input). Only then replace SI annotations
+    // with the user's original numbers; otherwise keep the existing SI view.
+    const withInputs=scales(node,true);
+    const part=bigGcd(withInputs.n,withInputs.d)>1n?withInputs:scales(node);
+    const divisor=bigGcd(part.n,part.d);
     if(divisor===1n)return node;
     const n=part.n/divisor,d=part.d/divisor;
     let body=part.body;
