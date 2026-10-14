@@ -44,7 +44,7 @@ test('input units, conversion factors and TI estimates survive every presentatio
   const m=model('beltSpeed');m.inputValues={'D:length':'500','n:rotationRate':'120'};
   m.inputUnits={'D:length':'mm','n:rotationRate':'rpm'};m.formulas[0].resultUnit='m_min';
   const ast=result(m),estimate=G.estimate(ast);
-  assert.equal(plain(ast,'values'),'π · 500 · 120 / 1000');
+  assert.equal(plain(ast,'values'),'π · 0,5 · 2 · 60');
   assert.equal(plain(ast,'units'),'π · D · n / 1000');
   for(const mode of ['values','units','both']){
     E.math(ast,'v','m/min',mode);E.tex(ast,mode);

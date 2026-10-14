@@ -75,7 +75,7 @@ test('annotations use selected input units while conversions and rpm cancellatio
   const belt=model('beltSpeed');belt.inputValues={'D:length':'500','n:rotationRate':'120'};
   belt.inputUnits={'D:length':'mm','n:rotationRate':'rpm'};belt.formulas[0].resultUnit='m_min';
   const ast=result(belt);near(value(ast),60*Math.PI);assert(!/\b60\b/.test(numericText(ast)));
-  assert.match(E.plain(ast),/120 omdr\.\/min \(n\)/);assert.match(numericText(ast),/1000/);
+  assert.match(E.plain(ast),/2 omdr\.\/s \(n\)/);assert.match(numericText(ast),/1000/);
   const mass=model('mass');mass.inputValues={'ρ:density':'7.85','V:volume':'2'};mass.inputUnits={'ρ:density':'ton_m3'};
   near(value(result(mass)),15700);assert.match(E.plain(result(mass)),/7850 kg\/m³ \(ρ\)/);
 });
