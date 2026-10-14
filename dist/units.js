@@ -229,7 +229,7 @@
     // requested result (or another input). Only then replace SI annotations
     // with the user's original numbers; otherwise keep the existing SI view.
     const withInputs=scales(node,true);
-    const part=bigGcd(withInputs.n,withInputs.d)>1n?withInputs:scales(node);
+    const part=withInputs.n===withInputs.d&&withInputs.n>1n?withInputs:scales(node);
     const divisor=bigGcd(part.n,part.d);
     if(divisor===1n)return node;
     const n=part.n/divisor,d=part.d/divisor;
