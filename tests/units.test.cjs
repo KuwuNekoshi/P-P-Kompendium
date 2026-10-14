@@ -288,3 +288,76 @@ test('unit cancellation propagates through live references and the TI estimate s
   assert.deepEqual(G.create(c,'formula:beltSpeed').estimate,G.estimate(full));
   assert.equal(E.plain(E.context(E.validateModel(JSON.parse(JSON.stringify(m)))).result('formula:beltSpeed')),E.plain(full));
 });
+
+
+test('ton per cubic metre times cubic metres gives tonnes with no unnecessary SI round trip',()=>{
+  const m=model('mass');m.version=6;m.formulas[0].resultUnit='ton';
+  m.inputUnits={'formula:mass:ρ:density':'ton_m3'};
+  m.inputValues={'formula:mass:ρ:density':'1.2','formula:mass:V:volume':'3'};
+  const saved=JSON.stringify(m);
+  for(const mode of ['compact','simple','expanded']){
+    const ast=E.context(m).result('formula:mass',mode);
+    assert.equal(E.plain(ast,null,'values'),'1,2 · 3');
+    assert.equal(E.plain(ast),'1,2 ton/m³ (ρ) · 3 m³ (V)');
+    assert.equal(E.plain(ast,null,'units'),'ρ · V');
+    assert.equal(E.tex(ast,'values'),'1{,}2 \\cdot 3');
+    assert(E.math(ast,'m','ton').includes('1,2 ton/m³ (ρ) · 3 m³ (V)'));
+    near(E.evaluate(ast).value,3.6);
+  }
+  assert.equal(JSON.stringify(m),saved,'display simplification must not change entered inputs or selected units');
+  assert.equal(E.plain(E.context(m).target('formula:mass'),null,'values'),'1200 · 3',
+    'unconverted canonical target remains in kilograms');
+});
+
+test('unit simplification retains only necessary factors for mixed mass, volume and flow units',()=>{
+  const m=model('mass');m.version=6;m.formulas[0].resultUnit='ton';
+  m.inputValues={'formula:mass:ρ:density':'1.2','formula:mass:V:volume':'3'};
+  const density='formula:mass:ρ:density',volume='formula:mass:V:volume';
+  m.inputUnits={[density]:'ton_m3',[volume]:'L'};
+  let ast=E.context(m).result('formula:mass');
+  assert.equal(E.plain(ast,null,'values'),'1,2 · 3 / 1000');
+  near(E.evaluate(ast).value,.0036);
+  m.inputUnits[density]='kg_m3';m.inputUnits[volume]='m3';
+  ast=E.context(m).result('formula:mass');
+  assert.equal(E.plain(ast,null,'values'),'1,2 · 3 / 1000');
+  near(E.evaluate(ast).value,.0036);
+  m.inputUnits[density]='ton_m3';m.formulas[0].resultUnit='kg';
+  ast=E.context(m).result('formula:mass');
+  assert.equal(E.plain(ast,null,'values'),'1200 · 3');
+  near(E.evaluate(ast).value,3600);
+
+  const flow=model('massFlow');flow.version=6;flow.formulas[0].resultUnit='ton_h';
+  flow.inputUnits={'formula:massFlow:ρ:density':'ton_m3','formula:massFlow:Q_v:flow':'m3_h'};
+  flow.inputValues={'formula:massFlow:ρ:density':'1.2','formula:massFlow:Q_v:flow':'3'};
+  ast=E.context(flow).result('formula:massFlow');
+  assert.equal(E.plain(ast,null,'values'),'1,2 · 3');
+  assert.equal(E.plain(ast,null,'units'),'ρ · Q_v');
+  near(E.evaluate(ast).value,3.6);
+  flow.inputUnits['formula:massFlow:Q_v:flow']='L_min';
+  ast=E.context(flow).result('formula:massFlow');
+  // 60 L/min converted through 1000 L/m³ reduces to the exact factor 3/50.
+  assert.equal(E.plain(ast,null,'values'),'1,2 · 3 · 3 / 50');
+  near(E.evaluate(ast).value,.216);
+});
+
+test('unpaired compound-unit conversions remain preconverted; percentages and offsets stay separate',()=>{
+  const flow=U.get('massFlow','ton_h');
+  const input={type:'symbol',symbol:'Q_m',dimension:'massFlow',inputValue:'3.6',valueUnit:flow.label};
+  const single=U.reduce(U.convert(input,flow));
+  assert.equal(E.plain(single),'1 kg/s (Q_m)');
+  near(E.evaluate(single).value,1);
+
+  const m=model('distance');m.version=6;
+  m.inputUnits={'formula:distance:v:velocity':'m_min','formula:distance:t:time':'min'};
+  m.inputValues={'formula:distance:v:velocity':'30','formula:distance:t:time':'2'};
+  const ast=E.context(m).result('formula:distance');
+  assert.equal(E.plain(ast,null,'values'),'30 · 2');
+  near(E.evaluate(ast).value,60);
+
+  const temp=model('temperatureDifference');temp.version=6;
+  temp.inputUnits={'formula:temperatureDifference:T_start:temperature':'C','formula:temperatureDifference:T_slut:temperature':'C'};
+  temp.inputValues={'formula:temperatureDifference:T_start:temperature':'20','formula:temperatureDifference:T_slut:temperature':'30'};
+  const a=E.context(temp).result('formula:temperatureDifference');
+  assert.match(E.plain(a,null,'units'),/273,15/);
+  near(E.evaluate(a).value,10);
+});

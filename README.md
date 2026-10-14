@@ -12,6 +12,12 @@ I formlens øverste højre hjørne kan du vælge mellem **Kort**, **Simpel** og 
 
 **Simpel** fungerer med egne formler, figurreferencer, de normale tal-/enhedsvisninger og **Kopiér formel**, også når lommeregnerens resultatfelt er skjult. Valget bevares under indtastning og enhedsændringer. Begge P&P-versioner understøtter det; opgavens data ændres ikke af visningen.
 
+## Kortere enhedsomregninger
+
+Kompendiet bevarer den præcise SI-beregning, men viser **tallene og enhederne fra opgaven**, når omregningsfaktorerne ophæver hinanden. Hvis du fx angiver **ρ = 1,2 ton/m³** og **V = 3 m³** og vælger resultatet i **ton**, bliver mellemregningen **1,2 · 3 = 3,6 ton** i stedet for 1200 kg/m³ · 3 m³ / 1000. Det samme gælder fx ton/m³ · m³/h → ton/h og m/min · min → m.
+
+Skal der faktisk omregnes, bevares det nødvendige forhold: ton/m³ · L → ton kræver division med 1000, og ton/m³ · m³ → kg kræver en faktor på 1000. Kun enhedsrelaterede faktorer forkortes; normale tal i formlen, procent og temperaturforskydninger ændres ikke. Dette gælder i **Kort**, **Simpel** og **Udfoldet** samt ved kopiering, både med og uden indtastede tal.
+
 ## Standardværdier og en enklere formelbygger
 
 Fanen **Enheder og omregninger** står til højre for **Formelsamling**. Her kan du se tyngdeaccelerationen **9,82 m/s²**, vandets specifikke varmekapacitet **4,18 kJ/(kg·°C)** og omregningstabellen. Nye felter og resultater til specifik varmekapacitet starter i kJ/(kg·°C); beregningerne bruger stadig J/(kg·K). En temperaturforskel på 1 °C svarer til 1 K.
