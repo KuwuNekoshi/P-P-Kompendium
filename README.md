@@ -2,6 +2,21 @@
 
 Et interaktivt **formelkompendium** til P&P. Vælg figurer og kendte størrelser, og få den relevante formel sat sammen. Du kan arbejde med symboler eller indsætte kendte tal med små enheds- og symbolmærker. Knappen **Lommeregner** øverst til højre vælger, om det beregnede resultat også skal vises.
 
+## Eksportér resultater til Word eller PDF
+
+I den **almindelige P&P-version**: Slå lommeregneren til, markér resultaterne i formelbyggeren, åbn **Resultater**, og vælg **Eksportér resultater til Word eller PDF**. Vælg Word (`.docx`, standard) eller PDF (`.pdf`) og ét niveau for **Mellemregninger**:
+
+- **Ingen:** Kun formelnavne og slutresultater med enheder.
+- **Kort** (standard): Den eksisterende kompakte formel med symbolreferencer.
+- **Simpel:** Referencer erstattes af deres numeriske mellemresultater.
+- **Fuld:** Hele formlen med referencerne udfoldet.
+
+Eksporten tager alle markerede resultater i samme gruppe- og formelrækkefølge som resultatvisningen, inklusive opgavenavn, navne, korrekte enheder og tidsformat. Den beregner på ny med fuld præcision og bruger samme afrunding af slutværdier som skærmen. Manglende værdier og beregningsfejl vises tydeligt frem for tidligere tal.
+
+Word-filen er en rigtig DOCX med redigerbare Word-ligninger (OMML), ikke HTML med ændret endelse. PDF er en direkte download med læsbar formeltekst og A4-sider. **PDF-siderne er billeder; teksten kan ikke markeres eller søges.** Begge formater dannes offline uden CDN eller netværkskald. Lange udtryk kan ombrydes i PDF; Word tilpasser ligninger efter sin egen layoutmotor.
+
+**Eksamensversionen kan ikke eksportere** hverken resultater eller opsætninger. SRO-versionerne har ikke P&P-resultatfanen. Alle fire selvstændige HTML-filer bygges og kontrolleres sammen. Se [versionsnoter for v1.27.0](releases/v1.27.0.md).
+
 ## Formelvisning: Kort · Simpel · Udfoldet
 
 I formlens øverste højre hjørne kan du vælge mellem **Kort**, **Simpel** og **Udfoldet**.

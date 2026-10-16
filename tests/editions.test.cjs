@@ -55,7 +55,7 @@ test('exam starts empty with calculation on and never reads or writes task stora
  assert(!/data-action="(?:import|export|example)"|id="file-input"/.test(h.markup));
  h.click('use-formula',{formula:'rectangleArea'});assert.equal(h.query('#formula-count').textContent,1);assert.match(h.query('#formula-preview').innerHTML,/Udfyld de manglende værdier/);
  h.input('project-title','Eksamensopgave');assert.match(h.query('#save-status').textContent,/gemmes ikke/);assert(!h.writes.includes(STORAGE));assert.equal(stored.get(STORAGE),saved);
- for(const action of ['import','export','example'])h.click(action);
+ for(const action of ['import','export','example','export-results','confirm-result-export'])h.click(action);
  assert.equal(h.downloads.length,0);assert.equal(h.query('#formula-count').textContent,1);
  h.click('toggle-calculator');assert.equal(h.query('#calculator-toggle')['aria-pressed'],'false');
  const reopened=boot('exam',stored);assert.equal(reopened.query('#formula-count').textContent,0);assert.equal(reopened.query('#calculator-toggle')['aria-pressed'],'true');

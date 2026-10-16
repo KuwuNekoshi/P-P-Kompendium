@@ -1,0 +1,23 @@
+name: Kontrollér ændringer
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Tests og alle fire offlinefiler
+        run: |
+          node --test tests/*.test.cjs
+          node tools/build.cjs
+          node tools/check.cjs
+          git diff --exit-code -- index.html eksamen.html sro.html sro-eksamen.html
+      - name: Browser og dokumentdownloads
+        run: |
+          npm install --no-save --package-lock=false playwright@1.62.1
+          npx playwright install --with-deps chromium
+          node tools/test-results-browser.cjs

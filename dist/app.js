@@ -375,7 +375,7 @@
     }
   }
   function renderResults(ctx=E.context(model)) {
-    const intro='<div class="library-intro"><h2>Resultater</h2><p>Markér de resultater, du vil samle, til højre for resultatet i formelbyggeren. Tal, enheder og den korte formel følger automatisk din opsætning.</p></div>';
+    const intro='<div class="library-intro"><h2>Resultater</h2><p>Markér de resultater, du vil samle, til højre for resultatet i formelbyggeren. Tal, enheder og den korte formel følger automatisk din opsætning.</p></div>'+(!EXAM?'<button class="button outline" data-action="export-results" '+(!resultVisible||!model.formulas.some(f=>f.isResult)?'disabled':'')+'>Eksportér resultater til Word eller PDF</button>':'');
     if(!resultVisible){$('#panel-results').innerHTML=intro+'<p class="results-empty">Slå lommeregneren til for at se dine resultater.</p><button class="button outline" data-action="toggle-calculator">Slå lommeregneren til</button>';return;}
     const groups=E.formulaSections(model).map(g=>({...g,formulas:g.formulas.filter(f=>f.isResult)})).filter(g=>g.formulas.length);
     $('#panel-results').innerHTML=intro+(groups.length?groups.map(g=>`<section class="results-group"><h3>${esc(g.name)}</h3><div class="results-list">${g.formulas.map(f=>{
@@ -383,6 +383,22 @@
       const value=result.status==='ready'?`<output class="result-value">${symbolHtml(f.symbol)}<span>=</span><strong>${esc(unit.format==='tms'?E.Units.formatTime(result.value):formatResultValue(result.value))}</strong><span>${esc(unit.format==='tms'?'timer:minutter:sekunder':unit.label)}</span></output>`:result.status==='incomplete'?`<p class="result-note">Udfyld de manglende værdier: ${result.missing.map(v=>symbolHtml(v.symbol)).join(', ')}</p>`:`<p class="inline-error">${esc(result.error)}</p>`;
       return `<article class="result-card" data-result-id="${esc(f.id)}"><div class="result-card-value"><button class="text-button result-card-name" data-action="select-formula" data-id="${esc(f.id)}">${esc(f.name)}</button>${value}<button class="text-button remove-result" data-action="remove-result" data-id="${esc(f.id)}" aria-label="${esc('Fjern '+f.name+' fra resultater')}">Fjern fra resultater</button></div><div class="result-card-formula"><span>Kort formel</span><div>${short.ok?E.math(short.ast,f.symbol,E.Units.arithmetic(unit).label,'units'):`<p class="inline-error">${esc(short.error)}</p>`}</div></div></article>`;
     }).join('')}</div></section>`).join(''):'<p class="results-empty">Ingen markerede resultater endnu.</p>');
+  }
+  function resultExportDialog(){
+    if(EXAM||!resultVisible||!model.formulas.some(f=>f.isResult))return;
+    openDialog('Eksportér resultater',`<label class="field-label">Filformat<select class="source-select" data-result-format><option value="docx">Word (.docx)</option><option value="pdf">PDF (.pdf)</option></select></label><label class="field-label">Mellemregninger<select class="source-select" data-result-mode><option value="none">Ingen</option><option value="compact" selected>Kort</option><option value="simple">Simpel</option><option value="expanded">Fuld</option></select></label><p>Alle markerede resultater eksporteres i den viste grupperækkefølge. Kort viser symbolreferencer, Simpel viser numeriske mellemresultater, og Fuld udfolder formlerne. PDF dannes som billeder med læsbar formeltekst; teksten kan ikke markeres.</p><p class="inline-error" data-result-export-error role="alert"></p>`,`<button class="button outline" data-action="close-dialog">Annullér</button><button class="button primary" data-action="confirm-result-export">Eksportér</button>`);
+  }
+  async function exportResults(){
+    if(EXAM||!resultVisible||!$('#app-dialog').open||!model.formulas.some(f=>f.isResult))return;
+    const button=$('[data-action="confirm-result-export"]');if(button.disabled)return;button.disabled=true;
+    try{
+      const X=globalThis.PPResultExport,ext=$('[data-result-format]').value,mode=$('[data-result-mode]').value;
+      if(!['docx','pdf'].includes(ext))throw Error('Ugyldigt filformat.');
+      const data=X.collect(E,model,mode,formatResultValue);
+      const bytes=ext==='docx'?X.docx(data,text=>new DOMParser().parseFromString(text,'application/xml').documentElement):await X.pdf(data,()=>document.createElement('canvas'));
+      const blob=new Blob([bytes],{type:ext==='docx'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download=X.filename(data.title,ext);document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);closeDialog();notify('Resultaterne er eksporteret til '+(ext==='docx'?'Word.':'PDF.'));
+    }catch(error){$('[data-result-export-error]').textContent='Eksporten kunne ikke gennemføres: '+error.message;button.disabled=false;}
   }
   function standardUnitControl(dimension,id=E.Units.preferred(dimension).id) {
     const unit=E.Units.get(dimension,id);
@@ -794,6 +810,8 @@
     const tab=event.target.closest('[data-view]');if(tab){changeView(tab.dataset.view);return;}
     const b=event.target.closest('[data-action]');if(!b)return;
     const a=b.dataset.action;
+    if(a==='export-results'){resultExportDialog();return;}
+    if(a==='confirm-result-export'){exportResults();return;}
     if(a==='theme'){theme=theme==='dark'?'light':'dark';setTheme();try{localStorage.setItem(THEME,theme);}catch(_){}}
     else if(a==='toggle-calculator'){resultVisible=!resultVisible;render();}
     else if(a==='hide-result'){resultVisible=false;render();}

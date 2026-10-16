@@ -18,7 +18,7 @@ assert(html.includes("connect-src 'none'"), 'Offline page must block network con
 assert(!/\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(html), 'Unexpected network API.');
 assert(/inputmode="(?:decimal|\$\{tms\?'text':'decimal'\})"/.test(html)&&html.includes('data-action="input-value"'), 'Optional numeric and TMS substitution fields must be available offline.');
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-assert.equal(scripts.length, 10);
+assert.equal(scripts.length, 11);
 for (const [i, [, script]] of scripts.entries()) new vm.Script(script, { filename: 'inline-' + i + '.js' });
 assert(html.indexOf('<script>') > html.indexOf('id="app-dialog"'), 'Inline app must run after its markup.');
 assert(!html.includes('id="calculator-guide"'), 'Length estimate panel must be removed.');
