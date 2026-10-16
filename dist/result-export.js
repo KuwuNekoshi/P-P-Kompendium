@@ -17,7 +17,7 @@
   for(const g of E.formulaSections(model)){
    const rows=[];for(const f of g.formulas.filter(f=>f.isResult)){
     const full=ctx.safe('formula:'+f.id,'expanded',true),r=full.ok?E.evaluate(full.ast):{status:'error',error:full.error},u=E.resultUnit(f);
-    const row={name:clean(f.name),symbol:clean(f.symbol),status:r.status,unit:u.format==='tms'?'timer:minutter:sekunder':u.label};
+    const row={name:clean(f.name),symbol:clean(f.symbol),symbolMath:E.mathSymbol(f.symbol),status:r.status,unit:u.format==='tms'?'timer:minutter:sekunder':u.label};
     row.value=r.status==='ready'?(u.format==='tms'?E.Units.formatTime(r.value):format(r.value)):r.status==='incomplete'?'Udfyld de manglende værdier: '+r.missing.map(v=>v.symbol).join(', '):'Beregningsfejl: '+r.error;
     if(mode!=='none'){
      const expression=ctx.safe('formula:'+f.id,mode,true);
@@ -46,7 +46,14 @@
  function docx(data,parse){
   const p=(text,style='Normal')=>'<w:p><w:pPr><w:pStyle w:val="'+style+'"/></w:pPr><w:r><w:t xml:space="preserve">'+xml(text)+'</w:t></w:r></w:p>';
   let body=p(data.title,'Title')+p('Resultater · Mellemregninger: '+modes[data.mode]);
-  for(const g of data.groups){body+=p(g.name,'Heading1');for(const r of g.rows){body+=p(r.name,'Heading2');if(r.text){body+=r.math&&parse?'<w:p><m:oMath>'+ '<m:r><m:t>'+xml(r.symbol)+' = </m:t></m:r>'+omml(r.math,parse)+'</m:oMath></w:p>':p(r.text,'Equation');}body+=p(r.status==='ready'?r.symbol+' = '+r.value+' '+r.unit:r.value);}}
+  const mathRun=text=>'<m:r><m:t xml:space="preserve">'+xml(text)+'</m:t></m:r>';
+  const equation=body=>'<w:p><m:oMathPara><m:oMath>'+body+'</m:oMath></m:oMathPara></w:p>';
+  for(const g of data.groups){body+=p(g.name,'Heading1');for(const r of g.rows){
+   const lhs=parse&&r.symbolMath?omml(r.symbolMath,parse):mathRun(r.symbol);
+   body+=p(r.name,'Heading2');
+   if(r.text)body+=r.math&&parse?equation(lhs+mathRun(' = ')+omml(r.math,parse)):p(r.text,'Equation');
+   body+=r.status==='ready'?equation(lhs+mathRun(' = '+r.value+' '+r.unit)):p(r.value);
+  }}
   body+='<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr>';
   const head='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   return zip({
