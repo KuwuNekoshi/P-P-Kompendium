@@ -4,7 +4,7 @@ const E=require('../dist/engine.js'),app=fs.readFileSync(require.resolve('../dis
 const setup=(...ids)=>E.initializeUnitChoices({version:6,title:'Resultater',tank:E.defaultTank(),inputUnits:{},inputValues:{},shapes:[],connections:[],formulas:ids.map(id=>E.newFormula(id,id))});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function harness(model){
- const panel={innerHTML:''},scope=vm.createContext({E,model,resultVisible:true,Intl,esc,symbolHtml:E.mathSymbol,$:()=>panel});
+ const panel={innerHTML:''},scope=vm.createContext({E,model,EXAM:false,resultVisible:true,Intl,esc,symbolHtml:E.mathSymbol,$:()=>panel});
  const excerpt=(a,b)=>app.slice(app.indexOf(a),app.indexOf(b));
  vm.runInContext(excerpt('  function renderResult(','  function unitOptions(')+excerpt('  function renderResults(','  function standardUnitControl('),scope);
  return {scope,show:ctx=>{scope.renderResults(ctx);return panel.innerHTML;}};

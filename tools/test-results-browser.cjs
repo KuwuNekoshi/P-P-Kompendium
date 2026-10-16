@@ -14,6 +14,8 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    const row=id=>page.locator(`#panel-results [data-result-id="${id}"]`),value=id=>row(id).locator('.result-value strong').innerText(),mark=()=>action('mark-result').check();
    const group=async(name,id)=>{await page.locator(`[data-action="formula-group"][data-id="${id}"]`).selectOption('+new');await page.locator('[data-group-name]').fill(name);await action('save-formula-group').click();return page.locator(`[data-action="formula-group"][data-id="${id}"]`).inputValue();};
    await page.goto(pathToFileURL(path.resolve(__dirname,'..',edition)).href);
+   const officeMath=await page.evaluate(()=>globalThis.PPResultExport.omml('<mrow><mfrac><msub><mi>A</mi><mn>1</mn></msub><msqrt><mi>x</mi></msqrt></mfrac><mo>+</mo><msup><mi>y</mi><mn>2</mn></msup></mrow>',text=>new DOMParser().parseFromString(text,'application/xml').documentElement));
+   for(const tag of ['m:f','m:num','m:den','m:sSub','m:rad','m:sSup'])assert(officeMath.includes('<'+tag+'>'),tag+' must remain a native Word equation element');
    if(edition==='index.html'){await action('new').click();await action('confirm').click();await page.locator('#calculator-toggle').click();}
    const gravity=await add('gravityForce');assert(await action('mark-result').isDisabled());await set('m','mass','2');
    const resultBox=await page.locator('.result-main').boundingBox(),markerBox=await page.locator('.result-marker').boundingBox();assert(markerBox.x>=resultBox.x+resultBox.width,'marker lies to the right of the result');
@@ -26,6 +28,18 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    const unmarked=await add('gravityForce');await set('m','mass','3');
    await tab('results');assert.equal(await page.locator('#panel-results .result-card').count(),3);assert.deepEqual(await page.locator('.results-group h3').allTextContents(),['Kræfter','Tider','Uden gruppe']);assert.equal(await row(unmarked).count(),0);
    assert.equal(await value(gravity),'19,640');assert.equal(await value(time),'02:00:00');assert.equal(await value(area),'2003,234');
+   if(edition==='eksamen.html')assert.equal(await action('export-results').count(),0);
+   else for(const format of ['docx','pdf'])for(const mode of ['none','compact','simple','expanded']){
+    await action('export-results').click();assert.equal(await page.locator('[data-result-mode]').inputValue(),'compact');
+    assert.deepEqual(await page.locator('[data-result-mode] option').allTextContents(),['Ingen','Kort','Simpel','Fuld']);
+    await page.locator('[data-result-format]').selectOption(format);await page.locator('[data-result-mode]').selectOption(mode);
+    const downloading=page.waitForEvent('download');await action('confirm-result-export').click();const download=await downloading,bytes=fs.readFileSync(await download.path());
+    assert(download.suggestedFilename().endsWith('-resultater.'+format));
+    if(format==='docx'){
+     assert.equal(bytes.readUInt32LE(0),0x04034b50);const text=bytes.toString('utf8');assert(text.includes('19,640'));assert(text.includes('02:00:00'));assert(text.includes('2003,234'));assert(text.includes('timer:minutter:sekunder'));assert.equal((text.match(/<m:oMath>/g)||[]).length,mode==='none'?3:6);assert(text.includes('<m:sSub>'),'output subscripts must be native Word subscripts');
+    }else{assert.equal(bytes.subarray(0,8).toString(),'%PDF-1.4');assert(bytes.toString('latin1').includes('/Subtype /Image'));}
+    if(process.env.PP_EXPORT_DIR){fs.mkdirSync(process.env.PP_EXPORT_DIR,{recursive:true});fs.writeFileSync(path.join(process.env.PP_EXPORT_DIR,mode+'.'+format),bytes);}
+   }
    const left=await row(gravity).locator('.result-card-value').boundingBox(),right=await row(gravity).locator('.result-card-formula').boundingBox();assert(right.x>=left.x+left.width,'short formula is to the right');assert(await row(gravity).locator('math').count());
    await page.locator(`[data-action="move-formula-group"][data-id="${timeGroup}"][data-part="up"]`).click();assert.deepEqual(await page.locator('.results-group h3').allTextContents(),['Tider','Kræfter','Uden gruppe']);
    await row(gravity).locator('[data-action="select-formula"]').click();assert(await page.locator('#panel-builder').isVisible());await set('m','mass','5');await action('result-unit').selectOption('kN');await tab('results');assert.equal(await value(gravity),'0,0491');assert.match(await row(gravity).innerText(),/kN/);
